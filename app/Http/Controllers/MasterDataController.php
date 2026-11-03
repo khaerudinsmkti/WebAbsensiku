@@ -370,7 +370,7 @@ class MasterDataController extends Controller
             'nip' => 'nullable|string|max:50|unique:users,nip',
             'username' => 'required|string|max:50|unique:users,username',
             'email' => 'required|email|max:150|unique:users,email',
-            'role' => 'required|in:teacher,admin,principal',
+            'role' => 'required|in:teacher,admin,principal,publisher',
             'password' => 'required|string|min:6',
         ]);
 
@@ -409,7 +409,7 @@ class MasterDataController extends Controller
             'nip' => 'nullable|string|max:50|unique:users,nip,' . $user->id,
             'username' => 'required|string|max:50|unique:users,username,' . $user->id,
             'email' => 'required|email|max:150|unique:users,email,' . $user->id,
-            'role' => 'required|in:teacher,admin,principal',
+            'role' => 'required|in:teacher,admin,principal,publisher',
             'password' => 'nullable|string|min:6',
         ]);
 
@@ -507,6 +507,7 @@ class MasterDataController extends Controller
                 $role = match ($rawRole) {
                     'admin', 'administrator' => 'admin',
                     'principal', 'kepala sekolah', 'kepsek' => 'principal',
+                    'publisher', 'redaksi', 'humas', 'publisher berita' => 'publisher',
                     default => 'teacher',
                 };
 

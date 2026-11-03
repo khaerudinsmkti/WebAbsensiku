@@ -6,11 +6,14 @@ use App\Models\Attendance;
 use App\Models\AttendanceAdjustment;
 use App\Models\Classroom;
 use App\Models\DutySchedule;
+use App\Models\News;
+use App\Models\NewsCategory;
 use App\Models\Student;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -258,5 +261,88 @@ class DatabaseSeeder extends Seeder
                 }
             }
         }
+
+        // 8. Create Publisher User
+        $publisher = User::firstOrCreate(
+            ['email' => 'publisher@absensiku.com'],
+            [
+                'name' => 'Tim Humas & Redaksi Berita',
+                'username' => 'publisher',
+                'password' => Hash::make('password'),
+                'role' => 'publisher',
+                'nip' => '199505052020011005',
+                'email_verified_at' => now(),
+            ]
+        );
+
+        // 9. Create News Categories
+        $catPengumuman = NewsCategory::firstOrCreate(
+            ['name' => 'Pengumuman Resmi'],
+            ['slug' => 'pengumuman-resmi', 'color' => 'amber', 'description' => 'Pengumuman kedinasan, agenda sekolah, dan surat edaran']
+        );
+        $catKegiatan = NewsCategory::firstOrCreate(
+            ['name' => 'Kegiatan Sekolah'],
+            ['slug' => 'kegiatan-sekolah', 'color' => 'emerald', 'description' => 'Dokumentasi dan liputan acara serta kegiatan belajar siswa']
+        );
+        $catPrestasi = NewsCategory::firstOrCreate(
+            ['name' => 'Prestasi & Akademik'],
+            ['slug' => 'prestasi-akademik', 'color' => 'blue', 'description' => 'Penghargaan dan capaian membanggakan siswa & guru']
+        );
+        $catEkskul = NewsCategory::firstOrCreate(
+            ['name' => 'Ekstrakurikuler'],
+            ['slug' => 'ekstrakurikuler', 'color' => 'purple', 'description' => 'Informasi klub minat, bakat, pramuka, dan olahraga']
+        );
+
+        // 10. Create Sample News
+        News::firstOrCreate(
+            ['slug' => 'edaran-pelaksanaan-penilaian-akhir-semester-pas-2026'],
+            [
+                'title' => 'Surat Edaran Pelaksanaan Penilaian Akhir Semester (PAS) Gasal 2026/2027',
+                'category_id' => $catPengumuman->id,
+                'user_id' => $publisher->id,
+                'excerpt' => 'Informasi lengkap jadwal dan tata tertib Penilaian Akhir Semester (PAS) Gasal bagi seluruh siswa kelas I hingga VI.',
+                'content' => "<p>Yth. Bapak/Ibu Orang Tua / Wali Murid dan seluruh Siswa-Siswi,</p><p>Sehubungan dengan berakhirnya kegiatan pembelajaran semester gasal Tahun Ajaran 2026/2027, pihak sekolah akan menyelenggarakan <strong>Penilaian Akhir Semester (PAS) Gasal</strong> yang dimulai pada tanggal 10 Desember 2026.</p><p>Diharapkan seluruh siswa mempersiapkan diri dengan baik, menjaga kesehatan, dan datang tepat waktu sesuai jam yang ditentukan. Silakan unduh lampiran berkas jadwal resmi dan tata tertib ujian di bawah ini.</p>",
+                'image_path' => null,
+                'attachment_path' => null,
+                'attachment_name' => null,
+                'is_published' => true,
+                'published_at' => now()->subDays(2),
+                'views_count' => 142,
+            ]
+        );
+
+        News::firstOrCreate(
+            ['slug' => 'prestasi-gemilang-juara-1-olimpiade-sains-nasional-tingkat-kota'],
+            [
+                'title' => 'Prestasi Gemilang! Kontingen Siswa Meraih Juara 1 Olimpiade Sains & Matematika',
+                'category_id' => $catPrestasi->id,
+                'user_id' => $publisher->id,
+                'excerpt' => 'Selamat kepada Ananda Naufal dan Tim yang berhasil mengharumkan nama sekolah di ajang Olimpiade Sains Kota.',
+                'content' => "<p>Kabar membanggakan kembali datang dari perwakilan siswa-siswi kita. Dalam ajang Olimpiade Sains & Matematika Tingkat Kota yang diselenggarakan akhir pekan lalu, perwakilan sekolah berhasil menyabet Juara 1 Kategori IPA Terapan dan Medali Perak Matematika.</p><p>Kepala Sekolah menyampaikan apresiasi setinggi-tingginya kepada para guru pembimbing dan orang tua yang senantiasa mendampingi proses belajar ananda. Semoga prestasi ini menjadi motivasi bagi seluruh murid untuk terus berkarya dan berprestasi.</p>",
+                'image_path' => null,
+                'attachment_path' => null,
+                'attachment_name' => null,
+                'is_published' => true,
+                'published_at' => now()->subDay(),
+                'views_count' => 285,
+            ]
+        );
+
+        News::firstOrCreate(
+            ['slug' => 'kegiatan-senam-sehat-dan-edukasi-gizi-bersama-puskesmas'],
+            [
+                'title' => 'Kegiatan Senam Bersama dan Edukasi Pola Hidup Bersih & Sehat (PHBS)',
+                'category_id' => $catKegiatan->id,
+                'user_id' => $publisher->id,
+                'excerpt' => 'Semarak Jumat Sehat bersama tenaga medis Puskesmas setempat untuk membangun kebiasaan hidup sehat sejak dini.',
+                'content' => "<p>Jumat pagi di halaman utama sekolah berlangsung penuh keceriaan. Seluruh warga sekolah mulai dari kelas 1 sampai kelas 6, didampingi dewan guru, mengikuti kegiatan Senam Kesegaran Jasmani (SKJ) bersama.</p><p>Setelah senam, tim dari Puskesmas memberikan penyuluhan interaktif mengenai pentingnya sarapan bergizi seimbang, cara mencuci tangan dengan sabun yang benar, dan menjaga kebersihan lingkungan sekolah.</p>",
+                'image_path' => null,
+                'attachment_path' => null,
+                'attachment_name' => null,
+                'is_published' => true,
+                'published_at' => now(),
+                'views_count' => 97,
+            ]
+        );
     }
 }

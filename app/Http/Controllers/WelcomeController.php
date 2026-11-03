@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicHoliday;
+use App\Models\News;
+use App\Models\NewsCategory;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -131,8 +133,20 @@ class WelcomeController extends Controller
             'is_saturday_holiday' => $isSaturdayOff,
         ];
 
+        // News for public dashboard
+        $newsList = News::with(['category', 'author:id,name,role'])
+            ->published()
+            ->orderByDesc('published_at')
+            ->take(12)
+            ->get();
+
+        $newsCategories = NewsCategory::withCount(['news' => fn ($q) => $q->published()])
+            ->get();
+
         return Inertia::render('welcome', [
             'calendar' => $calendar,
+            'news' => $newsList,
+            'newsCategories' => $newsCategories,
         ]);
     }
 }

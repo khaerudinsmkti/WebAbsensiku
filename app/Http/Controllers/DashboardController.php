@@ -13,11 +13,16 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|\Illuminate\Http\RedirectResponse
     {
+        $user = $request->user();
+
+        if ($user && $user->isPublisher()) {
+            return redirect()->route('news.index');
+        }
+
         $today = Carbon::today()->toDateString();
         $date = $request->input('date', $today);
-        $user = $request->user();
 
         $monthNames = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',

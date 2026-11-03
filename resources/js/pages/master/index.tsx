@@ -3161,10 +3161,12 @@ export default function MasterIndexPage({
                                                                 ? 'bg-purple-100 text-purple-800'
                                                                 : t.role === 'principal'
                                                                 ? 'bg-amber-100 text-amber-800'
+                                                                : t.role === 'publisher'
+                                                                ? 'bg-indigo-100 text-indigo-800'
                                                                 : 'bg-teal-100 text-teal-800'
                                                         }`}
                                                     >
-                                                        {t.role === 'admin' ? 'Administrator' : t.role === 'principal' ? 'Kepala Sekolah' : 'Guru Pengajar'}
+                                                        {t.role === 'admin' ? 'Administrator' : t.role === 'principal' ? 'Kepala Sekolah' : t.role === 'publisher' ? 'Publisher Berita' : 'Guru Pengajar'}
                                                     </span>
                                                 </td>
                                                 <td className="px-5 py-3.5 text-xs font-semibold text-gray-700">
@@ -4097,6 +4099,7 @@ export default function MasterIndexPage({
                                         >
                                             <option value="teacher">Guru Pengajar</option>
                                             <option value="principal">Kepala Sekolah</option>
+                                            <option value="publisher">Publisher Berita</option>
                                             {!isPrincipal && <option value="admin">Administrator</option>}
                                         </select>
                                     </div>

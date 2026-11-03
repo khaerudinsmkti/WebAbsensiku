@@ -1,4 +1,5 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { useState, useRef, useMemo } from 'react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
     BarChart3,
@@ -8,13 +9,25 @@ import {
     ChevronLeft,
     ChevronRight,
     Clock,
+    Download,
+    Eye,
+    FileText,
+    ImageIcon,
     Info,
+    Newspaper,
+    Paperclip,
+    Plus,
+    Search,
     Sparkles,
+    Tag,
+    UploadCloud,
+    X,
 } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Button } from '@/components/ui/button';
 import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
 import { dashboard, login } from '@/routes';
+import type { NewsCategory, NewsItem } from '@/types/news';
 
 interface SchoolProp {
     name?: string;
@@ -71,12 +84,89 @@ interface CalendarData {
 
 interface WelcomeProps {
     calendar?: CalendarData;
+    news?: NewsItem[];
+    newsCategories?: NewsCategory[];
 }
 
-export default function Welcome({ calendar }: WelcomeProps) {
+export default function Welcome({ calendar, news = [], newsCategories = [] }: WelcomeProps) {
     const { auth, school } = usePage<{ auth: any; school?: SchoolProp }>().props;
     const schoolName = school?.name || 'AbsensiKu SD';
     const logoUrl = school?.logo_url;
+    const isPublisherOrAdmin = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin';
+
+    // State for News on Public Dashboard
+    const [selectedNewsCategory, setSelectedNewsCategory] = useState<string>('all');
+    const [newsSearch, setNewsSearch] = useState<string>('');
+    const [readingNews, setReadingNews] = useState<NewsItem | null>(null);
+
+    // Quick Add News Modal (Available for Publisher & Admin)
+    const [isCreateNewsModalOpen, setIsCreateNewsModalOpen] = useState<boolean>(false);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
+    const attachmentInputRef = useRef<HTMLInputElement>(null);
+
+    const quickNewsForm = useForm<{
+        title: string;
+        category_id: string | number;
+        excerpt: string;
+        content: string;
+        is_published: boolean;
+        image: File | null;
+        attachment: File | null;
+    }>({
+        title: '',
+        category_id: newsCategories[0]?.id || '',
+        excerpt: '',
+        content: '',
+        is_published: true,
+        image: null,
+        attachment: null,
+    });
+
+    const handleQuickNewsSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        quickNewsForm.post('/news-management', {
+            onSuccess: () => {
+                setIsCreateNewsModalOpen(false);
+                quickNewsForm.reset();
+                setImagePreview(null);
+            },
+        });
+    };
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            quickNewsForm.setData('image', file);
+            const reader = new FileReader();
+            reader.onload = () => {
+                setImagePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            quickNewsForm.setData('attachment', file);
+        }
+    };
+
+    // Filtered news items
+    const filteredNews = useMemo(() => {
+        return news.filter((item) => {
+            const matchesCategory =
+                selectedNewsCategory === 'all' ||
+                item.category_id?.toString() === selectedNewsCategory;
+            const matchesSearch =
+                !newsSearch ||
+                item.title.toLowerCase().includes(newsSearch.toLowerCase()) ||
+                (item.excerpt && item.excerpt.toLowerCase().includes(newsSearch.toLowerCase())) ||
+                item.content.toLowerCase().includes(newsSearch.toLowerCase());
+            return matchesCategory && matchesSearch;
+        });
+    }, [news, selectedNewsCategory, newsSearch]);
 
     const navigateMonth = (targetMonth: number, targetYear: number) => {
         router.get(
@@ -121,10 +211,22 @@ export default function Welcome({ calendar }: WelcomeProps) {
                     </div>
 
                     <nav className="flex items-center gap-3">
+                        {isPublisherOrAdmin && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setIsCreateNewsModalOpen(true)}
+                                className="hidden sm:inline-flex rounded-xl border-[#FF6B35]/40 text-xs font-bold text-[#FF6B35] hover:bg-[#FFF0EB] dark:hover:bg-[#331C1A]"
+                            >
+                                <Plus className="mr-1 size-3.5" />
+                                Tambah Berita
+                            </Button>
+                        )}
                         {auth.user ? (
                             <Button asChild variant="primary">
-                                <Link href={dashboard()}>
-                                    Buka Dashboard
+                                <Link href={auth.user?.role === 'publisher' ? '/news-management' : dashboard()}>
+                                    {auth.user?.role === 'publisher' ? 'Kelola Berita' : 'Buka Dashboard'}
                                     <ArrowRight className="size-4" />
                                 </Link>
                             </Button>
@@ -163,8 +265,8 @@ export default function Welcome({ calendar }: WelcomeProps) {
                             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
                                 {auth.user ? (
                                     <Button asChild size="lg" variant="primary">
-                                        <Link href={dashboard()}>
-                                            Menuju Dashboard
+                                        <Link href={auth.user?.role === 'publisher' ? '/news-management' : dashboard()}>
+                                            {auth.user?.role === 'publisher' ? 'Buka Panel Berita' : 'Menuju Dashboard'}
                                             <ArrowRight className="size-5" />
                                         </Link>
                                     </Button>
@@ -481,6 +583,220 @@ export default function Welcome({ calendar }: WelcomeProps) {
                             </div>
                         )}
 
+                        {/* SECTION: Berita & Pengumuman Sekolah (Publik) */}
+                        <div id="berita" className="relative z-10 mx-auto mt-20 max-w-6xl">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                                <div>
+                                    <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-bold text-[#FF6B35] dark:border-orange-900 dark:bg-orange-950/60 dark:text-[#FFA07A]">
+                                        <Newspaper className="size-3.5" />
+                                        Kabar & Warta Sekolah
+                                    </div>
+                                    <h2 className="mt-2 text-2xl font-black text-[#111827] sm:text-3xl dark:text-white">
+                                        Berita, Agenda & Surat Edaran Resmi
+                                    </h2>
+                                    <p className="mt-1 text-xs sm:text-sm text-[#6B7280] dark:text-[#9CA3AF]">
+                                        Informasi kegiatan terkini, prestasi siswa, dan dokumen edaran penting dari pihak sekolah.
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-2.5">
+                                    {isPublisherOrAdmin && (
+                                        <Button
+                                            type="button"
+                                            variant="primary"
+                                            onClick={() => setIsCreateNewsModalOpen(true)}
+                                            className="rounded-xl px-4 text-xs font-bold shadow-md shadow-[#FF6B35]/20"
+                                        >
+                                            <Plus className="mr-1.5 size-4" />
+                                            Tambah Berita
+                                        </Button>
+                                    )}
+                                    {isPublisherOrAdmin && (
+                                        <Button
+                                            asChild
+                                            variant="outline"
+                                            className="rounded-xl border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200"
+                                        >
+                                            <Link href="/news-management">
+                                                Panel Berita
+                                                <ArrowRight className="ml-1 size-3.5" />
+                                            </Link>
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Filters Bar: Search & Categories */}
+                            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-2xl border-2 border-gray-100 bg-white p-4 shadow-xs dark:border-gray-800 dark:bg-[#18122B]">
+                                {/* Categories Filter Pills */}
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedNewsCategory('all')}
+                                        className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                                            selectedNewsCategory === 'all'
+                                                ? 'bg-[#FF6B35] text-white shadow-xs shadow-[#FF6B35]/30'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300'
+                                        }`}
+                                    >
+                                        Semua ({news.length})
+                                    </button>
+                                    {newsCategories.map((cat) => (
+                                        <button
+                                            key={cat.id}
+                                            type="button"
+                                            onClick={() => setSelectedNewsCategory(cat.id.toString())}
+                                            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                                                selectedNewsCategory === cat.id.toString()
+                                                    ? 'bg-[#FF6B35] text-white shadow-xs shadow-[#FF6B35]/30'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300'
+                                            }`}
+                                        >
+                                            {cat.name}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Search Input */}
+                                <div className="relative w-full sm:w-64">
+                                    <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        value={newsSearch}
+                                        onChange={(e) => setNewsSearch(e.target.value)}
+                                        placeholder="Cari topik berita..."
+                                        className="w-full rounded-xl border border-gray-200 bg-gray-50/70 pl-8.5 pr-8 py-1.5 text-xs font-medium focus:border-[#FF6B35] focus:bg-white focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                    />
+                                    {newsSearch && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewsSearch('')}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                        >
+                                            <X className="size-3.5" />
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* News Cards Grid */}
+                            {filteredNews.length === 0 ? (
+                                <div className="mt-8 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-gray-200 bg-white/60 p-12 text-center backdrop-blur-md dark:border-gray-800 dark:bg-[#18122B]/60">
+                                    <div className="flex size-14 items-center justify-center rounded-2xl bg-orange-50 text-[#FF6B35] dark:bg-orange-950/40">
+                                        <Newspaper className="size-7" />
+                                    </div>
+                                    <h3 className="mt-4 text-base font-bold text-gray-900 dark:text-white">
+                                        Tidak Ada Berita yang Sesuai
+                                    </h3>
+                                    <p className="mt-1 text-xs text-gray-500 max-w-sm dark:text-gray-400">
+                                        Coba gunakan kata kunci pencarian lain atau pilih kategori berita yang berbeda.
+                                    </p>
+                                    {(newsSearch || selectedNewsCategory !== 'all') && (
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={() => {
+                                                setNewsSearch('');
+                                                setSelectedNewsCategory('all');
+                                            }}
+                                            className="mt-4 rounded-xl text-xs font-bold"
+                                        >
+                                            Tampilkan Semua Berita
+                                        </Button>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                                    {filteredNews.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="group flex flex-col overflow-hidden rounded-[22px] border-2 border-[#E8E8E8] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF6B35]/40 hover:shadow-[0_12px_24px_rgba(255,107,53,0.08)] dark:border-[#2D234A] dark:bg-[#18122B]"
+                                        >
+                                            {/* Cover Image or Themed Graphic */}
+                                            <div className="relative h-48 w-full overflow-hidden bg-gradient-to-tr from-orange-100 via-amber-50 to-teal-50 dark:from-gray-900 dark:via-purple-950/30 dark:to-gray-800">
+                                                {item.image_url ? (
+                                                    <img
+                                                        src={item.image_url}
+                                                        alt={item.title}
+                                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center">
+                                                        <div className="flex size-12 items-center justify-center rounded-2xl bg-white/80 text-[#FF6B35] shadow-xs backdrop-blur-sm dark:bg-gray-800/80">
+                                                            <Newspaper className="size-6" />
+                                                        </div>
+                                                        <span className="mt-2 text-xs font-bold text-gray-500 dark:text-gray-400">
+                                                            Warta & Publikasi Sekolah
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {/* Top Badges */}
+                                                <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5">
+                                                    {item.category && (
+                                                        <span className="rounded-full bg-white/95 px-3 py-1 text-[11px] font-extrabold text-[#FF6B35] shadow-sm backdrop-blur-md dark:bg-gray-900/90 dark:text-[#FFA07A]">
+                                                            {item.category.name}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                {/* Attachment PDF Indicator */}
+                                                {item.attachment_url && (
+                                                    <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-red-600/95 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm backdrop-blur-sm">
+                                                        <FileText className="size-3" />
+                                                        <span>Lampiran PDF</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Card Body */}
+                                            <div className="flex flex-1 flex-col p-5">
+                                                <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                                                    <span>{item.formatted_date}</span>
+                                                    <span>•</span>
+                                                    <span>Oleh: {item.author?.name || 'Publisher'}</span>
+                                                </div>
+
+                                                <h3 className="mt-2 text-base font-extrabold text-[#111827] line-clamp-2 leading-snug group-hover:text-[#FF6B35] transition-colors dark:text-white">
+                                                    {item.title}
+                                                </h3>
+
+                                                <p className="mt-2 flex-1 text-xs text-[#6B7280] line-clamp-3 leading-relaxed dark:text-[#9CA3AF]">
+                                                    {item.excerpt || item.content.replace(/<[^>]*>?/gm, '').substring(0, 120)}
+                                                </p>
+
+                                                {/* Card Footer Action */}
+                                                <div className="mt-5 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-800">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setReadingNews(item)}
+                                                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FF6B35] hover:text-[#e05622] transition-colors"
+                                                    >
+                                                        <span>Baca Selengkapnya</span>
+                                                        <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
+                                                    </button>
+
+                                                    {item.attachment_url && (
+                                                        <a
+                                                            href={item.attachment_url}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            download
+                                                            className="flex size-7 items-center justify-center rounded-lg border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400"
+                                                            title={`Unduh ${item.attachment_name || 'Lampiran.pdf'}`}
+                                                        >
+                                                            <Download className="size-3.5" />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
                         {/* Feature Cards Grid */}
                         <div className="relative z-10 mx-auto mt-16 grid max-w-6xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                             <div className="rounded-[18px] border-2 border-[#E8E8E8] bg-white p-7 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:border-[#2D234A] dark:bg-[#18122B]">
@@ -532,6 +848,352 @@ export default function Welcome({ calendar }: WelcomeProps) {
                 </footer>
 
                 <PwaInstallPrompt />
+
+                {/* MODAL: Baca Berita Lengkap & Unduh PDF */}
+                {readingNews && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-[28px] bg-white shadow-2xl dark:bg-[#18122B] overflow-hidden">
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between border-b border-gray-100 p-5 dark:border-gray-800">
+                                <div className="flex items-center gap-2">
+                                    {readingNews.category && (
+                                        <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-[#FF6B35] dark:bg-orange-950 dark:text-[#FFA07A]">
+                                            {readingNews.category.name}
+                                        </span>
+                                    )}
+                                    <span className="text-xs text-gray-400">
+                                        {readingNews.formatted_date}
+                                    </span>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setReadingNews(null)}
+                                    className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800"
+                                >
+                                    <X className="size-5" />
+                                </button>
+                            </div>
+
+                            {/* Modal Body */}
+                            <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
+                                {readingNews.image_url && (
+                                    <div className="overflow-hidden rounded-2xl border border-gray-100 shadow-xs dark:border-gray-800">
+                                        <img
+                                            src={readingNews.image_url}
+                                            alt={readingNews.title}
+                                            className="w-full max-h-80 object-cover"
+                                        />
+                                    </div>
+                                )}
+
+                                <div>
+                                    <h1 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight dark:text-white">
+                                        {readingNews.title}
+                                    </h1>
+                                    <div className="mt-2 text-xs text-gray-400">
+                                        Diterbitkan oleh: <strong className="text-gray-700 dark:text-gray-300">{readingNews.author?.name || 'Publisher Berita'}</strong>
+                                    </div>
+                                </div>
+
+                                {/* Content */}
+                                <div
+                                    className="prose prose-sm sm:prose-base max-w-none text-gray-700 leading-relaxed dark:text-gray-300 space-y-3"
+                                    dangerouslySetInnerHTML={{ __html: readingNews.content }}
+                                />
+
+                                {/* Lampiran Dokumen PDF */}
+                                {readingNews.attachment_url && (
+                                    <div className="mt-8 rounded-2xl border-2 border-red-200 bg-red-50/70 p-5 dark:border-red-900/60 dark:bg-red-950/30">
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                            <div className="flex items-center gap-3.5">
+                                                <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-red-100 text-red-600 shadow-xs dark:bg-red-900/60 dark:text-red-300">
+                                                    <FileText className="size-6" />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-black uppercase tracking-wider text-red-700 dark:text-red-400">
+                                                            Lampiran Dokumen Resmi
+                                                        </span>
+                                                        {readingNews.formatted_attachment_size && (
+                                                            <span className="rounded bg-red-200/80 px-1.5 py-0.5 text-[9px] font-bold text-red-900 dark:bg-red-900 dark:text-red-200">
+                                                                {readingNews.formatted_attachment_size}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <h4 className="mt-0.5 text-sm font-extrabold text-gray-900 dark:text-white break-all">
+                                                        {readingNews.attachment_name || 'Dokumen-Lampiran.pdf'}
+                                                    </h4>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <a
+                                                    href={readingNews.attachment_url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="inline-flex items-center gap-1.5 rounded-xl border border-red-300 bg-white px-3.5 py-2 text-xs font-bold text-red-700 shadow-xs hover:bg-red-50 dark:border-red-800 dark:bg-gray-800 dark:text-red-300"
+                                                >
+                                                    <Eye className="size-3.5" />
+                                                    Lihat PDF
+                                                </a>
+                                                <a
+                                                    href={readingNews.attachment_url}
+                                                    download
+                                                    className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-red-700 transition-colors"
+                                                >
+                                                    <Download className="size-3.5" />
+                                                    Unduh PDF
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="flex items-center justify-end border-t border-gray-100 p-4 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50">
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => setReadingNews(null)}
+                                    className="rounded-xl text-xs font-bold"
+                                >
+                                    Tutup Berita
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* MODAL: Tambah Berita Cepat dari Dashboard Publik */}
+                {isCreateNewsModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-[28px] bg-white shadow-2xl dark:bg-[#18122B] overflow-hidden">
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between border-b border-gray-100 p-5 dark:border-gray-800">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="flex size-9 items-center justify-center rounded-xl bg-orange-100 text-[#FF6B35] dark:bg-orange-950 dark:text-[#FFA07A]">
+                                        <Newspaper className="size-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-black text-gray-900 dark:text-white">
+                                            Tambah Berita ke Dashboard Publik
+                                        </h3>
+                                        <span className="text-[11px] text-gray-400">
+                                            Hak Akses: Publisher Berita
+                                        </span>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCreateNewsModalOpen(false)}
+                                    className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                >
+                                    <X className="size-5" />
+                                </button>
+                            </div>
+
+                            {/* Form */}
+                            <form onSubmit={handleQuickNewsSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">
+                                        Judul Berita <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={quickNewsForm.data.title}
+                                        onChange={(e) => quickNewsForm.setData('title', e.target.value)}
+                                        placeholder="Judul pengumuman atau berita sekolah..."
+                                        required
+                                        className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs font-semibold focus:border-[#FF6B35] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">
+                                            Kategori Berita
+                                        </label>
+                                        <select
+                                            value={quickNewsForm.data.category_id}
+                                            onChange={(e) => quickNewsForm.setData('category_id', e.target.value)}
+                                            className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs font-semibold focus:border-[#FF6B35] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                        >
+                                            <option value="">Tanpa Kategori</option>
+                                            {newsCategories.map((c) => (
+                                                <option key={c.id} value={c.id}>
+                                                    {c.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">
+                                            Status
+                                        </label>
+                                        <div className="flex items-center gap-2 pt-2">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={quickNewsForm.data.is_published}
+                                                    onChange={(e) => quickNewsForm.setData('is_published', e.target.checked)}
+                                                    className="size-4 rounded text-[#FF6B35] focus:ring-[#FF6B35]"
+                                                />
+                                                <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                                                    Terbitkan sekarang di halaman publik
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">
+                                        Ringkasan Singkat (Opsional)
+                                    </label>
+                                    <textarea
+                                        rows={2}
+                                        value={quickNewsForm.data.excerpt}
+                                        onChange={(e) => quickNewsForm.setData('excerpt', e.target.value)}
+                                        placeholder="Ringkasan singkat untuk kartu berita di dashboard..."
+                                        className="w-full rounded-xl border border-gray-200 p-3 text-xs focus:border-[#FF6B35] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">
+                                        Isi Berita Lengkap <span className="text-red-500">*</span>
+                                    </label>
+                                    <textarea
+                                        rows={6}
+                                        value={quickNewsForm.data.content}
+                                        onChange={(e) => quickNewsForm.setData('content', e.target.value)}
+                                        placeholder="Ketik isi berita selengkapnya di sini..."
+                                        required
+                                        className="w-full rounded-xl border border-gray-200 p-3 text-xs focus:border-[#FF6B35] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                    />
+                                </div>
+
+                                {/* Upload Gambar Cover */}
+                                <div className="rounded-2xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/40">
+                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">
+                                        Gambar Berita (JPG / PNG / WEBP, maks 5MB)
+                                    </label>
+                                    <div className="flex items-center gap-4 mt-2">
+                                        {imagePreview ? (
+                                            <div className="relative">
+                                                <img
+                                                    src={imagePreview}
+                                                    alt="Preview"
+                                                    className="size-20 rounded-xl object-cover border border-orange-200"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setImagePreview(null);
+                                                        quickNewsForm.setData('image', null);
+                                                    }}
+                                                    className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-red-600 text-white"
+                                                >
+                                                    <X className="size-3" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex size-20 items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-white text-gray-400 dark:border-gray-700 dark:bg-gray-800">
+                                                <ImageIcon className="size-6" />
+                                            </div>
+                                        )}
+                                        <div>
+                                            <input
+                                                type="file"
+                                                ref={imageInputRef}
+                                                accept="image/*"
+                                                onChange={handleImageChange}
+                                                className="hidden"
+                                                id="quick-image-upload"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => imageInputRef.current?.click()}
+                                                className="rounded-xl border-gray-300 text-xs font-bold"
+                                            >
+                                                <UploadCloud className="mr-1.5 size-3.5 text-[#FF6B35]" />
+                                                {imagePreview ? 'Ganti Gambar' : 'Pilih Gambar'}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Upload PDF */}
+                                <div className="rounded-2xl border border-red-100 bg-red-50/50 p-4 dark:border-red-950/60 dark:bg-red-950/20">
+                                    <label className="block text-xs font-bold text-red-950 dark:text-red-300 uppercase mb-1">
+                                        Lampiran Dokumen PDF (Opsional, maks 20MB)
+                                    </label>
+                                    {quickNewsForm.data.attachment ? (
+                                        <div className="flex items-center justify-between rounded-xl border border-red-200 bg-white p-3 dark:border-red-900/50 dark:bg-gray-800">
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="size-4 text-red-600" />
+                                                <span className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-xs">
+                                                    {quickNewsForm.data.attachment.name}
+                                                </span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => quickNewsForm.setData('attachment', null)}
+                                                className="text-red-600 p-1 hover:bg-red-50 rounded-lg"
+                                            >
+                                                <X className="size-4" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="mt-2">
+                                            <input
+                                                type="file"
+                                                ref={attachmentInputRef}
+                                                accept="application/pdf"
+                                                onChange={handleAttachmentChange}
+                                                className="hidden"
+                                                id="quick-attachment-upload"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => attachmentInputRef.current?.click()}
+                                                className="rounded-xl border-red-200 bg-white text-xs font-bold text-red-700 hover:bg-red-50 dark:border-red-900 dark:bg-gray-800 dark:text-red-300"
+                                            >
+                                                <Paperclip className="mr-1.5 size-3.5" />
+                                                Pilih Berkas PDF
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-gray-100 dark:border-gray-800">
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={() => setIsCreateNewsModalOpen(false)}
+                                        className="rounded-xl text-xs font-bold"
+                                    >
+                                        Batal
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        variant="primary"
+                                        disabled={quickNewsForm.processing}
+                                        className="rounded-xl px-5 text-xs font-bold"
+                                    >
+                                        {quickNewsForm.processing ? 'Menyimpan...' : 'Terbitkan Berita'}
+                                    </Button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
             </div>
         </>
     );

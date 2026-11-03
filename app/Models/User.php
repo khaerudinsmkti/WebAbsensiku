@@ -73,6 +73,21 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return $this->role === 'student';
     }
 
+    public function isPublisher(): bool
+    {
+        return $this->role === 'publisher';
+    }
+
+    public function canManageNews(): bool
+    {
+        return $this->role === 'admin' || $this->role === 'publisher';
+    }
+
+    public function news(): HasMany
+    {
+        return $this->hasMany(News::class, 'user_id');
+    }
+
     public function homeroomClassrooms(): HasMany
     {
         return $this->hasMany(Classroom::class, 'homeroom_teacher_id');

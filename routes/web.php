@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\LatenessController;
 use App\Http\Controllers\MasterDataController;
+use App\Http\Controllers\NewsController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SchoolSettingController;
 use App\Http\Controllers\WelcomeController;
@@ -27,25 +28,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // 1. Dashboard Eksekutif & Ringkasan Realtime
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // 2. Presensi Harian (Batch & Quick Update)
-    Route::get('/attendances', [AttendanceController::class, 'index'])->name('attendances.index');
-    Route::post('/attendances/batch', [AttendanceController::class, 'storeBatch'])->name('attendances.batch');
-    Route::patch('/attendances/student/{student}', [AttendanceController::class, 'quickUpdate'])->name('attendances.quick-update');
+    // Modul Presensi & Rekapitulasi (Admin, Kepala Sekolah, Guru Pengajar)
+    Route::middleware('role:teacher,principal')->group(function () {
+        // 2. Presensi Harian (Batch & Quick Update)
+        Route::get('/attendances', [AttendanceController::class, 'index'])->name('attendances.index');
+        Route::post('/attendances/batch', [AttendanceController::class, 'storeBatch'])->name('attendances.batch');
+        Route::patch('/attendances/student/{student}', [AttendanceController::class, 'quickUpdate'])->name('attendances.quick-update');
 
-    // 3. Pelacak Keterlambatan Siswa
-    Route::get('/attendances/lateness', [LatenessController::class, 'index'])->name('attendances.lateness');
-    Route::post('/attendances/lateness', [LatenessController::class, 'store'])->name('attendances.lateness.store');
-    Route::put('/attendances/lateness/{attendance}', [LatenessController::class, 'update'])->name('attendances.lateness.update');
-    Route::delete('/attendances/lateness/{attendance}', [LatenessController::class, 'destroy'])->name('attendances.lateness.destroy');
+        // 3. Pelacak Keterlambatan Siswa
+        Route::get('/attendances/lateness', [LatenessController::class, 'index'])->name('attendances.lateness');
+        Route::post('/attendances/lateness', [LatenessController::class, 'store'])->name('attendances.lateness.store');
+        Route::put('/attendances/lateness/{attendance}', [LatenessController::class, 'update'])->name('attendances.lateness.update');
+        Route::delete('/attendances/lateness/{attendance}', [LatenessController::class, 'destroy'])->name('attendances.lateness.destroy');
 
-    // 4. Absen Khusus / Izin Pulang Awal
-    Route::get('/attendances/adjustments', [AttendanceAdjustmentController::class, 'index'])->name('attendances.adjustments');
-    Route::post('/attendances/adjustments', [AttendanceAdjustmentController::class, 'store'])->name('attendances.adjustments.store');
+        // 4. Absen Khusus / Izin Pulang Awal
+        Route::get('/attendances/adjustments', [AttendanceAdjustmentController::class, 'index'])->name('attendances.adjustments');
+        Route::post('/attendances/adjustments', [AttendanceAdjustmentController::class, 'store'])->name('attendances.adjustments.store');
 
-    // 5. Rekapitulasi & Ekspor Laporan
-    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
-    Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
-    Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.export-pdf');
+        // 5. Rekapitulasi & Ekspor Laporan
+        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+        Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.export-pdf');
+    });
+
+    // Modul Pengelolaan Berita (Publisher Berita & Admin)
+    Route::middleware('role:publisher,admin')->group(function () {
+        Route::get('/news-management', [NewsController::class, 'index'])->name('news.index');
+        Route::post('/news-management', [NewsController::class, 'store'])->name('news.store');
+        Route::post('/news-management/{news}', [NewsController::class, 'update'])->name('news.update');
+        Route::delete('/news-management/{news}', [NewsController::class, 'destroy'])->name('news.destroy');
+        Route::post('/news-management/categories', [NewsController::class, 'storeCategory'])->name('news.categories.store');
+        Route::delete('/news-management/categories/{category}', [NewsController::class, 'destroyCategory'])->name('news.categories.destroy');
+    });
 
     // 6. Master Data (Kelas, Siswa, Guru, Jadwal Piket) - Admin & Kepala Sekolah
     Route::middleware('role:admin,principal')->group(function () {
