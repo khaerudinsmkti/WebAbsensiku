@@ -8,6 +8,7 @@ import {
     LayoutGrid,
     MessageSquareQuote,
     Newspaper,
+    PhoneCall,
     School,
     UserCheck,
 } from 'lucide-react';
@@ -44,6 +45,12 @@ export function AppSidebar() {
                   href: '/publisher/principal-greeting',
                   icon: MessageSquareQuote,
                   isActive: url.startsWith('/publisher/principal-greeting'),
+              },
+              {
+                  title: 'Kontak Kami',
+                  href: '/manage/contact',
+                  icon: PhoneCall,
+                  isActive: url.startsWith('/manage/contact'),
               },
               {
                   title: 'Berita Publik',
@@ -118,6 +125,18 @@ export function AppSidebar() {
                             href: '/admin/school-settings',
                             icon: School,
                             isActive: url.startsWith('/admin/school-settings'),
+                        },
+                        {
+                            title: 'Sambutan Kepala Sekolah',
+                            href: '/publisher/principal-greeting',
+                            icon: MessageSquareQuote,
+                            isActive: url.startsWith('/publisher/principal-greeting'),
+                        },
+                        {
+                            title: 'Kontak Kami',
+                            href: '/manage/contact',
+                            icon: PhoneCall,
+                            isActive: url.startsWith('/manage/contact'),
                         },
                         {
                             title: 'Kalender Pendidikan',

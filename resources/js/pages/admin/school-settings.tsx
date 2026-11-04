@@ -1,4 +1,4 @@
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import {
     Building2,
     Calendar,
@@ -9,7 +9,9 @@ import {
     Image as ImageIcon,
     Mail,
     MapPin,
+    MessageSquareQuote,
     Phone,
+    PhoneCall,
     Save,
     School,
     Trash2,
@@ -244,6 +246,20 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                         )}
                                     </div>
                                 </div>
+
+                                <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between rounded-xl bg-orange-50/70 p-3 border border-orange-100 dark:bg-orange-950/20 dark:border-orange-900/40">
+                                    <div className="flex items-center gap-2">
+                                        <PhoneCall className="size-4 text-[#FF6B35] shrink-0" />
+                                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                            Kelola nomor WhatsApp, Medsos, Google Maps, dan kotak masuk pesan Kontak Kami
+                                        </span>
+                                    </div>
+                                    <Button asChild variant="outline" size="sm" className="rounded-xl text-xs font-bold text-[#FF6B35] border-[#FF6B35]/40 hover:bg-[#FFF0EB] dark:bg-gray-800 dark:hover:bg-gray-700 shrink-0">
+                                        <Link href="/manage/contact">
+                                            Kelola Kontak &rarr;
+                                        </Link>
+                                    </Button>
+                                </div>
                             </div>
 
                             {/* Card 2: Kepala Sekolah & Penandatangan */}
@@ -294,6 +310,20 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                             <p className="mt-1 text-xs text-red-500">{errors.principal_nip}</p>
                                         )}
                                     </div>
+                                </div>
+
+                                <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between rounded-xl bg-orange-50/70 p-3 border border-orange-100 dark:bg-orange-950/20 dark:border-orange-900/40">
+                                    <div className="flex items-center gap-2">
+                                        <MessageSquareQuote className="size-4 text-[#FF6B35] shrink-0" />
+                                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                            Kelola foto resmi, judul, dan pesan sambutan publik Kepala Sekolah
+                                        </span>
+                                    </div>
+                                    <Button asChild variant="outline" size="sm" className="rounded-xl text-xs font-bold text-[#FF6B35] border-[#FF6B35]/40 hover:bg-[#FFF0EB] dark:bg-gray-800 dark:hover:bg-gray-700 shrink-0">
+                                        <Link href="/publisher/principal-greeting">
+                                            Buka Sambutan &rarr;
+                                        </Link>
+                                    </Button>
                                 </div>
                             </div>
 

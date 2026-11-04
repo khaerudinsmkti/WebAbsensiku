@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AttendanceAdjustmentController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\LatenessController;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
 Route::get('/berita', [WelcomeController::class, 'news'])->name('public.news');
+Route::post('/kontak/kirim', [ContactController::class, 'publicStore'])->name('contact.public.store');
 Route::redirect('/register', '/login');
 
 Route::get('/manifest.json', function () {
@@ -52,7 +54,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.export-pdf');
     });
 
-    // Modul Pengelolaan Berita & Sambutan (Publisher Berita & Admin)
+    // Modul Pengelolaan Berita (Publisher Berita & Admin)
     Route::middleware('role:publisher,admin')->group(function () {
         Route::get('/news-management', [NewsController::class, 'index'])->name('news.index');
         Route::post('/news-management', [NewsController::class, 'store'])->name('news.store');
@@ -60,10 +62,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/news-management/{news}', [NewsController::class, 'destroy'])->name('news.destroy');
         Route::post('/news-management/categories', [NewsController::class, 'storeCategory'])->name('news.categories.store');
         Route::delete('/news-management/categories/{category}', [NewsController::class, 'destroyCategory'])->name('news.categories.destroy');
+    });
 
-        // Kelola Sambutan Kepala Sekolah
+    // Kelola Sambutan Kepala Sekolah & Kontak Kami (Publisher, Admin, Kepala Sekolah)
+    Route::middleware('role:publisher,admin,principal')->group(function () {
         Route::get('/publisher/principal-greeting', [\App\Http\Controllers\PrincipalGreetingController::class, 'edit'])->name('publisher.greeting.edit');
         Route::post('/publisher/principal-greeting', [\App\Http\Controllers\PrincipalGreetingController::class, 'update'])->name('publisher.greeting.update');
+
+        // Kelola Kontak Kami & Pesan Pengunjung
+        Route::get('/manage/contact', [ContactController::class, 'index'])->name('contact.index');
+        Route::post('/manage/contact/settings', [ContactController::class, 'updateSettings'])->name('contact.settings.update');
+        Route::patch('/manage/contact/messages/{message}/read', [ContactController::class, 'markAsRead'])->name('contact.messages.read');
+        Route::delete('/manage/contact/messages/{message}', [ContactController::class, 'destroyMessage'])->name('contact.messages.destroy');
     });
 
     // 6. Master Data (Kelas, Siswa, Guru, Jadwal Piket) - Admin & Kepala Sekolah

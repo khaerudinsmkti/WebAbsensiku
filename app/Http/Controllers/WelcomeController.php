@@ -156,12 +156,31 @@ class WelcomeController extends Controller
             'photo_url' => $schoolSetting->principal_photo_url,
         ];
 
+        $contactInfo = [
+            'name' => $schoolSetting->name,
+            'phone' => $schoolSetting->phone,
+            'whatsapp' => $schoolSetting->whatsapp,
+            'email' => $schoolSetting->email,
+            'address' => $schoolSetting->address,
+            'city' => $schoolSetting->city,
+            'postal_code' => $schoolSetting->postal_code,
+            'instagram' => $schoolSetting->instagram,
+            'facebook' => $schoolSetting->facebook,
+            'youtube' => $schoolSetting->youtube,
+            'tiktok' => $schoolSetting->tiktok,
+            'operating_hours' => $schoolSetting->operating_hours,
+            'maps_embed_url' => $schoolSetting->maps_embed_url,
+            'contact_description' => $schoolSetting->contact_description,
+            'is_active' => (bool) ($schoolSetting->contact_active ?? true),
+        ];
+
         return Inertia::render('welcome', [
             'calendar' => $calendar,
             'news' => $newsList,
             'newsCategories' => $newsCategories,
             'totalNewsCount' => $totalNewsCount,
             'principalGreeting' => $principalGreeting,
+            'contactInfo' => $contactInfo,
         ]);
     }
 
