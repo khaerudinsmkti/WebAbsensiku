@@ -6,6 +6,7 @@ import {
     Globe,
     GraduationCap,
     LayoutGrid,
+    MessageSquareQuote,
     Newspaper,
     School,
     UserCheck,
@@ -39,10 +40,22 @@ export function AppSidebar() {
                   isActive: url.startsWith('/news-management'),
               },
               {
-                  title: 'Portal Publik',
-                  href: '/',
+                  title: 'Sambutan Kepala Sekolah',
+                  href: '/publisher/principal-greeting',
+                  icon: MessageSquareQuote,
+                  isActive: url.startsWith('/publisher/principal-greeting'),
+              },
+              {
+                  title: 'Berita Publik',
+                  href: '/berita',
                   icon: Globe,
-                  isActive: false,
+                  isActive: url.startsWith('/berita'),
+              },
+              {
+                  title: 'Beranda Sekolah',
+                  href: '/',
+                  icon: School,
+                  isActive: url === '/',
               },
           ]
         : [
@@ -83,6 +96,12 @@ export function AppSidebar() {
                             href: '/news-management',
                             icon: Newspaper,
                             isActive: url.startsWith('/news-management'),
+                        },
+                        {
+                            title: 'Berita Publik',
+                            href: '/berita',
+                            icon: Globe,
+                            isActive: url.startsWith('/berita'),
                         },
                     ]
                   : []),

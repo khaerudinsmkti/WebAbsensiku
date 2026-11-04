@@ -618,6 +618,17 @@ export default function ReportsPage({
                                                     const daily = student.daily_attendances?.[d.day];
                                                     const isRedDay = d.is_holiday || d.is_sunday || d.is_saturday;
                                                     const code = daily?.code || (d.is_holiday ? 'L' : (d.is_sunday || d.is_saturday ? '-' : '.'));
+                                                    const statusText = daily?.status_label || (
+                                                        code === 'H' ? 'Hadir Tepat Waktu' :
+                                                        code === 'T' ? `Terlambat${daily?.late_minutes ? ' (' + daily.late_minutes + ' mnt)' : ''}` :
+                                                        code === 'S' ? `Sakit${daily?.notes ? ': ' + daily.notes : ''}` :
+                                                        code === 'I' ? `Izin${daily?.notes ? ': ' + daily.notes : ''}` :
+                                                        code === 'A' ? 'Alpa / Tanpa Keterangan' :
+                                                        code === 'L' || d.is_holiday ? `Libur Resmi: ${d.holiday_name || 'Libur Sekolah'}` :
+                                                        isRedDay ? 'Libur Akhir Pekan' : 'Belum Ada Presensi'
+                                                    );
+                                                    const cellTitle = `${student.name} • Tgl ${d.day} (${d.day_name}): ${statusText}`;
+
                                                     return (
                                                         <td
                                                             key={d.date}
@@ -626,39 +637,54 @@ export default function ReportsPage({
                                                                     ? 'bg-red-50/50 dark:bg-red-950/20'
                                                                     : ''
                                                             }`}
-                                                            title={daily?.notes || (d.is_holiday ? `${d.holiday_name || 'Hari Libur'}${d.holiday_description ? ' - ' + d.holiday_description : ''}` : undefined)}
+                                                            title={cellTitle}
                                                         >
                                                             {code === 'H' ? (
-                                                                <span className="inline-block size-5 leading-5 rounded bg-emerald-100 text-emerald-800 font-extrabold dark:bg-emerald-950/80 dark:text-emerald-300">
+                                                                <span
+                                                                    className="inline-flex size-5.5 items-center justify-center rounded bg-emerald-100 text-emerald-800 font-extrabold shadow-xs dark:bg-emerald-950/80 dark:text-emerald-300"
+                                                                    title={cellTitle}
+                                                                >
                                                                     H
                                                                 </span>
                                                             ) : code === 'T' ? (
-                                                                <span className="inline-block size-5 leading-5 rounded bg-purple-100 text-purple-800 font-extrabold dark:bg-purple-950/80 dark:text-purple-300">
+                                                                <span
+                                                                    className="inline-flex size-5.5 items-center justify-center rounded bg-purple-100 text-purple-800 font-extrabold shadow-xs dark:bg-purple-950/80 dark:text-purple-300"
+                                                                    title={cellTitle}
+                                                                >
                                                                     T
                                                                 </span>
                                                             ) : code === 'S' ? (
-                                                                <span className="inline-block size-5 leading-5 rounded bg-blue-100 text-blue-800 font-extrabold dark:bg-blue-950/80 dark:text-blue-300">
+                                                                <span
+                                                                    className="inline-flex size-5.5 items-center justify-center rounded bg-blue-100 text-blue-800 font-extrabold shadow-xs dark:bg-blue-950/80 dark:text-blue-300"
+                                                                    title={cellTitle}
+                                                                >
                                                                     S
                                                                 </span>
                                                             ) : code === 'I' ? (
-                                                                <span className="inline-block size-5 leading-5 rounded bg-amber-100 text-amber-800 font-extrabold dark:bg-amber-950/80 dark:text-amber-300">
+                                                                <span
+                                                                    className="inline-flex size-5.5 items-center justify-center rounded bg-amber-100 text-amber-800 font-extrabold shadow-xs dark:bg-amber-950/80 dark:text-amber-300"
+                                                                    title={cellTitle}
+                                                                >
                                                                     I
                                                                 </span>
                                                             ) : code === 'A' ? (
-                                                                <span className="inline-block size-5 leading-5 rounded bg-red-100 text-red-800 font-extrabold dark:bg-red-950/80 dark:text-red-300">
+                                                                <span
+                                                                    className="inline-flex size-5.5 items-center justify-center rounded bg-red-100 text-red-800 font-extrabold shadow-xs dark:bg-red-950/80 dark:text-red-300"
+                                                                    title={cellTitle}
+                                                                >
                                                                     A
                                                                 </span>
                                                             ) : code === 'L' || d.is_holiday ? (
                                                                 <span
-                                                                    className="inline-block size-5 leading-5 rounded bg-red-100 text-red-700 font-black dark:bg-red-950/80 dark:text-red-300 text-[10px]"
-                                                                    title={d.holiday_name ? `${d.holiday_name}${d.holiday_description ? ' - ' + d.holiday_description : ''}` : 'Hari Libur'}
+                                                                    className="inline-flex size-5.5 items-center justify-center rounded bg-red-100 text-red-700 font-black dark:bg-red-950/80 dark:text-red-300 text-[10px]"
+                                                                    title={cellTitle}
                                                                 >
                                                                     L
                                                                 </span>
                                                             ) : d.is_sunday || d.is_saturday ? (
-                                                                <span className="text-red-300 dark:text-red-700">-</span>
+                                                                <span className="text-red-300 dark:text-red-700 font-bold" title={cellTitle}>-</span>
                                                             ) : (
-                                                                <span className="text-gray-200 dark:text-gray-800">.</span>
+                                                                <span className="text-gray-300 dark:text-gray-700" title={cellTitle}>•</span>
                                                             )}
                                                         </td>
                                                     );

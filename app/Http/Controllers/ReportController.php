@@ -159,7 +159,13 @@ class ReportController extends Controller
                 $percentage = round(($hadir / $denominator) * 100, 1);
                 if ($percentage > 100) $percentage = 100;
 
-                $attsByDate = $atts->keyBy('date');
+                $attsByDate = $atts->keyBy(function ($att) {
+                    if (empty($att->date)) {
+                        return '';
+                    }
+                    return is_string($att->date) ? substr($att->date, 0, 10) : $att->date->format('Y-m-d');
+                });
+
                 $dailyAttendances = [];
                 foreach ($days as $dayInfo) {
                     $d = $dayInfo['day'];
@@ -173,28 +179,44 @@ class ReportController extends Controller
                             'absent' => 'A',
                             default => '-',
                         };
+                        $statusLabel = match ($att->status) {
+                            'present' => $att->is_late ? 'Terlambat (' . ($att->late_minutes ?? 0) . ' menit)' : 'Hadir Tepat Waktu',
+                            'sick' => 'Sakit' . ($att->notes ? ' (' . $att->notes . ')' : ''),
+                            'permit' => 'Izin' . ($att->notes ? ' (' . $att->notes . ')' : ''),
+                            'absent' => 'Alpa (Tanpa Keterangan)',
+                            default => '-',
+                        };
                         $dailyAttendances[$d] = [
                             'code' => $code,
                             'status' => $att->status,
+                            'status_label' => $statusLabel,
                             'is_late' => (bool) $att->is_late,
+                            'late_minutes' => $att->late_minutes ?? 0,
+                            'check_in_time' => $att->check_in_time,
                             'notes' => $att->notes,
                         ];
                     } else {
                         if ($dayInfo['is_holiday']) {
                             $code = 'L';
                             $status = 'holiday';
-                        } elseif ($dayInfo['is_sunday'] || $dayInfo['is_saturday']) {
+                            $statusLabel = 'Libur: ' . ($dayInfo['holiday_name'] ?? 'Libur Resmi Sekolah');
+                        } elseif ($dayInfo['is_sunday'] || ($dayInfo['is_saturday_off'] ?? false)) {
                             $code = '-';
                             $status = 'weekend';
+                            $statusLabel = 'Libur Akhir Pekan';
                         } else {
                             $code = '.';
                             $status = 'empty';
+                            $statusLabel = 'Belum Ada Presensi';
                         }
 
                         $dailyAttendances[$d] = [
                             'code' => $code,
                             'status' => $status,
+                            'status_label' => $statusLabel,
                             'is_late' => false,
+                            'late_minutes' => 0,
+                            'check_in_time' => null,
                             'notes' => $dayInfo['holiday_name'] ?? ($dayInfo['is_weekend'] ? 'Libur Akhir Pekan' : null),
                         ];
                     }
@@ -222,7 +244,14 @@ class ReportController extends Controller
                 $dDate = $dayInfo['date'];
                 $h = 0; $s = 0; $i = 0; $a = 0; $t = 0;
                 foreach ($studentsData as $st) {
-                    $att = $st->attendances->firstWhere('date', $dDate);
+                    $att = $st->attendances->first(function ($attendance) use ($dDate) {
+                        if (empty($attendance->date)) {
+                            return false;
+                        }
+                        $attDateStr = is_string($attendance->date) ? substr($attendance->date, 0, 10) : $attendance->date->format('Y-m-d');
+                        return $attDateStr === $dDate;
+                    });
+
                     if ($att) {
                         if ($att->status === 'present') {
                             $h++;

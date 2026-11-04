@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AcademicHoliday;
 use App\Models\News;
 use App\Models\NewsCategory;
+use App\Models\SchoolSetting;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -133,20 +134,73 @@ class WelcomeController extends Controller
             'is_saturday_holiday' => $isSaturdayOff,
         ];
 
-        // News for public dashboard
+        // News for public dashboard - default 6 berita terbaru
         $newsList = News::with(['category', 'author:id,name,role'])
             ->published()
             ->orderByDesc('published_at')
-            ->take(12)
+            ->take(6)
             ->get();
+
+        $totalNewsCount = News::published()->count();
 
         $newsCategories = NewsCategory::withCount(['news' => fn ($q) => $q->published()])
             ->get();
+
+        $schoolSetting = SchoolSetting::getSetting();
+        $principalGreeting = [
+            'name' => $schoolSetting->principal_name,
+            'nip' => $schoolSetting->principal_nip,
+            'title' => $schoolSetting->principal_greeting_title ?? 'Sambutan Kepala Sekolah',
+            'content' => $schoolSetting->principal_greeting,
+            'is_active' => (bool) ($schoolSetting->principal_greeting_active ?? true),
+            'photo_url' => $schoolSetting->principal_photo_url,
+        ];
 
         return Inertia::render('welcome', [
             'calendar' => $calendar,
             'news' => $newsList,
             'newsCategories' => $newsCategories,
+            'totalNewsCount' => $totalNewsCount,
+            'principalGreeting' => $principalGreeting,
+        ]);
+    }
+
+    /**
+     * Display a paginated listing of news for the public portal.
+     */
+    public function news(Request $request): Response
+    {
+        $search = $request->input('search');
+        $categoryId = $request->input('category_id');
+
+        $query = News::with(['category', 'author:id,name,role'])
+            ->published()
+            ->orderByDesc('published_at');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('content', 'like', "%{$search}%")
+                    ->orWhere('excerpt', 'like', "%{$search}%");
+            });
+        }
+
+        if ($categoryId && $categoryId !== 'all') {
+            $query->where('category_id', $categoryId);
+        }
+
+        $newsList = $query->paginate(9)->withQueryString();
+
+        $newsCategories = NewsCategory::withCount(['news' => fn ($q) => $q->published()])
+            ->get();
+
+        return Inertia::render('news/public-index', [
+            'news' => $newsList,
+            'newsCategories' => $newsCategories,
+            'filters' => [
+                'search' => $search ?? '',
+                'category_id' => $categoryId ?? 'all',
+            ],
         ]);
     }
 }

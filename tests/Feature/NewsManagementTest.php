@@ -98,3 +98,42 @@ test('publisher user can view and create news with image and pdf attachment', fu
     Storage::disk('public')->assertExists($created->image_path);
     Storage::disk('public')->assertExists($created->attachment_path);
 });
+
+test('publisher can create and edit news without image without getting image failed to upload error', function () {
+    $publisher = createTestPublisher();
+    $category = NewsCategory::firstOrCreate(
+        ['slug' => 'cat-pengumuman'],
+        ['name' => 'Pengumuman', 'color' => 'amber']
+    );
+
+    // 1. Create news with empty/null image
+    $title = 'Berita Tanpa Gambar ' . uniqid();
+    $storeResponse = $this->actingAs($publisher)->post('/news-management', [
+        'title' => $title,
+        'category_id' => $category->id,
+        'content' => '<p>Konten tanpa gambar</p>',
+        'is_published' => true,
+        'image' => null,
+        'attachment' => null,
+    ]);
+
+    $storeResponse->assertSessionHasNoErrors();
+    $news = News::where('title', $title)->first();
+    expect($news)->not->toBeNull();
+    expect($news->image_path)->toBeNull();
+
+    // 2. Update news with empty file instance (UPLOAD_ERR_NO_FILE) simulation
+    $emptyFile = new UploadedFile('', '', null, UPLOAD_ERR_NO_FILE, true);
+    $updateResponse = $this->actingAs($publisher)->post('/news-management/' . $news->id, [
+        'title' => $title . ' Diperbarui',
+        'category_id' => $category->id,
+        'content' => '<p>Konten diperbarui</p>',
+        'is_published' => true,
+        'image' => $emptyFile,
+        'attachment' => $emptyFile,
+    ]);
+
+    $updateResponse->assertSessionHasNoErrors();
+    $news->refresh();
+    expect($news->title)->toBe($title . ' Diperbarui');
+});

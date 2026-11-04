@@ -18,26 +18,34 @@ class SchoolSetting extends Model
         'email',
         'principal_name',
         'principal_nip',
+        'principal_photo_path',
+        'principal_greeting_title',
+        'principal_greeting',
+        'principal_greeting_active',
         'start_time',
         'school_days_per_week',
         'logo_path',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'school_days_per_week' => 'integer',
-        ];
-    }
+    protected $casts = [
+        'school_days_per_week' => 'integer',
+        'principal_greeting_active' => 'boolean',
+    ];
 
     protected $appends = [
         'logo_url',
+        'principal_photo_url',
         'is_saturday_holiday',
     ];
 
     public function getLogoUrlAttribute(): ?string
     {
         return $this->logo_path ? asset('storage/' . $this->logo_path) : null;
+    }
+
+    public function getPrincipalPhotoUrlAttribute(): ?string
+    {
+        return $this->principal_photo_path ? asset('storage/' . $this->principal_photo_path) : null;
     }
 
     public function getIsSaturdayHolidayAttribute(): bool
@@ -67,6 +75,10 @@ class SchoolSetting extends Model
             'email' => 'info@sddigital.sch.id',
             'principal_name' => 'Drs. H. Mulyadi, M.Pd.',
             'principal_nip' => '197205121998031004',
+            'principal_photo_path' => null,
+            'principal_greeting_title' => 'Membangun Karakter, Meraih Prestasi Bersama',
+            'principal_greeting' => 'Puji syukur kita panjatkan ke hadirat Tuhan Yang Maha Esa. Selamat datang di portal resmi sekolah kami. Kami berkomitmen untuk mewujudkan lingkungan pendidikan yang aman, inklusif, dan penuh kasih sayang bagi seluruh peserta didik. Bersama jajaran tenaga pendidik yang berdedikasi dan dukungan hangat para orang tua, kami membimbing anak-anak menjadi pribadi yang unggul, berakhlak mulia, serta siap menyongsong masa depan dengan ceria dan penuh percaya diri.',
+            'principal_greeting_active' => true,
             'start_time' => '07:00',
             'school_days_per_week' => 6,
             'logo_path' => null,

@@ -640,8 +640,8 @@ export default function Dashboard({
                         </div>
                     </div>
 
-                    {/* 4 Cards Grid */}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {/* 4 Cards Grid (2 Kolom 2 Baris pada Desktop) */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
                         {/* 1. Telat */}
                         {renderTopCard({
                             title: 'Terbanyak Telat',

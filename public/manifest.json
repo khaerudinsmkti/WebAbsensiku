@@ -1,8 +1,8 @@
 {
     "id": "/?source=pwa",
-    "name": "SD NEGERI RAWA BUAYA 07",
-    "short_name": "SD NEGERI RAWA BUAYA 07",
-    "description": "Aplikasi Presensi Siswa dan Manajemen Sekolah - SD NEGERI RAWA BUAYA 07",
+    "name": "SDN Rambatan Kulon 2",
+    "short_name": "SDN Rambatan Kulon 2",
+    "description": "Aplikasi Presensi Siswa dan Manajemen Sekolah - SDN Rambatan Kulon 2",
     "start_url": "/?source=pwa",
     "scope": "/",
     "display": "standalone",

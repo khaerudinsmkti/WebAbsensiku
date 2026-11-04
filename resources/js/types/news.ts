@@ -9,6 +9,14 @@ export interface NewsCategory {
     updated_at?: string;
 }
 
+export interface NewsAttachment {
+    path: string;
+    name: string;
+    size: number;
+    url?: string;
+    formatted_size?: string | null;
+}
+
 export interface NewsItem {
     id: number;
     title: string;
@@ -19,10 +27,14 @@ export interface NewsItem {
     content: string;
     image_path?: string | null;
     image_url?: string | null;
+    images?: string[] | null;
+    images_urls?: string[];
     attachment_path?: string | null;
     attachment_name?: string | null;
     attachment_size?: number | null;
     attachment_url?: string | null;
+    attachments?: NewsAttachment[] | null;
+    attachments_data?: NewsAttachment[];
     formatted_attachment_size?: string | null;
     is_published: boolean;
     published_at?: string | null;

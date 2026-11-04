@@ -21,9 +21,11 @@ class News extends Model
         'excerpt',
         'content',
         'image_path',
+        'images',
         'attachment_path',
         'attachment_name',
         'attachment_size',
+        'attachments',
         'is_published',
         'published_at',
         'views_count',
@@ -31,7 +33,9 @@ class News extends Model
 
     protected $appends = [
         'image_url',
+        'images_urls',
         'attachment_url',
+        'attachments_data',
         'formatted_date',
         'formatted_attachment_size',
     ];
@@ -39,6 +43,8 @@ class News extends Model
     protected function casts(): array
     {
         return [
+            'images' => 'array',
+            'attachments' => 'array',
             'is_published' => 'boolean',
             'published_at' => 'datetime',
             'views_count' => 'integer',
@@ -88,12 +94,90 @@ class News extends Model
 
     public function getImageUrlAttribute(): ?string
     {
-        return $this->image_path ? asset('storage/' . $this->image_path) : null;
+        if ($this->image_path) {
+            return asset('storage/' . $this->image_path);
+        }
+
+        if (! empty($this->images) && is_array($this->images)) {
+            return asset('storage/' . $this->images[0]);
+        }
+
+        return null;
+    }
+
+    public function getImagesUrlsAttribute(): array
+    {
+        $urls = [];
+        if (! empty($this->images) && is_array($this->images)) {
+            foreach ($this->images as $img) {
+                if ($img) {
+                    $urls[] = asset('storage/' . $img);
+                }
+            }
+        } elseif ($this->image_path) {
+            $urls[] = asset('storage/' . $this->image_path);
+        }
+
+        return $urls;
     }
 
     public function getAttachmentUrlAttribute(): ?string
     {
-        return $this->attachment_path ? asset('storage/' . $this->attachment_path) : null;
+        if ($this->attachment_path) {
+            return asset('storage/' . $this->attachment_path);
+        }
+
+        if (! empty($this->attachments) && is_array($this->attachments)) {
+            $first = $this->attachments[0];
+            return ! empty($first['path']) ? asset('storage/' . $first['path']) : null;
+        }
+
+        return null;
+    }
+
+    public function getAttachmentsDataAttribute(): array
+    {
+        $result = [];
+        if (! empty($this->attachments) && is_array($this->attachments)) {
+            foreach ($this->attachments as $att) {
+                if (! empty($att['path'])) {
+                    $size = $att['size'] ?? 0;
+                    $result[] = [
+                        'path' => $att['path'],
+                        'name' => $att['name'] ?? basename($att['path']),
+                        'size' => $size,
+                        'url' => asset('storage/' . $att['path']),
+                        'formatted_size' => $this->formatFileSize($size),
+                    ];
+                }
+            }
+        } elseif ($this->attachment_path) {
+            $result[] = [
+                'path' => $this->attachment_path,
+                'name' => $this->attachment_name ?? basename($this->attachment_path),
+                'size' => $this->attachment_size ?? 0,
+                'url' => asset('storage/' . $this->attachment_path),
+                'formatted_size' => $this->formatted_attachment_size,
+            ];
+        }
+
+        return $result;
+    }
+
+    protected function formatFileSize(?int $bytes): ?string
+    {
+        if (! $bytes) {
+            return null;
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $i = 0;
+        while ($bytes >= 1024 && $i < count($units) - 1) {
+            $bytes /= 1024;
+            $i++;
+        }
+
+        return round($bytes, 1) . ' ' . $units[$i];
     }
 
     public function getFormattedDateAttribute(): string

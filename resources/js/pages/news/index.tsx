@@ -20,11 +20,14 @@ import {
     X,
     ExternalLink,
     AlertCircle,
+    ChevronLeft,
+    ChevronRight,
+    Images,
+    FileCheck,
 } from 'lucide-react';
-import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import type { BreadcrumbItem } from '@/types';
-import type { NewsCategory, NewsItem } from '@/types/news';
+import type { NewsAttachment, NewsCategory, NewsItem } from '@/types/news';
 
 interface PaginationMeta {
     current_page: number;
@@ -72,6 +75,99 @@ const categoryColorMap: Record<string, { bg: string; text: string; border: strin
     sky: { bg: 'bg-sky-100 dark:bg-sky-950/60', text: 'text-sky-800 dark:text-sky-300', border: 'border-sky-200 dark:border-sky-800' },
 };
 
+interface CompressedImageResult {
+    file: File;
+    base64: string;
+    size: number;
+}
+
+function compressImageFile(file: File, maxWidth = 1200, maxHeight = 900, quality = 0.72): Promise<CompressedImageResult> {
+    return new Promise((resolve) => {
+        // If file is SVG, return as-is
+        if (file.type === 'image/svg+xml') {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const b64 = (e.target?.result as string) || '';
+                resolve({ file, base64: b64, size: file.size });
+            };
+            reader.readAsDataURL(file);
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const rawBase64 = event.target?.result as string;
+            const img = new Image();
+            img.src = rawBase64;
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+
+                // Scale down proportionally
+                if (width > maxWidth || height > maxHeight) {
+                    if (width / height > maxWidth / maxHeight) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    } else {
+                        width = Math.round((width * maxHeight) / height);
+                        height = maxHeight;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    resolve({ file, base64: rawBase64, size: file.size });
+                    return;
+                }
+
+                // Draw background white for transparent png conversion to jpeg
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, width, height);
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Export as compressed JPEG
+                const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+
+                canvas.toBlob(
+                    (blob) => {
+                        const blobSize = blob ? blob.size : Math.round((compressedBase64.length * 3) / 4);
+                        const newName = file.name.replace(/\.[^/.]+$/, '.jpg');
+                        const compressedFile = new File([blob || new Blob()], newName, {
+                            type: 'image/jpeg',
+                            lastModified: Date.now(),
+                        });
+                        resolve({
+                            file: compressedFile,
+                            base64: compressedBase64,
+                            size: blobSize,
+                        });
+                    },
+                    'image/jpeg',
+                    quality,
+                );
+            };
+            img.onerror = () => resolve({ file, base64: rawBase64, size: file.size });
+        };
+        reader.onerror = () => resolve({ file, base64: '', size: file.size });
+    });
+}
+
+function formatFileSize(bytes: number): string {
+    if (!bytes) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let i = 0;
+    let b = bytes;
+    while (b >= 1024 && i < units.length - 1) {
+        b /= 1024;
+        i++;
+    }
+    return `${b.toFixed(1)} ${units[i]}`;
+}
+
 export default function NewsManagement({ news, categories, stats, filters }: NewsPageProps) {
     const { flash } = usePage<{ flash?: { success?: string; error?: string } }>().props;
 
@@ -85,12 +181,22 @@ export default function NewsManagement({ news, categories, stats, filters }: New
     const [editingNews, setEditingNews] = useState<NewsItem | null>(null);
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [previewNews, setPreviewNews] = useState<NewsItem | null>(null);
+    const [previewActiveImageIdx, setPreviewActiveImageIdx] = useState(0);
     const [deletingNews, setDeletingNews] = useState<NewsItem | null>(null);
 
-    // Image & File upload refs
+    // Multi-Image & Multi-Attachment States for Form
     const imageInputRef = useRef<HTMLInputElement>(null);
     const attachmentInputRef = useRef<HTMLInputElement>(null);
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [isCompressingImages, setIsCompressingImages] = useState(false);
+    const [isConvertingPdf, setIsConvertingPdf] = useState(false);
+
+    // Images state
+    const [existingImages, setExistingImages] = useState<Array<{ path: string; url: string }>>([]);
+    const [newImages, setNewImages] = useState<Array<{ id: string; file: File; base64: string }>>([]);
+
+    // Attachments state
+    const [existingAttachments, setExistingAttachments] = useState<NewsAttachment[]>([]);
+    const [newAttachments, setNewAttachments] = useState<Array<{ id: string; file: File; base64: string; name: string; size: number }>>([]);
 
     // Form handler for News
     const form = useForm<{
@@ -99,20 +205,22 @@ export default function NewsManagement({ news, categories, stats, filters }: New
         excerpt: string;
         content: string;
         is_published: boolean;
-        image: File | null;
-        remove_image: boolean;
-        attachment: File | null;
-        remove_attachment: boolean;
+        existing_images: string[];
+        images_base64: string[];
+        existing_attachments: any[];
+        attachments_base64: string[];
+        attachments_names: string[];
     }>({
         title: '',
         category_id: categories[0]?.id || '',
         excerpt: '',
         content: '',
         is_published: true,
-        image: null,
-        remove_image: false,
-        attachment: null,
-        remove_attachment: false,
+        existing_images: [],
+        images_base64: [],
+        existing_attachments: [],
+        attachments_base64: [],
+        attachments_names: [],
     });
 
     // Form handler for Category
@@ -148,94 +256,219 @@ export default function NewsManagement({ news, categories, stats, filters }: New
     const openCreateModal = () => {
         setEditingNews(null);
         form.reset();
+        setExistingImages([]);
+        setNewImages([]);
+        setExistingAttachments([]);
+        setNewAttachments([]);
         form.setData({
             title: '',
             category_id: categories[0]?.id || '',
             excerpt: '',
             content: '',
             is_published: true,
-            image: null,
-            remove_image: false,
-            attachment: null,
-            remove_attachment: false,
+            existing_images: [],
+            images_base64: [],
+            existing_attachments: [],
+            attachments_base64: [],
+            attachments_names: [],
         });
-        setImagePreview(null);
         setIsFormModalOpen(true);
     };
 
     const openEditModal = (item: NewsItem) => {
         setEditingNews(item);
         form.reset();
+
+        // Existing images setup
+        const curImages: Array<{ path: string; url: string }> = [];
+        if (item.images && item.images.length > 0) {
+            item.images.forEach((path, idx) => {
+                const url = item.images_urls?.[idx] || `/storage/${path}`;
+                curImages.push({ path, url });
+            });
+        } else if (item.image_path) {
+            curImages.push({
+                path: item.image_path,
+                url: item.image_url || `/storage/${item.image_path}`,
+            });
+        }
+        setExistingImages(curImages);
+        setNewImages([]);
+
+        // Existing attachments setup
+        const curAttachments: NewsAttachment[] = [];
+        if (item.attachments_data && item.attachments_data.length > 0) {
+            item.attachments_data.forEach((att) => curAttachments.push(att));
+        } else if (item.attachment_path) {
+            curAttachments.push({
+                path: item.attachment_path,
+                name: item.attachment_name || 'Dokumen.pdf',
+                size: item.attachment_size || 0,
+                url: item.attachment_url || `/storage/${item.attachment_path}`,
+                formatted_size: item.formatted_attachment_size,
+            });
+        }
+        setExistingAttachments(curAttachments);
+        setNewAttachments([]);
+
         form.setData({
             title: item.title,
             category_id: item.category_id || '',
             excerpt: item.excerpt || '',
             content: item.content,
             is_published: item.is_published,
-            image: null,
-            remove_image: false,
-            attachment: null,
-            remove_attachment: false,
+            existing_images: curImages.map((i) => i.path),
+            images_base64: [],
+            existing_attachments: curAttachments,
+            attachments_base64: [],
+            attachments_names: [],
         });
-        setImagePreview(item.image_url || null);
         setIsFormModalOpen(true);
     };
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            form.setData('image', file);
-            form.setData('remove_image', false);
-            const reader = new FileReader();
-            reader.onload = () => {
-                setImagePreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
+    const handleMultipleImagesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        setIsCompressingImages(true);
+        try {
+            const fileList = Array.from(files);
+            const compressedResults: Array<{ id: string; file: File; base64: string }> = [];
+
+            for (const f of fileList) {
+                // Kompresi setiap gambar secara client-side
+                const res = await compressImageFile(f);
+                compressedResults.push({
+                    id: Math.random().toString(36).substring(2, 9),
+                    file: res.file,
+                    base64: res.base64,
+                });
+            }
+
+            setNewImages((prev) => {
+                const updated = [...prev, ...compressedResults];
+                form.setData('images_base64', updated.map((i) => i.base64));
+                return updated;
+            });
+        } finally {
+            setIsCompressingImages(false);
+            if (imageInputRef.current) {
+                imageInputRef.current.value = '';
+            }
         }
     };
 
-    const handleRemoveSelectedImage = () => {
-        form.setData('image', null);
-        form.setData('remove_image', true);
-        setImagePreview(null);
-        if (imageInputRef.current) {
-            imageInputRef.current.value = '';
+    const handleRemoveExistingImage = (path: string) => {
+        setExistingImages((prev) => {
+            const updated = prev.filter((i) => i.path !== path);
+            form.setData('existing_images', updated.map((i) => i.path));
+            return updated;
+        });
+    };
+
+    const handleRemoveNewImage = (id: string) => {
+        setNewImages((prev) => {
+            const updated = prev.filter((i) => i.id !== id);
+            form.setData('images_base64', updated.map((i) => i.base64));
+            return updated;
+        });
+    };
+
+    const handleMultipleAttachmentsChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        setIsConvertingPdf(true);
+        try {
+            const fileList = Array.from(files);
+            const addedAttachments: Array<{ id: string; file: File; base64: string; name: string; size: number }> = [];
+
+            for (const f of fileList) {
+                if (f.size > 20 * 1024 * 1024) {
+                    alert(`Berkas "${f.name}" melebihi batas 20 MB.`);
+                    continue;
+                }
+
+                const base64Data = await new Promise<string>((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.onerror = () => resolve('');
+                    reader.readAsDataURL(f);
+                });
+
+                if (base64Data) {
+                    addedAttachments.push({
+                        id: Math.random().toString(36).substring(2, 9),
+                        file: f,
+                        base64: base64Data,
+                        name: f.name,
+                        size: f.size,
+                    });
+                }
+            }
+
+            setNewAttachments((prev) => {
+                const updated = [...prev, ...addedAttachments];
+                form.setData('attachments_base64', updated.map((a) => a.base64));
+                form.setData('attachments_names', updated.map((a) => a.name));
+                return updated;
+            });
+        } finally {
+            setIsConvertingPdf(false);
+            if (attachmentInputRef.current) {
+                attachmentInputRef.current.value = '';
+            }
         }
     };
 
-    const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            form.setData('attachment', file);
-            form.setData('remove_attachment', false);
-        }
+    const handleRemoveExistingAttachment = (path: string) => {
+        setExistingAttachments((prev) => {
+            const updated = prev.filter((a) => a.path !== path);
+            form.setData('existing_attachments', updated);
+            return updated;
+        });
     };
 
-    const handleRemoveSelectedAttachment = () => {
-        form.setData('attachment', null);
-        form.setData('remove_attachment', true);
-        if (attachmentInputRef.current) {
-            attachmentInputRef.current.value = '';
-        }
+    const handleRemoveNewAttachment = (id: string) => {
+        setNewAttachments((prev) => {
+            const updated = prev.filter((a) => a.id !== id);
+            form.setData('attachments_base64', updated.map((a) => a.base64));
+            form.setData('attachments_names', updated.map((a) => a.name));
+            return updated;
+        });
     };
 
     const handleSaveNews = (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Sync final values before posting
+        const payloadData = {
+            ...form.data,
+            existing_images: existingImages.map((i) => i.path),
+            images_base64: newImages.map((i) => i.base64),
+            existing_attachments: existingAttachments,
+            attachments_base64: newAttachments.map((a) => a.base64),
+            attachments_names: newAttachments.map((a) => a.name),
+        };
+
         if (editingNews) {
-            // Using POST with multipart form data
-            form.post(`/news-management/${editingNews.id}`, {
+            router.post(`/news-management/${editingNews.id}`, payloadData, {
+                preserveScroll: true,
                 onSuccess: () => {
                     setIsFormModalOpen(false);
                     setEditingNews(null);
                 },
             });
         } else {
-            form.post('/news-management', {
+            router.post('/news-management', payloadData, {
+                preserveScroll: true,
                 onSuccess: () => {
                     setIsFormModalOpen(false);
                     form.reset();
-                    setImagePreview(null);
+                    setExistingImages([]);
+                    setNewImages([]);
+                    setExistingAttachments([]);
+                    setNewAttachments([]);
                 },
             });
         }
@@ -266,7 +499,7 @@ export default function NewsManagement({ news, categories, stats, filters }: New
     };
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <>
             <Head title="Kelola Berita & Informasi Sekolah" />
 
             <div className="flex h-full flex-1 flex-col gap-6 p-4 md:p-8">
@@ -452,17 +685,25 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                             >
                                                 <td className="px-4 py-3.5">
                                                     <div className="flex items-start gap-3 max-w-md">
-                                                        {item.image_url ? (
-                                                            <img
-                                                                src={item.image_url}
-                                                                alt={item.title}
-                                                                className="size-14 shrink-0 rounded-xl object-cover border border-gray-200 dark:border-gray-700"
-                                                            />
-                                                        ) : (
-                                                            <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-400 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                                                                <ImageIcon className="size-6" />
-                                                            </div>
-                                                        )}
+                                                        <div className="relative shrink-0">
+                                                            {item.image_url ? (
+                                                                <img
+                                                                    src={item.image_url}
+                                                                    alt={item.title}
+                                                                    className="size-14 rounded-xl object-cover border border-gray-200 dark:border-gray-700"
+                                                                />
+                                                            ) : (
+                                                                <div className="flex size-14 items-center justify-center rounded-xl bg-gray-100 text-gray-400 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                                                                    <ImageIcon className="size-6" />
+                                                                </div>
+                                                            )}
+                                                            {((item.images_urls && item.images_urls.length > 1) || (item.images && item.images.length > 1)) && (
+                                                                <span className="absolute -bottom-1.5 -right-1.5 flex items-center gap-0.5 rounded-md bg-black/75 px-1.5 py-0.5 text-[9px] font-black text-white shadow-xs backdrop-blur-xs">
+                                                                    <Images className="size-2.5" />
+                                                                    {item.images_urls?.length || item.images?.length}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <div>
                                                             <h4 className="font-extrabold text-gray-900 line-clamp-1 dark:text-white">
                                                                 {item.title}
@@ -488,7 +729,19 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-3.5">
-                                                    {item.attachment_url ? (
+                                                    {item.attachments_data && item.attachments_data.length > 1 ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setPreviewActiveImageIdx(0);
+                                                                setPreviewNews(item);
+                                                            }}
+                                                            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-bold text-red-700 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/60 dark:text-red-300"
+                                                        >
+                                                            <FileText className="size-3.5 text-red-600" />
+                                                            <span>{item.attachments_data.length} Dokumen PDF</span>
+                                                        </button>
+                                                    ) : item.attachment_url ? (
                                                         <a
                                                             href={item.attachment_url}
                                                             target="_blank"
@@ -705,127 +958,224 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                 )}
                             </div>
 
-                            {/* Upload Gambar Berita */}
+                            {/* Upload Multiple Gambar Berita */}
                             <div className="rounded-2xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/40">
-                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">
-                                    Gambar Berita (Cover)
-                                </label>
-                                <p className="text-[11px] text-gray-500 mb-3">
-                                    Format: JPG, PNG, WEBP. Maksimal 5MB.
-                                </p>
-
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                                    {imagePreview ? (
-                                        <div className="relative group">
-                                            <img
-                                                src={imagePreview}
-                                                alt="Preview Berita"
-                                                className="size-24 rounded-2xl object-cover border-2 border-orange-200 shadow-sm dark:border-gray-700"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={handleRemoveSelectedImage}
-                                                className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-red-600 text-white shadow-md hover:bg-red-700"
-                                                title="Hapus gambar"
-                                            >
-                                                <X className="size-3.5" />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex size-24 items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-white text-gray-400 dark:border-gray-700 dark:bg-gray-800">
-                                            <ImageIcon className="size-8" />
-                                        </div>
-                                    )}
-
-                                    <div className="flex-1">
-                                        <input
-                                            type="file"
-                                            ref={imageInputRef}
-                                            accept="image/*"
-                                            onChange={handleImageChange}
-                                            className="hidden"
-                                            id="news-image-upload"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() => imageInputRef.current?.click()}
-                                            className="rounded-xl border-gray-300 text-xs font-bold"
-                                        >
-                                            <UploadCloud className="mr-1.5 size-4 text-[#FF6B35]" />
-                                            {imagePreview ? 'Ganti Gambar' : 'Pilih File Gambar'}
-                                        </Button>
-                                        {form.errors.image && (
-                                            <p className="mt-1 text-xs text-red-500">{form.errors.image}</p>
-                                        )}
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">
+                                            Galeri Foto / Gambar Berita
+                                        </label>
+                                        <p className="text-[11px] text-gray-500 mt-0.5">
+                                            Bisa memilih lebih dari 1 gambar. Gambar akan dikompresi otomatis sehingga ukuran sangat ringan.
+                                        </p>
                                     </div>
+                                    <span className="text-[11px] font-bold text-[#FF6B35]">
+                                        Total: {existingImages.length + newImages.length} Foto
+                                    </span>
+                                </div>
+
+                                {/* Preview Grid Images */}
+                                {(existingImages.length > 0 || newImages.length > 0) && (
+                                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                                        {/* Existing Images */}
+                                        {existingImages.map((img, idx) => (
+                                            <div key={`existing-${img.path}`} className="group relative rounded-xl overflow-hidden border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800 aspect-square">
+                                                <img
+                                                    src={img.url}
+                                                    alt={`Foto ${idx + 1}`}
+                                                    className="size-full object-cover"
+                                                />
+                                                {idx === 0 && (
+                                                    <span className="absolute top-1 left-1 rounded bg-[#FF6B35] px-1.5 py-0.5 text-[9px] font-black text-white shadow-xs">
+                                                        Utama
+                                                    </span>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveExistingImage(img.path)}
+                                                    className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-red-600 text-white opacity-90 hover:opacity-100 hover:scale-110 shadow-xs"
+                                                    title="Hapus foto ini"
+                                                >
+                                                    <X className="size-3" />
+                                                </button>
+                                            </div>
+                                        ))}
+
+                                        {/* New Images */}
+                                        {newImages.map((img, idx) => {
+                                            const isPrimary = existingImages.length === 0 && idx === 0;
+                                            return (
+                                                <div key={`new-${img.id}`} className="group relative rounded-xl overflow-hidden border-2 border-emerald-400/80 bg-gray-100 dark:border-emerald-600 dark:bg-gray-800 aspect-square">
+                                                    <img
+                                                        src={img.base64}
+                                                        alt="Foto Baru"
+                                                        className="size-full object-cover"
+                                                    />
+                                                    {isPrimary ? (
+                                                        <span className="absolute top-1 left-1 rounded bg-[#FF6B35] px-1.5 py-0.5 text-[9px] font-black text-white shadow-xs">
+                                                            Utama
+                                                        </span>
+                                                    ) : (
+                                                        <span className="absolute top-1 left-1 rounded bg-emerald-600 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-xs">
+                                                            Baru
+                                                        </span>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveNewImage(img.id)}
+                                                        className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-red-600 text-white opacity-90 hover:opacity-100 hover:scale-110 shadow-xs"
+                                                        title="Hapus foto ini"
+                                                    >
+                                                        <X className="size-3" />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                <div className="mt-3 flex items-center gap-3">
+                                    <input
+                                        type="file"
+                                        ref={imageInputRef}
+                                        accept="image/*"
+                                        multiple
+                                        onChange={handleMultipleImagesChange}
+                                        className="hidden"
+                                        id="news-images-upload"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        disabled={isCompressingImages}
+                                        onClick={() => imageInputRef.current?.click()}
+                                        className="rounded-xl border-gray-300 text-xs font-bold"
+                                    >
+                                        <UploadCloud className="mr-1.5 size-4 text-[#FF6B35]" />
+                                        {isCompressingImages
+                                            ? 'Mengompresi Gambar...'
+                                            : existingImages.length + newImages.length > 0
+                                            ? '+ Tambah Foto Lainnya'
+                                            : 'Pilih Foto / Gambar (Bisa Banyak)'}
+                                    </Button>
+                                    <span className="text-[11px] text-gray-400">
+                                        Foto urutan pertama akan otomatis dijadikan sampul (cover).
+                                    </span>
                                 </div>
                             </div>
 
-                            {/* Upload Lampiran Dokumen PDF */}
+                            {/* Upload Multiple Lampiran Dokumen PDF */}
                             <div className="rounded-2xl border border-red-100 bg-red-50/40 p-4 dark:border-red-950/60 dark:bg-red-950/20">
-                                <div className="flex items-center gap-2">
-                                    <FileText className="size-4 text-red-600 dark:text-red-400" />
-                                    <label className="text-xs font-bold text-red-950 dark:text-red-300 uppercase">
-                                        Lampiran Dokumen PDF (Opsional)
-                                    </label>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <FileText className="size-4 text-red-600 dark:text-red-400" />
+                                        <label className="text-xs font-bold text-red-950 dark:text-red-300 uppercase">
+                                            Lampiran Dokumen PDF (Opsional)
+                                        </label>
+                                    </div>
+                                    <span className="text-[11px] font-bold text-red-700 dark:text-red-300">
+                                        Total: {existingAttachments.length + newAttachments.length} Berkas
+                                    </span>
                                 </div>
                                 <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 mb-3">
-                                    Gunakan untuk melampirkan berkas resmi seperti Surat Edaran, Jadwal Ujian, Panduan, dll. Maks 20MB.
+                                    Bisa melampirkan beberapa dokumen PDF resmi sekaligus (Surat Edaran, Jadwal Ujian, Panduan, dsb). Maks 20MB per berkas.
                                 </p>
 
-                                {(form.data.attachment || (editingNews?.attachment_path && !form.data.remove_attachment)) ? (
-                                    <div className="flex items-center justify-between rounded-xl border border-red-200 bg-white p-3 shadow-xs dark:border-red-900/50 dark:bg-gray-800">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="flex size-8 items-center justify-center rounded-lg bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400">
-                                                <FileText className="size-4" />
+                                {/* List Attachments */}
+                                {(existingAttachments.length > 0 || newAttachments.length > 0) && (
+                                    <div className="space-y-2 mb-3">
+                                        {/* Existing Attachments */}
+                                        {existingAttachments.map((att) => (
+                                            <div
+                                                key={`existing-att-${att.path}`}
+                                                className="flex items-center justify-between rounded-xl border border-red-200 bg-white p-2.5 shadow-xs dark:border-red-900/50 dark:bg-gray-800"
+                                            >
+                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                    <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400">
+                                                        <FileText className="size-3.5" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <span className="text-xs font-bold text-gray-900 dark:text-white block truncate">
+                                                            {att.name}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-400 block">
+                                                            {att.formatted_size || formatFileSize(att.size)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveExistingAttachment(att.path)}
+                                                    className="rounded-lg p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                                    title="Hapus berkas ini"
+                                                >
+                                                    <X className="size-4" />
+                                                </button>
                                             </div>
-                                            <div>
-                                                <span className="text-xs font-extrabold text-gray-900 dark:text-white max-w-xs block truncate">
-                                                    {form.data.attachment
-                                                        ? form.data.attachment.name
-                                                        : editingNews?.attachment_name || 'Lampiran.pdf'}
-                                                </span>
-                                                <span className="text-[10px] text-gray-400">
-                                                    {form.data.attachment
-                                                        ? `${(form.data.attachment.size / 1024 / 1024).toFixed(2)} MB`
-                                                        : editingNews?.formatted_attachment_size}
-                                                </span>
+                                        ))}
+
+                                        {/* New Attachments */}
+                                        {newAttachments.map((att) => (
+                                            <div
+                                                key={`new-att-${att.id}`}
+                                                className="flex items-center justify-between rounded-xl border border-emerald-300 bg-emerald-50/50 p-2.5 shadow-xs dark:border-emerald-800 dark:bg-emerald-950/20"
+                                            >
+                                                <div className="flex items-center gap-2.5 min-w-0">
+                                                    <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                                                        <FileCheck className="size-3.5" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                                                                {att.name}
+                                                            </span>
+                                                            <span className="rounded bg-emerald-200/80 px-1 py-0.2 text-[9px] font-bold text-emerald-900 dark:bg-emerald-900 dark:text-emerald-200">
+                                                                Baru
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-[10px] text-gray-400 block">
+                                                            {formatFileSize(att.size)}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveNewAttachment(att.id)}
+                                                    className="rounded-lg p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                                                    title="Hapus berkas ini"
+                                                >
+                                                    <X className="size-4" />
+                                                </button>
                                             </div>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={handleRemoveSelectedAttachment}
-                                            className="rounded-lg p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                                            title="Hapus lampiran PDF"
-                                        >
-                                            <X className="size-4" />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <input
-                                            type="file"
-                                            ref={attachmentInputRef}
-                                            accept="application/pdf"
-                                            onChange={handleAttachmentChange}
-                                            className="hidden"
-                                            id="news-attachment-upload"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() => attachmentInputRef.current?.click()}
-                                            className="rounded-xl border-red-200 bg-white text-xs font-bold text-red-700 hover:bg-red-50 dark:border-red-900 dark:bg-gray-800 dark:text-red-300"
-                                        >
-                                            <Paperclip className="mr-1.5 size-4" />
-                                            Pilih Berkas PDF
-                                        </Button>
+                                        ))}
                                     </div>
                                 )}
-                                {form.errors.attachment && (
-                                    <p className="mt-1 text-xs text-red-500">{form.errors.attachment}</p>
-                                )}
+
+                                <div>
+                                    <input
+                                        type="file"
+                                        ref={attachmentInputRef}
+                                        accept="application/pdf"
+                                        multiple
+                                        onChange={handleMultipleAttachmentsChange}
+                                        className="hidden"
+                                        id="news-attachments-upload"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        disabled={isConvertingPdf}
+                                        onClick={() => attachmentInputRef.current?.click()}
+                                        className="rounded-xl border-red-200 bg-white text-xs font-bold text-red-700 hover:bg-red-50 dark:border-red-900 dark:bg-gray-800 dark:text-red-300"
+                                    >
+                                        <Paperclip className="mr-1.5 size-4" />
+                                        {isConvertingPdf
+                                            ? 'Menyiapkan Dokumen...'
+                                            : existingAttachments.length + newAttachments.length > 0
+                                            ? '+ Tambah Dokumen PDF Lain'
+                                            : 'Pilih Dokumen PDF (Bisa Banyak)'}
+                                    </Button>
+                                </div>
                             </div>
 
                             {/* Modal Footer Buttons */}
@@ -841,10 +1191,18 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                 <Button
                                     type="submit"
                                     variant="primary"
-                                    disabled={form.processing}
+                                    disabled={form.processing || isCompressingImages || isConvertingPdf}
                                     className="rounded-xl px-5 text-xs font-bold shadow-sm"
                                 >
-                                    {form.processing ? 'Menyimpan...' : (editingNews ? 'Simpan Perubahan' : 'Terbitkan Berita')}
+                                    {isCompressingImages
+                                        ? 'Mengompresi Foto...'
+                                        : isConvertingPdf
+                                        ? 'Menyiapkan Lampiran...'
+                                        : form.processing
+                                        ? 'Menyimpan...'
+                                        : editingNews
+                                        ? 'Simpan Perubahan'
+                                        : 'Terbitkan Berita'}
                                 </Button>
                             </div>
                         </form>
@@ -974,83 +1332,179 @@ export default function NewsManagement({ news, categories, stats, filters }: New
             )}
 
             {/* MODAL: Pratinjau Berita (Preview) */}
-            {previewNews && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-                    <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-3xl bg-white shadow-2xl dark:bg-[#18122B]">
-                        <div className="flex items-center justify-between border-b border-gray-100 p-5 dark:border-gray-800">
-                            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                                Pratinjau Tampilan Berita
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() => setPreviewNews(null)}
-                                className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                            >
-                                <X className="size-5" />
-                            </button>
-                        </div>
+            {previewNews && (() => {
+                const previewImages = previewNews.images_urls && previewNews.images_urls.length > 0
+                    ? previewNews.images_urls
+                    : (previewNews.image_url ? [previewNews.image_url] : []);
 
-                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                            {previewNews.image_url && (
-                                <img
-                                    src={previewNews.image_url}
-                                    alt={previewNews.title}
-                                    className="w-full max-h-72 rounded-2xl object-cover border border-gray-100 shadow-sm dark:border-gray-700"
-                                />
-                            )}
+                const previewAttachments = previewNews.attachments_data && previewNews.attachments_data.length > 0
+                    ? previewNews.attachments_data
+                    : (previewNews.attachment_url ? [{
+                        path: previewNews.attachment_path || '',
+                        name: previewNews.attachment_name || 'Lampiran Berita.pdf',
+                        size: previewNews.attachment_size || 0,
+                        url: previewNews.attachment_url,
+                        formatted_size: previewNews.formatted_attachment_size,
+                    }] : []);
 
-                            <div className="flex items-center gap-2">
-                                {previewNews.category && (
-                                    <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-[#FF6B35] dark:bg-orange-950 dark:text-[#FFA07A]">
-                                        {previewNews.category.name}
-                                    </span>
-                                )}
-                                <span className="text-xs text-gray-400">
-                                    {previewNews.formatted_date}
+                const currentImage = previewImages[previewActiveImageIdx] || previewImages[0];
+
+                return (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                        <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col rounded-3xl bg-white shadow-2xl dark:bg-[#18122B]">
+                            <div className="flex items-center justify-between border-b border-gray-100 p-5 dark:border-gray-800">
+                                <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                                    Pratinjau Tampilan Berita
                                 </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewNews(null)}
+                                    className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                >
+                                    <X className="size-5" />
+                                </button>
                             </div>
 
-                            <h2 className="text-2xl font-black text-gray-900 leading-snug dark:text-white">
-                                {previewNews.title}
-                            </h2>
-
-                            <div
-                                className="prose prose-sm max-w-none text-gray-700 dark:text-gray-300 leading-relaxed space-y-3"
-                                dangerouslySetInnerHTML={{ __html: previewNews.content }}
-                            />
-
-                            {previewNews.attachment_url && (
-                                <div className="mt-6 flex items-center justify-between rounded-2xl border-2 border-red-100 bg-red-50/50 p-4 dark:border-red-950 dark:bg-red-950/30">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex size-10 items-center justify-center rounded-xl bg-red-100 text-red-600 dark:bg-red-900/60 dark:text-red-300">
-                                            <FileText className="size-5" />
-                                        </div>
-                                        <div>
-                                            <span className="text-xs font-extrabold text-gray-900 dark:text-white">
-                                                {previewNews.attachment_name || 'Lampiran Berita.pdf'}
-                                            </span>
-                                            {previewNews.formatted_attachment_size && (
-                                                <span className="text-[10px] text-gray-500 block">
-                                                    Ukuran: {previewNews.formatted_attachment_size}
-                                                </span>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                                {/* Galeri Gambar */}
+                                {previewImages.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="relative overflow-hidden rounded-2xl border border-gray-100 bg-black/5 dark:border-gray-800">
+                                            <img
+                                                src={currentImage}
+                                                alt={previewNews.title}
+                                                className="w-full max-h-80 object-cover"
+                                            />
+                                            {previewImages.length > 1 && (
+                                                <>
+                                                    <span className="absolute bottom-2.5 right-2.5 rounded-lg bg-black/70 px-2 py-1 text-[10px] font-black text-white backdrop-blur-xs">
+                                                        {previewActiveImageIdx + 1} / {previewImages.length} Foto
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPreviewActiveImageIdx((prev) => (prev > 0 ? prev - 1 : previewImages.length - 1))}
+                                                        className="absolute left-2.5 top-1/2 -translate-y-1/2 flex size-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-xs hover:bg-black/80"
+                                                    >
+                                                        <ChevronLeft className="size-5" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPreviewActiveImageIdx((prev) => (prev < previewImages.length - 1 ? prev + 1 : 0))}
+                                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 flex size-8 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-xs hover:bg-black/80"
+                                                    >
+                                                        <ChevronRight className="size-5" />
+                                                    </button>
+                                                </>
                                             )}
                                         </div>
+
+                                        {/* Thumbnail Strip jika lebih dari 1 foto */}
+                                        {previewImages.length > 1 && (
+                                            <div className="flex items-center gap-2 overflow-x-auto py-1">
+                                                {previewImages.map((img, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        type="button"
+                                                        onClick={() => setPreviewActiveImageIdx(idx)}
+                                                        className={`relative size-14 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
+                                                            previewActiveImageIdx === idx
+                                                                ? 'border-[#FF6B35] ring-2 ring-orange-200 dark:ring-orange-900'
+                                                                : 'border-transparent opacity-60 hover:opacity-100'
+                                                        }`}
+                                                    >
+                                                        <img src={img} alt={`Thumb ${idx + 1}`} className="size-full object-cover" />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                    <a
-                                        href={previewNews.attachment_url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-red-700"
-                                    >
-                                        <Download className="size-4" />
-                                        Unduh PDF
-                                    </a>
+                                )}
+
+                                <div className="flex items-center gap-2">
+                                    {previewNews.category && (
+                                        <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-[#FF6B35] dark:bg-orange-950 dark:text-[#FFA07A]">
+                                            {previewNews.category.name}
+                                        </span>
+                                    )}
+                                    <span className="text-xs text-gray-400">
+                                        {previewNews.formatted_date}
+                                    </span>
                                 </div>
-                            )}
+
+                                <h2 className="text-2xl font-black text-gray-900 leading-snug dark:text-white">
+                                    {previewNews.title}
+                                </h2>
+
+                                <div
+                                    className="prose prose-sm max-w-none text-gray-700 dark:text-gray-300 leading-relaxed space-y-3"
+                                    dangerouslySetInnerHTML={{ __html: previewNews.content }}
+                                />
+
+                                {/* Daftar Lampiran Dokumen PDF */}
+                                {previewAttachments.length > 0 && (
+                                    <div className="mt-6 rounded-2xl border-2 border-red-100 bg-red-50/50 p-4.5 dark:border-red-950 dark:bg-red-950/30 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="size-4.5 text-red-600 dark:text-red-400" />
+                                                <h4 className="text-xs font-black uppercase tracking-wider text-red-950 dark:text-red-300">
+                                                    Lampiran Dokumen Resmi ({previewAttachments.length})
+                                                </h4>
+                                            </div>
+                                        </div>
+
+                                        <div className="divide-y divide-red-200/60 dark:divide-red-900/40">
+                                            {previewAttachments.map((att, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 first:pt-0"
+                                                >
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600 dark:bg-red-900/60 dark:text-red-300">
+                                                            <FileText className="size-4.5" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <span className="text-xs font-extrabold text-gray-900 dark:text-white block truncate">
+                                                                {att.name}
+                                                            </span>
+                                                            <span className="text-[10px] text-gray-500 block">
+                                                                Ukuran: {att.formatted_size || formatFileSize(att.size)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        {att.url && (
+                                                            <>
+                                                                <a
+                                                                    href={att.url}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                    className="inline-flex items-center gap-1 rounded-xl border border-red-300 bg-white px-2.5 py-1.5 text-xs font-bold text-red-700 shadow-xs hover:bg-red-50 dark:border-red-800 dark:bg-gray-800 dark:text-red-300"
+                                                                >
+                                                                    <Eye className="size-3.5" />
+                                                                    Lihat
+                                                                </a>
+                                                                <a
+                                                                    href={att.url}
+                                                                    download
+                                                                    className="inline-flex items-center gap-1 rounded-xl bg-red-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-red-700"
+                                                                >
+                                                                    <Download className="size-3.5" />
+                                                                    Unduh
+                                                                </a>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             {/* MODAL: Konfirmasi Hapus Berita */}
             {deletingNews && (
@@ -1086,7 +1540,11 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                     </div>
                 </div>
             )}
-        </AppLayout>
+        </>
     );
 }
+
+NewsManagement.layout = {
+    breadcrumbs,
+};
 
