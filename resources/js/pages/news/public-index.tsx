@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Button } from '@/components/ui/button';
+import { PublicHeader } from '@/components/public-header';
 import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
 import { dashboard, login } from '@/routes';
 import type { NewsCategory, NewsItem } from '@/types/news';
@@ -109,75 +110,7 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
         <>
             <Head title={`Berita & Warta Sekolah - ${schoolName}`} />
             <div className="flex min-h-screen flex-col bg-page-gradient text-[#1F2937] dark:text-neutral-100">
-                {/* Navbar */}
-                <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between border-b border-[#E8E8E8] bg-white/80 px-6 backdrop-blur-md lg:px-12 dark:border-[#2D234A] dark:bg-[#18122B]/80">
-                    <div className="flex items-center gap-3">
-                        <Link href="/" className="flex items-center gap-3 group">
-                            {logoUrl ? (
-                                <img
-                                    src={logoUrl}
-                                    alt={schoolName}
-                                    className="size-10 object-contain rounded-xl bg-white p-1 shadow-md border border-[#E8E8E8] dark:border-[#2D234A]"
-                                />
-                            ) : (
-                                <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#FFE66D] text-white shadow-md shadow-[#FF6B35]/25">
-                                    <AppLogoIcon className="size-6 text-white" />
-                                </div>
-                            )}
-                            <div>
-                                <span className="text-lg font-black tracking-tight text-[#111827] dark:text-white leading-tight group-hover:text-[#FF6B35] transition-colors">
-                                    {schoolName}
-                                </span>
-                                <span className="ml-1.5 rounded bg-[#FFF0EB] px-1.5 py-0.5 text-[10px] font-bold text-[#FF6B35] dark:bg-[#3D1A10]">
-                                    PORTAL INFORMASI
-                                </span>
-                            </div>
-                        </Link>
-                    </div>
-
-                    {/* Navigation Links */}
-                    <nav className="flex items-center gap-2 sm:gap-4">
-                        <Link
-                            href="/"
-                            className="hidden sm:inline-flex items-center px-3 py-1.5 text-xs font-bold text-gray-600 hover:text-[#FF6B35] transition-colors dark:text-gray-300"
-                        >
-                            Beranda
-                        </Link>
-                        <Link
-                            href="/berita"
-                            className="inline-flex items-center rounded-xl bg-orange-50 px-3 py-1.5 text-xs font-black text-[#FF6B35] dark:bg-orange-950/60 dark:text-[#FFA07A]"
-                        >
-                            Berita
-                        </Link>
-                        <Link
-                            href="/#kalender"
-                            className="hidden md:inline-flex items-center px-3 py-1.5 text-xs font-bold text-gray-600 hover:text-[#FF6B35] transition-colors dark:text-gray-300"
-                        >
-                            Kalender Akademik
-                        </Link>
-
-                        {isPublisherOrAdmin && (
-                            <Button asChild variant="outline" size="sm" className="hidden lg:inline-flex rounded-xl border-[#FF6B35]/40 text-xs font-bold text-[#FF6B35] hover:bg-[#FFF0EB] dark:hover:bg-[#331C1A]">
-                                <Link href="/news-management">
-                                    Kelola Berita
-                                </Link>
-                            </Button>
-                        )}
-
-                        {auth.user ? (
-                            <Button asChild variant="primary" size="sm">
-                                <Link href={auth.user?.role === 'publisher' ? '/news-management' : dashboard()}>
-                                    {auth.user?.role === 'publisher' ? 'Panel Berita' : 'Dashboard'}
-                                    <ArrowRight className="ml-1 size-3.5" />
-                                </Link>
-                            </Button>
-                        ) : (
-                            <Button asChild variant="primary" size="sm">
-                                <Link href={login()}>Masuk Sistem</Link>
-                            </Button>
-                        )}
-                    </nav>
-                </header>
+                <PublicHeader />
 
                 <main className="flex-1 px-6 py-10 lg:px-12">
                     <div className="mx-auto max-w-6xl">

@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
 Route::get('/berita', [WelcomeController::class, 'news'])->name('public.news');
+Route::get('/kalender', [WelcomeController::class, 'calendar'])->name('public.calendar');
+Route::get('/kontak', [WelcomeController::class, 'contact'])->name('public.contact');
 Route::post('/kontak/kirim', [ContactController::class, 'publicStore'])->name('contact.public.store');
 Route::redirect('/register', '/login');
 

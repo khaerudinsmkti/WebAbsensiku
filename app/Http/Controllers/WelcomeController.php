@@ -13,7 +13,84 @@ use Inertia\Response;
 
 class WelcomeController extends Controller
 {
-    public function index(Request $request): Response
+    /**
+     * Public Homepage (Beranda Utama): Hero, 4 Pilar, Sambutan Kepala Sekolah, Berita Terkini.
+     */
+    public function index(): Response
+    {
+        // News for public homepage - 6 berita terbaru
+        $newsList = News::with(['category', 'author:id,name,role'])
+            ->published()
+            ->orderByDesc('published_at')
+            ->take(6)
+            ->get();
+
+        $totalNewsCount = News::published()->count();
+
+        $newsCategories = NewsCategory::withCount(['news' => fn ($q) => $q->published()])
+            ->get();
+
+        $schoolSetting = SchoolSetting::getSetting();
+        $principalGreeting = [
+            'name' => $schoolSetting->principal_name,
+            'nip' => $schoolSetting->principal_nip,
+            'title' => $schoolSetting->principal_greeting_title ?? 'Sambutan Kepala Sekolah',
+            'content' => $schoolSetting->principal_greeting,
+            'is_active' => (bool) ($schoolSetting->principal_greeting_active ?? true),
+            'photo_url' => $schoolSetting->principal_photo_url,
+        ];
+
+        return Inertia::render('welcome', [
+            'news' => $newsList,
+            'newsCategories' => $newsCategories,
+            'totalNewsCount' => $totalNewsCount,
+            'principalGreeting' => $principalGreeting,
+        ]);
+    }
+
+    /**
+     * Display a paginated listing of news for the public portal.
+     */
+    public function news(Request $request): Response
+    {
+        $search = $request->input('search');
+        $categoryId = $request->input('category_id');
+
+        $query = News::with(['category', 'author:id,name,role'])
+            ->published()
+            ->orderByDesc('published_at');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('content', 'like', "%{$search}%")
+                    ->orWhere('excerpt', 'like', "%{$search}%");
+            });
+        }
+
+        if ($categoryId && $categoryId !== 'all') {
+            $query->where('category_id', $categoryId);
+        }
+
+        $newsList = $query->paginate(9)->withQueryString();
+
+        $newsCategories = NewsCategory::withCount(['news' => fn ($q) => $q->published()])
+            ->get();
+
+        return Inertia::render('news/public-index', [
+            'news' => $newsList,
+            'newsCategories' => $newsCategories,
+            'filters' => [
+                'search' => $search ?? '',
+                'category_id' => $categoryId ?? 'all',
+            ],
+        ]);
+    }
+
+    /**
+     * Public Academic Calendar Page (Menu Kalender).
+     */
+    public function calendar(Request $request): Response
     {
         $today = Carbon::today();
         $month = (int) $request->input('month', $today->month);
@@ -134,27 +211,17 @@ class WelcomeController extends Controller
             'is_saturday_holiday' => $isSaturdayOff,
         ];
 
-        // News for public dashboard - default 6 berita terbaru
-        $newsList = News::with(['category', 'author:id,name,role'])
-            ->published()
-            ->orderByDesc('published_at')
-            ->take(6)
-            ->get();
+        return Inertia::render('calendar/public-index', [
+            'calendar' => $calendar,
+        ]);
+    }
 
-        $totalNewsCount = News::published()->count();
-
-        $newsCategories = NewsCategory::withCount(['news' => fn ($q) => $q->published()])
-            ->get();
-
+    /**
+     * Public Contact Us Page (Menu Kontak).
+     */
+    public function contact(): Response
+    {
         $schoolSetting = SchoolSetting::getSetting();
-        $principalGreeting = [
-            'name' => $schoolSetting->principal_name,
-            'nip' => $schoolSetting->principal_nip,
-            'title' => $schoolSetting->principal_greeting_title ?? 'Sambutan Kepala Sekolah',
-            'content' => $schoolSetting->principal_greeting,
-            'is_active' => (bool) ($schoolSetting->principal_greeting_active ?? true),
-            'photo_url' => $schoolSetting->principal_photo_url,
-        ];
 
         $contactInfo = [
             'name' => $schoolSetting->name,
@@ -174,53 +241,8 @@ class WelcomeController extends Controller
             'is_active' => (bool) ($schoolSetting->contact_active ?? true),
         ];
 
-        return Inertia::render('welcome', [
-            'calendar' => $calendar,
-            'news' => $newsList,
-            'newsCategories' => $newsCategories,
-            'totalNewsCount' => $totalNewsCount,
-            'principalGreeting' => $principalGreeting,
+        return Inertia::render('contact/public-index', [
             'contactInfo' => $contactInfo,
         ]);
     }
-
-    /**
-     * Display a paginated listing of news for the public portal.
-     */
-    public function news(Request $request): Response
-    {
-        $search = $request->input('search');
-        $categoryId = $request->input('category_id');
-
-        $query = News::with(['category', 'author:id,name,role'])
-            ->published()
-            ->orderByDesc('published_at');
-
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('content', 'like', "%{$search}%")
-                    ->orWhere('excerpt', 'like', "%{$search}%");
-            });
-        }
-
-        if ($categoryId && $categoryId !== 'all') {
-            $query->where('category_id', $categoryId);
-        }
-
-        $newsList = $query->paginate(9)->withQueryString();
-
-        $newsCategories = NewsCategory::withCount(['news' => fn ($q) => $q->published()])
-            ->get();
-
-        return Inertia::render('news/public-index', [
-            'news' => $newsList,
-            'newsCategories' => $newsCategories,
-            'filters' => [
-                'search' => $search ?? '',
-                'category_id' => $categoryId ?? 'all',
-            ],
-        ]);
-    }
 }
-
