@@ -28,6 +28,8 @@ export function useFlashToast(): void {
         const flash = props?.flash;
         if (flash?.success) {
             triggerToast('success', flash.success);
+        } else if (flash?.contact_success) {
+            triggerToast('success', flash.contact_success);
         } else if (flash?.error) {
             triggerToast('error', flash.error);
         } else if (flash?.message) {

@@ -43,7 +43,9 @@ class ContactController extends Controller
             'is_read' => false,
         ]);
 
-        return back()->with('contact_success', 'Terima kasih! Pesan Anda telah berhasil dikirim. Tim sekolah akan segera menghubungi Anda.');
+        return back()
+            ->with('success', 'Terima kasih! Pesan Anda telah berhasil dikirim. Tim sekolah akan segera menghubungi Anda.')
+            ->with('contact_success', 'Terima kasih! Pesan Anda telah berhasil dikirim. Tim sekolah akan segera menghubungi Anda.');
     }
 
     /**

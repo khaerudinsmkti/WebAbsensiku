@@ -1,4 +1,5 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import {
     CheckCircle2,
     Clock,
@@ -6,12 +7,15 @@ import {
     Instagram,
     Mail,
     MapPin,
+    PartyPopper,
     Phone,
     PhoneCall,
+    RotateCcw,
     Send,
     Sparkles,
     Youtube,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { PublicHeader } from '@/components/public-header';
 import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
@@ -39,9 +43,12 @@ interface PublicContactProps {
 }
 
 export default function PublicContactIndex({ contactInfo }: PublicContactProps) {
-    const { auth, school, flash } = usePage<{ auth: any; school?: { name?: string }; flash?: { contact_success?: string } }>().props;
+    const { auth, school, flash } = usePage<{ auth: any; school?: { name?: string }; flash?: { contact_success?: string; success?: string } }>().props;
     const schoolName = school?.name || 'AbsensiKu SD';
     const canManageContact = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin' || auth?.user?.role === 'principal';
+
+    const [isSubmittedSuccess, setIsSubmittedSuccess] = useState(false);
+    const successMsg = flash?.contact_success || flash?.success || (isSubmittedSuccess ? 'Terima kasih! Pesan Anda telah berhasil dikirim. Tim sekolah akan segera menghubungi Anda.' : null);
 
     const contactForm = useForm({
         name: '',
@@ -57,6 +64,11 @@ export default function PublicContactIndex({ contactInfo }: PublicContactProps) 
             preserveScroll: true,
             onSuccess: () => {
                 contactForm.reset();
+                setIsSubmittedSuccess(true);
+                toast.success('Pesan Anda berhasil dikirim!', {
+                    description: 'Terima kasih telah menghubungi kami. Tim sekolah kami akan segera merespons.',
+                    duration: 5000,
+                });
             },
         });
     };
@@ -267,10 +279,34 @@ export default function PublicContactIndex({ contactInfo }: PublicContactProps) 
                                         </div>
                                     </div>
 
-                                    {flash?.contact_success && (
-                                        <div className="mb-5 flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-200">
-                                            <CheckCircle2 className="size-5 shrink-0" />
-                                            <span>{flash.contact_success}</span>
+                                    {successMsg && (
+                                        <div className="mb-6 overflow-hidden rounded-2xl border-2 border-emerald-300 bg-emerald-50/90 p-5 shadow-lg shadow-emerald-500/10 dark:border-emerald-700/80 dark:bg-emerald-950/60 animate-in fade-in zoom-in-95 duration-300">
+                                            <div className="flex items-start gap-3.5">
+                                                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/30">
+                                                    <CheckCircle2 className="size-6" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="text-sm font-black text-emerald-900 dark:text-emerald-100">
+                                                            Pesan Anda Berhasil Terkirim!
+                                                        </h3>
+                                                        <Sparkles className="size-4 text-emerald-500 animate-pulse" />
+                                                    </div>
+                                                    <p className="mt-1 text-xs font-medium text-emerald-800 dark:text-emerald-200/90 leading-relaxed">
+                                                        {successMsg}
+                                                    </p>
+                                                    <div className="mt-3 flex items-center gap-2">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsSubmittedSuccess(false)}
+                                                            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600/10 hover:bg-emerald-600/20 px-3 py-1 text-[11px] font-bold text-emerald-800 transition dark:bg-emerald-500/20 dark:text-emerald-200"
+                                                        >
+                                                            <RotateCcw className="size-3" />
+                                                            Kirim Pesan Lain
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     )}
 
