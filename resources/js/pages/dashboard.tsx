@@ -263,7 +263,7 @@ export default function Dashboard({
 
     return (
         <>
-            <Head title={`Dashboard - ${school?.name || 'AbsensiKu'}`} />
+            <Head title="Dashboard" />
             <div className="flex flex-1 flex-col gap-6 p-6 sm:p-8 bg-page-gradient min-h-screen">
                 {/* 1. Page Banner */}
                 <PageBanner

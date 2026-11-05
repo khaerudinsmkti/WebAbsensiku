@@ -175,7 +175,7 @@ export default function LatenessPage({
 
     return (
         <>
-            <Head title="Pelacak Keterlambatan - AbsensiKu" />
+            <Head title="Pelacak Keterlambatan" />
             <div className="flex flex-1 flex-col gap-6 p-6 sm:p-8 bg-page-gradient min-h-screen">
                 <PageBanner
                     badgeText="Modul Guru Piket • Keterlambatan"

@@ -336,7 +336,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
 
     return (
         <>
-            <Head title={`${schoolName} - Sistem Presensi Siswa Digital`} />
+            <Head title="Beranda" />
             <div className="flex min-h-screen flex-col bg-page-gradient text-[#1F2937] dark:text-neutral-100">
                 <PublicHeader onOpenCreateNews={() => setIsCreateNewsModalOpen(true)} />
 
@@ -900,7 +900,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                 </main>
 
                 {/* Footer */}
-                <footer className="border-t border-[#E8E8E8] bg-white/70 py-6 text-center text-xs text-[#6B7280] backdrop-blur-md dark:border-[#2D234A] dark:bg-[#18122B]/70 dark:text-[#9CA3AF]">
+                <footer className="border-t border-[#E8E8E8] bg-white/70 py-6 mb-16 md:mb-0 text-center text-xs text-[#6B7280] backdrop-blur-md dark:border-[#2D234A] dark:bg-[#18122B]/70 dark:text-[#9CA3AF]">
                     <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
                         <div>
                             &copy; {new Date().getFullYear()} {schoolName}. All rights reserved.

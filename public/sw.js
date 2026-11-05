@@ -53,6 +53,14 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
+    // Always fetch latest manifest without stale cache
+    if (url.pathname === '/manifest.json') {
+        event.respondWith(
+            fetch(request).catch(() => caches.match(request))
+        );
+        return;
+    }
+
     // 1. Static build assets (Vite build chunks, images, fonts) -> Cache-first with network fallback
     if (
         url.pathname.startsWith('/build/') ||

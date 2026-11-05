@@ -175,7 +175,7 @@ export default function ReportsPage({
 
     return (
         <>
-            <Head title="Rekap & Laporan Presensi - AbsensiKu" />
+            <Head title="Rekap & Laporan Presensi" />
             <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6 lg:p-8 bg-page-gradient min-h-screen">
                 {/* Header Banner */}
                 <PageBanner

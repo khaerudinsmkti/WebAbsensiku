@@ -37,10 +37,12 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
         $isDutyToday = $user ? $user->isDutyTeacherToday() : false;
+        $school = \App\Models\SchoolSetting::getSetting();
+        $schoolName = $school->name ?: config('app.name', 'AbsensiKu SD');
 
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'name' => $schoolName,
             'auth' => [
                 'user' => $user ? array_merge($user->toArray(), [
                     'is_duty_teacher_today' => $isDutyToday,

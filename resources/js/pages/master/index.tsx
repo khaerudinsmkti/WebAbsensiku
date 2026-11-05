@@ -1497,7 +1497,7 @@ export default function MasterIndexPage({
 
     return (
         <>
-            <Head title="Kelola Data Master - AbsensiKu" />
+            <Head title="Data Siswa & Kelas" />
             <div className="flex flex-1 flex-col gap-6 p-6 sm:p-8 bg-page-gradient min-h-screen">
                 <PageBanner
                     badgeText="Modul Administrator Sistem"

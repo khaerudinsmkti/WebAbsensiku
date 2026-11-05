@@ -11,6 +11,12 @@ class SchoolSetting extends Model
 
     protected $fillable = [
         'name',
+        'school_motto',
+        'accreditation',
+        'profile_description',
+        'vision',
+        'mission',
+        'profile_image_path',
         'address',
         'city',
         'postal_code',
@@ -45,6 +51,7 @@ class SchoolSetting extends Model
     protected $appends = [
         'logo_url',
         'principal_photo_url',
+        'profile_image_url',
         'is_saturday_holiday',
     ];
 
@@ -56,6 +63,36 @@ class SchoolSetting extends Model
     public function getPrincipalPhotoUrlAttribute(): ?string
     {
         return $this->principal_photo_path ? asset('storage/' . $this->principal_photo_path) : null;
+    }
+
+    public function getProfileImageUrlAttribute(): ?string
+    {
+        return $this->profile_image_path ? asset('storage/' . $this->profile_image_path) : null;
+    }
+
+    public function getProfileDescriptionAttribute($value): ?string
+    {
+        return $value ?: 'SD Digital Indonesia adalah institusi pendidikan dasar terkemuka yang berdedikasi menghadirkan pembelajaran modern berbasis teknologi serta penanaman budi pekerti luhur. Berdiri sejak tahun 2010, sekolah kami telah mendidik ribuan siswa berprestasi yang siap bersaing di kancah nasional maupun global.';
+    }
+
+    public function getVisionAttribute($value): ?string
+    {
+        return $value ?: 'Terwujudnya peserta didik yang beriman, bertakwa, berakhlak mulia, cerdas, terampil, berkarakter luhur, dan berwawasan global dalam era digital.';
+    }
+
+    public function getMissionAttribute($value): ?string
+    {
+        return $value ?: "1. Menanamkan nilai keimanan, ketakwaan, dan budi pekerti luhur dalam kehidupan sehari-hari.\n2. Melaksanakan pembelajaran aktif, inovatif, kreatif, dan menyenangkan berbasis teknologi ramah anak.\n3. Mengembangkan potensi bakat, minat, dan kecerdasan majemuk peserta didik secara optimal melalui kegiatan intrakulikuler dan ekstrakurikuler.\n4. Mewujudkan lingkungan sekolah yang bersih, sehat, aman, inklusif, dan kondusif untuk bertumbuh kembang.\n5. Menjalin kemitraan yang harmonis dan transparan antara pihak sekolah, komite, orang tua murid, dan masyarakat sekitar.";
+    }
+
+    public function getSchoolMottoAttribute($value): ?string
+    {
+        return $value ?: 'Membentuk Generasi Berkarakter, Cerdas, dan Berprestasi';
+    }
+
+    public function getAccreditationAttribute($value): ?string
+    {
+        return $value ?: 'Akreditasi A (Unggul)';
     }
 
     public function getIsSaturdayHolidayAttribute(): bool

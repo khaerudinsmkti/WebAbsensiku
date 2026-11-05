@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
+    Building2,
     CalendarDays,
     Clock,
     FileSpreadsheet,
@@ -39,6 +40,12 @@ export function AppSidebar() {
                   href: '/news-management',
                   icon: Newspaper,
                   isActive: url.startsWith('/news-management'),
+              },
+              {
+                  title: 'Profil Sekolah',
+                  href: '/manage/school-profile',
+                  icon: Building2,
+                  isActive: url.startsWith('/manage/school-profile'),
               },
               {
                   title: 'Sambutan Kepala Sekolah',
@@ -125,6 +132,12 @@ export function AppSidebar() {
                             href: '/admin/school-settings',
                             icon: School,
                             isActive: url.startsWith('/admin/school-settings'),
+                        },
+                        {
+                            title: 'Profil Sekolah',
+                            href: '/manage/school-profile',
+                            icon: Building2,
+                            isActive: url.startsWith('/manage/school-profile'),
                         },
                         {
                             title: 'Sambutan Kepala Sekolah',

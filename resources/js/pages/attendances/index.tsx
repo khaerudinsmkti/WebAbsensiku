@@ -145,7 +145,7 @@ export default function AttendanceIndex({
 
     return (
         <>
-            <Head title="Presensi Harian Massal - AbsensiKu" />
+            <Head title="Presensi Harian" />
             <div className="flex flex-1 flex-col gap-6 p-6 sm:p-8 bg-page-gradient min-h-screen">
                 <PageBanner
                     badgeText="Presensi Reguler Pagi"

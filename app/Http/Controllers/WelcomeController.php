@@ -245,4 +245,34 @@ class WelcomeController extends Controller
             'contactInfo' => $contactInfo,
         ]);
     }
+
+    /**
+     * Public School Profile Page (Menu Profil & Visi Misi).
+     */
+    public function profile(): Response
+    {
+        $schoolSetting = SchoolSetting::getSetting();
+
+        $profileData = [
+            'name' => $schoolSetting->name,
+            'school_motto' => $schoolSetting->school_motto,
+            'accreditation' => $schoolSetting->accreditation,
+            'profile_description' => $schoolSetting->profile_description,
+            'vision' => $schoolSetting->vision,
+            'mission' => $schoolSetting->mission,
+            'profile_image_url' => $schoolSetting->profile_image_url,
+            'principal_name' => $schoolSetting->principal_name,
+            'principal_nip' => $schoolSetting->principal_nip,
+            'principal_photo_url' => $schoolSetting->principal_photo_url,
+            'address' => $schoolSetting->address,
+            'city' => $schoolSetting->city,
+            'phone' => $schoolSetting->phone,
+            'email' => $schoolSetting->email,
+            'whatsapp' => $schoolSetting->whatsapp,
+        ];
+
+        return Inertia::render('profile/public-index', [
+            'profile' => $profileData,
+        ]);
+    }
 }

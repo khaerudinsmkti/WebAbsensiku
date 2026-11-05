@@ -154,7 +154,7 @@ export default function AdjustmentsPage({
 
     return (
         <>
-            <Head title="Absen Khusus / Izin Pulang Awal - AbsensiKu" />
+            <Head title="Absen Khusus" />
             <div className="flex flex-1 flex-col gap-6 p-6 sm:p-8 bg-page-gradient min-h-screen">
                 <PageBanner
                     badgeText="Modul Guru Piket • Mid-Day Status"

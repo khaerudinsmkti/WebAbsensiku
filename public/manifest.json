@@ -2,7 +2,7 @@
     "id": "/?source=pwa",
     "name": "SDN Rambatan Kulon 2",
     "short_name": "SDN Rambatan Kulon 2",
-    "description": "Aplikasi Presensi Siswa dan Manajemen Sekolah - SDN Rambatan Kulon 2",
+    "description": "Portal dan Aplikasi Presensi Siswa Resmi - SDN Rambatan Kulon 2",
     "start_url": "/?source=pwa",
     "scope": "/",
     "display": "standalone",
@@ -15,19 +15,31 @@
     ],
     "icons": [
         {
-            "src": "/icons/icon-192x192.png",
+            "src": "http://localhost:8000/storage/school/no7GTqiTmEI7sCtf7OYja3fXi9PLyzWWkzRPC09S.png?v=1793781813",
+            "sizes": "any",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "http://localhost:8000/storage/school/no7GTqiTmEI7sCtf7OYja3fXi9PLyzWWkzRPC09S.png?v=1793781813",
+            "sizes": "any",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/icons/icon-192x192.png?v=1793781813",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "/icons/icon-512x512.png",
+            "src": "/icons/icon-512x512.png?v=1793781813",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "/icons/icon-maskable-512x512.png",
+            "src": "/icons/icon-maskable-512x512.png?v=1793781813",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"

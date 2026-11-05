@@ -9,11 +9,13 @@ use App\Http\Controllers\LatenessController;
 use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SchoolProfileController;
 use App\Http\Controllers\SchoolSettingController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
+Route::get('/profil', [WelcomeController::class, 'profile'])->name('public.profile');
 Route::get('/berita', [WelcomeController::class, 'news'])->name('public.news');
 Route::get('/kalender', [WelcomeController::class, 'calendar'])->name('public.calendar');
 Route::get('/kontak', [WelcomeController::class, 'contact'])->name('public.contact');
@@ -26,6 +28,8 @@ Route::get('/manifest.json', function () {
     return response()->json($manifestData, 200, [
         'Content-Type' => 'application/manifest+json; charset=UTF-8',
         'Cache-Control' => 'no-cache, no-store, must-revalidate',
+        'Pragma' => 'no-cache',
+        'Expires' => '0',
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 })->name('pwa.manifest');
 
@@ -68,8 +72,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Kelola Sambutan Kepala Sekolah & Kontak Kami (Publisher, Admin, Kepala Sekolah)
     Route::middleware('role:publisher,admin,principal')->group(function () {
+        // Kelola Sambutan Kepala Sekolah, Profil Sekolah & Kontak Kami
         Route::get('/publisher/principal-greeting', [\App\Http\Controllers\PrincipalGreetingController::class, 'edit'])->name('publisher.greeting.edit');
         Route::post('/publisher/principal-greeting', [\App\Http\Controllers\PrincipalGreetingController::class, 'update'])->name('publisher.greeting.update');
+
+        // Kelola Profil & Visi Misi Sekolah
+        Route::get('/manage/school-profile', [SchoolProfileController::class, 'edit'])->name('school-profile.edit');
+        Route::post('/manage/school-profile', [SchoolProfileController::class, 'update'])->name('school-profile.update');
 
         // Kelola Kontak Kami & Pesan Pengunjung
         Route::get('/manage/contact', [ContactController::class, 'index'])->name('contact.index');

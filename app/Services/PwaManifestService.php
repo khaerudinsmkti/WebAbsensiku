@@ -12,14 +12,62 @@ class PwaManifestService
     public static function getManifestData(): array
     {
         $school = SchoolSetting::getSetting();
-        $name = $school->name ?: 'AbsensiKu';
+        $name = $school->name ?: 'AbsensiKu SD';
         $shortName = $school->name ?: 'AbsensiKu';
+
+        $version = $school->updated_at ? $school->updated_at->timestamp : (file_exists(public_path('manifest.json')) ? filemtime(public_path('manifest.json')) : time());
+
+        $icons = [];
+
+        // 1. Primary Dynamic School Logo (if configured)
+        if ($school->logo_url) {
+            $logoExtension = pathinfo($school->logo_path ?? '', PATHINFO_EXTENSION);
+            $mime = match (strtolower($logoExtension)) {
+                'svg' => 'image/svg+xml',
+                'webp' => 'image/webp',
+                'jpg', 'jpeg' => 'image/jpeg',
+                default => 'image/png',
+            };
+
+            $icons[] = [
+                'src' => $school->logo_url . '?v=' . $version,
+                'sizes' => 'any',
+                'type' => $mime,
+                'purpose' => 'any',
+            ];
+            $icons[] = [
+                'src' => $school->logo_url . '?v=' . $version,
+                'sizes' => 'any',
+                'type' => $mime,
+                'purpose' => 'maskable',
+            ];
+        }
+
+        // 2. Standard Responsive PWA Icons (Generated/Synced from school logo)
+        $icons[] = [
+            'src' => '/icons/icon-192x192.png?v=' . $version,
+            'sizes' => '192x192',
+            'type' => 'image/png',
+            'purpose' => 'any',
+        ];
+        $icons[] = [
+            'src' => '/icons/icon-512x512.png?v=' . $version,
+            'sizes' => '512x512',
+            'type' => 'image/png',
+            'purpose' => 'any',
+        ];
+        $icons[] = [
+            'src' => '/icons/icon-maskable-512x512.png?v=' . $version,
+            'sizes' => '512x512',
+            'type' => 'image/png',
+            'purpose' => 'maskable',
+        ];
 
         return [
             'id' => '/?source=pwa',
             'name' => $name,
             'short_name' => $shortName,
-            'description' => 'Aplikasi Presensi Siswa dan Manajemen Sekolah - ' . $name,
+            'description' => 'Portal dan Aplikasi Presensi Siswa Resmi - ' . $name,
             'start_url' => '/?source=pwa',
             'scope' => '/',
             'display' => 'standalone',
@@ -27,26 +75,7 @@ class PwaManifestService
             'background_color' => '#FFFFFF',
             'theme_color' => '#FF6B35',
             'categories' => ['education', 'productivity'],
-            'icons' => [
-                [
-                    'src' => '/icons/icon-192x192.png',
-                    'sizes' => '192x192',
-                    'type' => 'image/png',
-                    'purpose' => 'any',
-                ],
-                [
-                    'src' => '/icons/icon-512x512.png',
-                    'sizes' => '512x512',
-                    'type' => 'image/png',
-                    'purpose' => 'any',
-                ],
-                [
-                    'src' => '/icons/icon-maskable-512x512.png',
-                    'sizes' => '512x512',
-                    'type' => 'image/png',
-                    'purpose' => 'maskable',
-                ],
-            ],
+            'icons' => $icons,
         ];
     }
 
@@ -98,6 +127,7 @@ class PwaManifestService
         if ($sourceImage && file_exists($sourceImage)) {
             $info = @getimagesize($sourceImage);
             $mime = $info['mime'] ?? '';
+
             $src = null;
             if ($mime === 'image/png') {
                 $src = @imagecreatefrompng($sourceImage);
@@ -111,7 +141,7 @@ class PwaManifestService
                 $origW = imagesx($src);
                 $origH = imagesy($src);
 
-                $paddingRatio = $isMaskable ? 0.20 : 0.08;
+                $paddingRatio = $isMaskable ? 0.18 : 0.06;
                 $innerSize = (int) round($size * (1 - ($paddingRatio * 2)));
 
                 $scale = min($innerSize / $origW, $innerSize / $origH);
@@ -125,6 +155,7 @@ class PwaManifestService
                 imagedestroy($src);
             }
         } else {
+            // Default branded fallback icon
             $bg = imagecolorallocate($img, 255, 107, 53); // #FF6B35
             imagefilledrectangle($img, 0, 0, $size, $size, $bg);
         }
@@ -133,4 +164,3 @@ class PwaManifestService
         imagedestroy($img);
     }
 }
-
