@@ -125,23 +125,23 @@ export function PublicHeader({ onOpenCreateNews }: PublicHeaderProps) {
         <>
             {/* Top Navigation Bar Header */}
             <header className="sticky top-0 z-30 border-b border-[#E8E8E8] bg-white/85 px-4 backdrop-blur-md sm:px-6 lg:px-12 dark:border-[#2D234A] dark:bg-[#18122B]/85">
-                <div className="flex h-[68px] sm:h-[72px] items-center justify-between">
+                <div className="flex h-[70px] sm:h-[74px] items-center justify-between gap-2">
                     {/* Logo & School Name */}
-                    <div className="flex items-center gap-3">
-                        <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <Link href="/" className="flex items-center gap-3 group min-w-0">
                             {logoUrl ? (
                                 <img
                                     src={logoUrl}
                                     alt={schoolName}
-                                    className="size-9 sm:size-10 object-contain rounded-xl bg-white p-1 shadow-md border border-[#E8E8E8] dark:border-[#2D234A]"
+                                    className="size-11 sm:size-11 shrink-0 object-contain rounded-xl bg-white p-1 shadow-md border border-[#E8E8E8] dark:border-[#2D234A]"
                                 />
                             ) : (
-                                <div className="flex size-9 sm:size-10 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#FFE66D] text-white shadow-md shadow-[#FF6B35]/25">
-                                    <AppLogoIcon className="size-5 sm:size-6 text-white" />
+                                <div className="flex size-11 sm:size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#FFE66D] text-white shadow-md shadow-[#FF6B35]/25">
+                                    <AppLogoIcon className="size-6 text-white" />
                                 </div>
                             )}
-                            <div>
-                                <span className="text-sm sm:text-base lg:text-lg font-black tracking-tight text-[#111827] dark:text-white leading-tight group-hover:text-[#FF6B35] transition-colors line-clamp-1">
+                            <div className="min-w-0">
+                                <span className="text-base sm:text-lg lg:text-xl font-black tracking-tight text-[#111827] dark:text-white leading-tight group-hover:text-[#FF6B35] transition-colors line-clamp-1">
                                     {schoolName}
                                 </span>
                             </div>

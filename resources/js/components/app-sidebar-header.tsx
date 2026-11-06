@@ -15,7 +15,7 @@ export function AppSidebarHeader({
     const isTeacherDuty = auth?.user?.role === 'teacher' && auth?.user?.is_duty_teacher_today;
 
     return (
-        <header className="sticky top-0 z-20 flex h-14 md:h-[68px] shrink-0 items-center justify-between border-b border-[#E8E8E8] bg-white/80 px-4 md:px-6 backdrop-blur-md transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-14 dark:border-[#2D234A] dark:bg-[#18122B]/80">
+        <header className="sticky top-0 z-20 flex h-16 md:h-[68px] shrink-0 items-center justify-between border-b border-[#E8E8E8] bg-white/85 px-4 md:px-6 backdrop-blur-md transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-16 dark:border-[#2D234A] dark:bg-[#18122B]/85">
             {/* Desktop Left: Sidebar Trigger & Breadcrumbs */}
             <div className="hidden md:flex items-center gap-3">
                 <SidebarTrigger className="-ml-1 rounded-lg border-2 border-[#E8E8E8] bg-white hover:bg-[#FFF0EB] hover:text-[#FF6B35] dark:border-[#2D234A] dark:bg-[#18122B]" />
@@ -23,19 +23,19 @@ export function AppSidebarHeader({
             </div>
 
             {/* Mobile Left: School Brand (Breadcrumb & Sidebar Trigger hidden on mobile) */}
-            <div className="flex md:hidden items-center gap-2">
+            <div className="flex md:hidden items-center gap-3 min-w-0">
                 {school?.logo_url ? (
                     <img
                         src={school.logo_url}
                         alt={school.name || 'Logo'}
-                        className="size-7 rounded-lg object-contain"
+                        className="size-10 shrink-0 rounded-xl border border-gray-200/80 bg-white p-1 object-contain shadow-xs dark:border-gray-700"
                     />
                 ) : (
-                    <div className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white font-black text-xs shadow-xs">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white font-black text-sm shadow-sm">
                         AK
                     </div>
                 )}
-                <span className="text-xs font-extrabold text-gray-900 dark:text-white line-clamp-1 max-w-[170px]">
+                <span className="text-base sm:text-lg font-black tracking-tight text-gray-900 dark:text-white line-clamp-1">
                     {school?.name || 'AbsensiKu'}
                 </span>
             </div>
