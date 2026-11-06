@@ -24,6 +24,9 @@ import {
     ChevronRight,
     Images,
     FileCheck,
+    Instagram,
+    Sparkles,
+    Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { BreadcrumbItem } from '@/types';
@@ -197,6 +200,9 @@ export default function NewsManagement({ news, categories, stats, filters }: New
     // Attachments state
     const [existingAttachments, setExistingAttachments] = useState<NewsAttachment[]>([]);
     const [newAttachments, setNewAttachments] = useState<Array<{ id: string; file: File; base64: string; name: string; size: number }>>([]);
+    const [isFetchingInstagram, setIsFetchingInstagram] = useState(false);
+    const [lastFetchedInstagramUrl, setLastFetchedInstagramUrl] = useState('');
+    const [instagramFetchNotice, setInstagramFetchNotice] = useState<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
 
     // Form handler for News
     const form = useForm<{
@@ -204,6 +210,7 @@ export default function NewsManagement({ news, categories, stats, filters }: New
         category_id: string | number;
         excerpt: string;
         content: string;
+        instagram_url: string;
         is_published: boolean;
         existing_images: string[];
         images_base64: string[];
@@ -215,6 +222,7 @@ export default function NewsManagement({ news, categories, stats, filters }: New
         category_id: categories[0]?.id || '',
         excerpt: '',
         content: '',
+        instagram_url: '',
         is_published: true,
         existing_images: [],
         images_base64: [],
@@ -255,6 +263,8 @@ export default function NewsManagement({ news, categories, stats, filters }: New
 
     const openCreateModal = () => {
         setEditingNews(null);
+        setInstagramFetchNotice(null);
+        setLastFetchedInstagramUrl('');
         form.reset();
         setExistingImages([]);
         setNewImages([]);
@@ -265,6 +275,7 @@ export default function NewsManagement({ news, categories, stats, filters }: New
             category_id: categories[0]?.id || '',
             excerpt: '',
             content: '',
+            instagram_url: '',
             is_published: true,
             existing_images: [],
             images_base64: [],
@@ -277,6 +288,8 @@ export default function NewsManagement({ news, categories, stats, filters }: New
 
     const openEditModal = (item: NewsItem) => {
         setEditingNews(item);
+        setInstagramFetchNotice(null);
+        setLastFetchedInstagramUrl(item.instagram_url || '');
         form.reset();
 
         // Existing images setup
@@ -316,6 +329,7 @@ export default function NewsManagement({ news, categories, stats, filters }: New
             category_id: item.category_id || '',
             excerpt: item.excerpt || '',
             content: item.content,
+            instagram_url: item.instagram_url || '',
             is_published: item.is_published,
             existing_images: curImages.map((i) => i.path),
             images_base64: [],
@@ -324,6 +338,106 @@ export default function NewsManagement({ news, categories, stats, filters }: New
             attachments_names: [],
         });
         setIsFormModalOpen(true);
+    };
+
+    const handleFetchInstagramPost = async (overrideUrl?: string) => {
+        const url = (overrideUrl !== undefined ? overrideUrl : form.data.instagram_url).trim();
+        if (!url) {
+            setInstagramFetchNotice({
+                type: 'error',
+                text: 'Masukkan tautan (URL) postingan atau reel Instagram terlebih dahulu.',
+            });
+            return;
+        }
+
+        if (isFetchingInstagram) return;
+
+        setIsFetchingInstagram(true);
+        setInstagramFetchNotice(null);
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const xsrfCookie = document.cookie
+                .split('; ')
+                .find((row) => row.startsWith('XSRF-TOKEN='))
+                ?.split('=')[1];
+
+            const res = await fetch('/news-management/fetch-instagram', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                    ...(xsrfCookie ? { 'X-XSRF-TOKEN': decodeURIComponent(xsrfCookie) } : {}),
+                },
+                body: JSON.stringify({ url }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                setInstagramFetchNotice({
+                    type: 'error',
+                    text: data.message || 'Gagal membaca tautan Instagram.',
+                });
+                return;
+            }
+
+            setLastFetchedInstagramUrl(data.clean_url || url);
+
+            form.setData((prev) => ({
+                ...prev,
+                instagram_url: data.clean_url || url,
+                title: data.title || prev.title || 'Update Informasi Instagram Sekolah',
+                content: data.caption || prev.content || 'Simak informasi terbaru dari Instagram resmi sekolah melalui postingan terlampir.',
+                excerpt: data.excerpt || prev.excerpt || '',
+                category_id: data.suggested_category_id || prev.category_id,
+            }));
+
+            if (data.image_base64) {
+                const addedImg = {
+                    id: 'ig-cover-' + Math.random().toString(36).substring(2, 7),
+                    file: new File([], 'instagram-post.jpg', { type: 'image/jpeg' }),
+                    base64: data.image_base64,
+                };
+                setNewImages((prev) => {
+                    const withoutOldIg = prev.filter((item) => !item.id.startsWith('ig-cover-'));
+                    const updated = [addedImg, ...withoutOldIg];
+                    form.setData('images_base64', updated.map((i) => i.base64));
+                    return updated;
+                });
+            }
+
+            if (data.fetched_automatically) {
+                setInstagramFetchNotice({
+                    type: 'success',
+                    text: 'Judul, ringkasan, isi berita, dan foto sampul berhasil ditarik otomatis dari Instagram!',
+                });
+            } else {
+                setInstagramFetchNotice({
+                    type: 'info',
+                    text: 'Tautan Embed Instagram berhasil dipasang! Silakan sesuaikan judul/caption atau foto sampul bila diperlukan.',
+                });
+            }
+        } catch {
+            setInstagramFetchNotice({
+                type: 'error',
+                text: 'Terjadi kesalahan saat menghubungi server untuk mengambil info Instagram.',
+            });
+        } finally {
+            setIsFetchingInstagram(false);
+        }
+    };
+
+    const handleInstagramUrlInputChange = (val: string) => {
+        form.setData('instagram_url', val);
+        const trimmed = val.trim();
+        if (
+            /instagram\.com\/(?:[^/]+\/)?(?:p|reel|tv)\/[A-Za-z0-9_-]+/i.test(trimmed) &&
+            trimmed !== lastFetchedInstagramUrl
+        ) {
+            setLastFetchedInstagramUrl(trimmed);
+            handleFetchInstagramPost(trimmed);
+        }
     };
 
     const handleMultipleImagesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -706,9 +820,17 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                                             )}
                                                         </div>
                                                         <div>
-                                                            <h4 className="font-extrabold text-gray-900 line-clamp-1 dark:text-white">
-                                                                {item.title}
-                                                            </h4>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <h4 className="font-extrabold text-gray-900 line-clamp-1 dark:text-white">
+                                                                    {item.title}
+                                                                </h4>
+                                                                {item.instagram_url && (
+                                                                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-orange-500 px-2 py-0.5 text-[9px] font-extrabold text-white shadow-xs">
+                                                                        <Instagram className="size-2.5" />
+                                                                        <span>IG</span>
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                             <p className="mt-0.5 text-[11px] text-gray-500 line-clamp-2 dark:text-gray-400 leading-snug">
                                                                 {item.excerpt || item.content.replace(/<[^>]*>?/gm, '').substring(0, 100)}
                                                             </p>
@@ -872,6 +994,82 @@ export default function NewsManagement({ news, categories, stats, filters }: New
 
                         {/* Modal Form Content */}
                         <form onSubmit={handleSaveNews} className="flex-1 overflow-y-auto p-6 space-y-4">
+                            {/* Impor dari Postingan / Reel Instagram Sekolah */}
+                            <div className="rounded-2xl border-2 border-pink-200/80 bg-gradient-to-r from-pink-50/70 via-purple-50/40 to-orange-50/60 p-4 dark:border-pink-900/50 dark:from-pink-950/30 dark:via-purple-950/20 dark:to-orange-950/20">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600 text-white shadow-xs">
+                                            <Instagram className="size-4" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-extrabold uppercase tracking-wide text-pink-900 dark:text-pink-200">
+                                                Impor / Tautkan dari Instagram Sekolah (Opsional)
+                                            </label>
+                                            <p className="text-[11px] text-gray-600 dark:text-gray-400">
+                                                Tempel link postingan atau reel Instagram sekolah untuk menarik caption & foto otomatis serta menampilkan embed Instagram di berita.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                    <input
+                                        type="url"
+                                        value={form.data.instagram_url}
+                                        onChange={(e) => handleInstagramUrlInputChange(e.target.value)}
+                                        placeholder="Tempel link Instagram (otomatis tarik judul, ringkasan & foto sampul)..."
+                                        className="flex-1 rounded-xl border border-pink-200 bg-white px-3.5 py-2 text-xs font-semibold focus:border-pink-500 focus:outline-none dark:border-pink-900/60 dark:bg-gray-800 dark:text-white"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        disabled={isFetchingInstagram || !form.data.instagram_url.trim()}
+                                        onClick={() => handleFetchInstagramPost()}
+                                        className="rounded-xl bg-gradient-to-r from-pink-600 via-purple-600 to-orange-500 px-4 py-2 text-xs font-bold text-white hover:opacity-95 border-0 shadow-xs shrink-0"
+                                    >
+                                        {isFetchingInstagram ? (
+                                            <>
+                                                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                                                Menarik Data IG...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Sparkles className="mr-1.5 size-3.5" />
+                                                Tarik Otomatis dari IG
+                                            </>
+                                        )}
+                                    </Button>
+                                    {form.data.instagram_url && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                form.setData('instagram_url', '');
+                                                setLastFetchedInstagramUrl('');
+                                                setInstagramFetchNotice(null);
+                                            }}
+                                            className="rounded-xl border border-gray-200 bg-white px-2.5 py-2 text-xs font-bold text-gray-500 hover:text-red-600 dark:border-gray-700 dark:bg-gray-800"
+                                            title="Hapus tautan Instagram"
+                                        >
+                                            Reset Link
+                                        </button>
+                                    )}
+                                </div>
+
+                                {instagramFetchNotice && (
+                                    <div
+                                        className={`mt-2.5 rounded-xl px-3 py-2 text-[11px] font-semibold ${
+                                            instagramFetchNotice.type === 'success'
+                                                ? 'bg-emerald-100/90 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-200'
+                                                : instagramFetchNotice.type === 'error'
+                                                ? 'bg-rose-100/90 text-rose-800 dark:bg-rose-950/70 dark:text-rose-200'
+                                                : 'bg-blue-100/90 text-blue-800 dark:bg-blue-950/70 dark:text-blue-200'
+                                        }`}
+                                    >
+                                        {instagramFetchNotice.text}
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Judul Berita */}
                             <div>
                                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">
@@ -1447,9 +1645,46 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                 </h2>
 
                                 <div
-                                    className="prose prose-sm max-w-none text-gray-700 dark:text-gray-300 leading-relaxed space-y-3"
+                                    className="prose prose-sm max-w-none text-gray-700 dark:text-gray-300 leading-relaxed space-y-3 whitespace-pre-line"
                                     dangerouslySetInnerHTML={{ __html: previewNews.content }}
                                 />
+
+                                {/* Instagram Embed & Link di Pratinjau */}
+                                {previewNews.instagram_url && (
+                                    <div className="mt-5 rounded-2xl border-2 border-pink-200/80 bg-gradient-to-br from-pink-50/60 via-white to-orange-50/40 p-4 dark:border-pink-900/50 dark:from-pink-950/20 dark:via-gray-900 dark:to-orange-950/20 space-y-3">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600 text-white shadow-xs">
+                                                    <Instagram className="size-4" />
+                                                </div>
+                                                <span className="text-xs font-extrabold text-pink-900 dark:text-pink-200">
+                                                    Postingan Instagram Resmi Sekolah
+                                                </span>
+                                            </div>
+                                            <a
+                                                href={previewNews.instagram_url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-pink-600 via-purple-600 to-orange-500 px-3 py-1.5 text-[11px] font-bold text-white shadow-xs hover:opacity-95"
+                                            >
+                                                <ExternalLink className="size-3.5" />
+                                                Buka di Instagram
+                                            </a>
+                                        </div>
+
+                                        {previewNews.instagram_embed_url && (
+                                            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800">
+                                                <iframe
+                                                    src={previewNews.instagram_embed_url}
+                                                    title={previewNews.title}
+                                                    className="w-full h-[480px] border-0"
+                                                    allowTransparency={true}
+                                                    allow="encrypted-media"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Daftar Lampiran Dokumen PDF */}
                                 {previewAttachments.length > 0 && (

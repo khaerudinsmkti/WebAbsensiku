@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class News extends Model
@@ -26,6 +28,7 @@ class News extends Model
         'attachment_name',
         'attachment_size',
         'attachments',
+        'instagram_url',
         'is_published',
         'published_at',
         'views_count',
@@ -38,7 +41,21 @@ class News extends Model
         'attachments_data',
         'formatted_date',
         'formatted_attachment_size',
+        'instagram_embed_url',
     ];
+
+    public static function ensureInstagramColumn(): void
+    {
+        try {
+            if (Schema::hasTable('news') && ! Schema::hasColumn('news', 'instagram_url')) {
+                Schema::table('news', function (Blueprint $table) {
+                    $table->string('instagram_url', 500)->nullable()->after('attachments');
+                });
+            }
+        } catch (\Throwable $e) {
+            // Ignore schema check errors in restricted environments
+        }
+    }
 
     protected function casts(): array
     {
@@ -202,6 +219,22 @@ class News extends Model
         }
 
         return round($bytes, 1) . ' ' . $units[$i];
+    }
+
+    public function getInstagramEmbedUrlAttribute(): ?string
+    {
+        if (empty($this->instagram_url)) {
+            return null;
+        }
+
+        if (preg_match('/instagram\.com\/(?:[^\/]+\/)?(p|reel|tv)\/([A-Za-z0-9_-]+)/i', $this->instagram_url, $matches)) {
+            $type = strtolower($matches[1]);
+            $shortcode = $matches[2];
+
+            return "https://www.instagram.com/{$type}/{$shortcode}/embed";
+        }
+
+        return null;
     }
 }
 

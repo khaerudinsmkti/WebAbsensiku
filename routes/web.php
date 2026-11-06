@@ -68,6 +68,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Modul Pengelolaan Berita (Publisher Berita & Admin)
     Route::middleware('role:publisher,admin')->group(function () {
         Route::get('/news-management', [NewsController::class, 'index'])->name('news.index');
+        Route::post('/news-management/fetch-instagram', [NewsController::class, 'fetchInstagram'])->name('news.fetch-instagram');
         Route::post('/news-management', [NewsController::class, 'store'])->name('news.store');
         Route::post('/news-management/{news}', [NewsController::class, 'update'])->name('news.update');
         Route::delete('/news-management/{news}', [NewsController::class, 'destroy'])->name('news.destroy');

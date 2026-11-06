@@ -20,6 +20,8 @@ class WelcomeController extends Controller
      */
     public function index(): Response
     {
+        News::ensureInstagramColumn();
+
         // News for public homepage - 6 berita terbaru
         $newsList = News::with(['category', 'author:id,name,role'])
             ->published()
@@ -74,6 +76,8 @@ class WelcomeController extends Controller
      */
     public function news(Request $request): Response
     {
+        News::ensureInstagramColumn();
+
         $search = $request->input('search');
         $categoryId = $request->input('category_id');
 

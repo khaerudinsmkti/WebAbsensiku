@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\News;
 use App\Models\NewsCategory;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -20,6 +22,8 @@ class NewsController extends Controller
      */
     public function index(Request $request): Response
     {
+        News::ensureInstagramColumn();
+
         $search = $request->input('search');
         $categoryId = $request->input('category_id');
         $status = $request->input('status'); // all, published, draft
@@ -72,14 +76,17 @@ class NewsController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        News::ensureInstagramColumn();
+
         $data = $request->all();
 
         // Validasi dan sanitasi file binary vs base64
         $rules = [
-            'title' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
             'category_id' => 'nullable|exists:news_categories,id',
             'excerpt' => 'nullable|string|max:500',
-            'content' => 'required|string',
+            'content' => 'nullable|string',
+            'instagram_url' => 'nullable|string|max:500',
             'is_published' => 'boolean',
             'published_at' => 'nullable|date',
             'images_base64' => 'nullable|array',
@@ -118,6 +125,37 @@ class NewsController extends Controller
         }
 
         $validated = $validator->validated();
+
+        // Auto-extract metadata from Instagram URL if instagram_url is provided and title/content/images are missing
+        if (! empty($validated['instagram_url'])) {
+            $needMeta = empty($validated['title']) || empty($validated['content']) || (empty($validated['images_base64']) && ! $request->hasFile('images') && ! $request->hasFile('image'));
+            if ($needMeta) {
+                $igResponse = $this->fetchInstagram(new Request(['url' => $validated['instagram_url']]));
+                if ($igResponse->getStatusCode() === 200) {
+                    $igData = $igResponse->getData(true);
+                    $validated['instagram_url'] = $igData['clean_url'] ?? $validated['instagram_url'];
+                    if (empty($validated['title'])) {
+                        $validated['title'] = $igData['title'] ?? 'Update Informasi Instagram Sekolah';
+                    }
+                    if (empty($validated['content'])) {
+                        $validated['content'] = $igData['caption'] ?: 'Simak informasi terbaru dari Instagram resmi sekolah melalui postingan terlampir.';
+                    }
+                    if (empty($validated['excerpt']) && ! empty($igData['excerpt'])) {
+                        $validated['excerpt'] = $igData['excerpt'];
+                    }
+                    if (empty($validated['images_base64']) && ! empty($igData['image_base64'])) {
+                        $validated['images_base64'] = [$igData['image_base64']];
+                    }
+                }
+            }
+        }
+
+        if (empty($validated['title']) || empty($validated['content'])) {
+            return back()->withErrors([
+                'title' => empty($validated['title']) ? 'Judul berita wajib diisi.' : null,
+                'content' => empty($validated['content']) ? 'Isi berita wajib diisi.' : null,
+            ])->withInput();
+        }
 
         // 1. Simpan multiple images
         $imagesList = [];
@@ -217,6 +255,7 @@ class NewsController extends Controller
             'attachment_name' => $primaryAttachment['name'] ?? null,
             'attachment_size' => $primaryAttachment['size'] ?? null,
             'attachments' => ! empty($attachmentsList) ? $attachmentsList : null,
+            'instagram_url' => ! empty($validated['instagram_url']) ? trim($validated['instagram_url']) : null,
             'is_published' => $isPublished,
             'published_at' => $publishedAt,
         ]);
@@ -229,6 +268,8 @@ class NewsController extends Controller
      */
     public function update(Request $request, News $news): RedirectResponse
     {
+        News::ensureInstagramColumn();
+
         $data = $request->all();
 
         $rules = [
@@ -236,6 +277,7 @@ class NewsController extends Controller
             'category_id' => 'nullable|exists:news_categories,id',
             'excerpt' => 'nullable|string|max:500',
             'content' => 'required|string',
+            'instagram_url' => 'nullable|string|max:500',
             'is_published' => 'boolean',
             'published_at' => 'nullable|date',
             'existing_images' => 'nullable|array',
@@ -441,6 +483,7 @@ class NewsController extends Controller
             'attachment_name' => $primaryAttachment['name'] ?? null,
             'attachment_size' => $primaryAttachment['size'] ?? null,
             'attachments' => ! empty($finalAttachments) ? $finalAttachments : null,
+            'instagram_url' => ! empty($validated['instagram_url']) ? trim($validated['instagram_url']) : null,
             'is_published' => $isPublished,
             'published_at' => $isPublished ? $publishedAt : null,
         ]);
@@ -623,6 +666,229 @@ class NewsController extends Controller
         $category->delete();
 
         return back()->with('success', "Kategori '{$name}' berhasil dihapus.");
+    }
+
+    /**
+     * Fetch metadata (caption, title, image, embed URL) from a public Instagram Post/Reel URL.
+     */
+    public function fetchInstagram(Request $request): JsonResponse
+    {
+        $request->validate([
+            'url' => 'required|string|max:500',
+        ]);
+
+        $rawUrl = trim($request->input('url'));
+        if (! preg_match('/instagram\.com\/(?:[^\/]+\/)?(p|reel|tv)\/([A-Za-z0-9_-]+)/i', $rawUrl, $matches)) {
+            return response()->json([
+                'message' => 'Format tautan Instagram tidak valid. Gunakan link postingan atau reel Instagram (contoh: https://www.instagram.com/p/xxxxx/).',
+            ], 422);
+        }
+
+        $type = strtolower($matches[1]);
+        $shortcode = $matches[2];
+        $cleanUrl = "https://www.instagram.com/{$type}/{$shortcode}/";
+        $embedUrl = "https://www.instagram.com/{$type}/{$shortcode}/embed";
+
+        $caption = '';
+        $title = '';
+        $authorUsername = '';
+        $imageBase64 = null;
+
+        $httpOptions = ['verify' => false];
+        $browserHeaders = [
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language' => 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+        ];
+        $crawlerHeaders = [
+            'User-Agent' => 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language' => 'id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7',
+        ];
+
+        $downloadImageAsBase64 = function (string $imgUrl) use ($httpOptions, $browserHeaders): ?string {
+            try {
+                $cleanImgUrl = html_entity_decode($imgUrl, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $cleanImgUrl = stripslashes($cleanImgUrl);
+                if (! str_starts_with($cleanImgUrl, 'http')) {
+                    return null;
+                }
+                $resp = Http::withOptions($httpOptions)
+                    ->withHeaders(array_merge($browserHeaders, ['Referer' => 'https://www.instagram.com/']))
+                    ->timeout(12)
+                    ->get($cleanImgUrl);
+
+                if ($resp->successful() && strlen($resp->body()) > 500) {
+                    $mime = $resp->header('Content-Type') ?: 'image/jpeg';
+                    if (str_contains($mime, ';')) {
+                        $mime = trim(explode(';', $mime)[0]);
+                    }
+                    if (! str_starts_with($mime, 'image/')) {
+                        $mime = 'image/jpeg';
+                    }
+
+                    return 'data:' . $mime . ';base64,' . base64_encode($resp->body());
+                }
+            } catch (\Throwable $e) {
+                // Ignore download error and try next strategy
+            }
+
+            return null;
+        };
+
+        // Strategy 1: Parse /embed/captioned/ page (most reliable for public posts without API token)
+        try {
+            $embedResp = Http::withOptions($httpOptions)
+                ->withHeaders($browserHeaders)
+                ->timeout(12)
+                ->get("https://www.instagram.com/p/{$shortcode}/embed/captioned/");
+
+            if ($embedResp->successful()) {
+                $embedHtml = $embedResp->body();
+
+                // Extract author username if present
+                if (preg_match('/class=["\'][^"\']*UsernameText[^"\']*["\'][^>]*>([^<]+)</i', $embedHtml, $userMatch)) {
+                    $authorUsername = trim(html_entity_decode($userMatch[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                }
+
+                // 1a. Try extracting JSON inside window.__additionalDataLoaded or contextJSON
+                if (preg_match('/"edge_media_to_caption"\s*:\s*\{\s*"edges"\s*:\s*\[\s*\{\s*"node"\s*:\s*\{\s*"text"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/is', $embedHtml, $jsonCapMatch)) {
+                    $decodedCap = json_decode('"' . $jsonCapMatch[1] . '"');
+                    if (is_string($decodedCap) && trim($decodedCap) !== '') {
+                        $caption = trim($decodedCap);
+                    }
+                }
+
+                if (empty($imageBase64) && preg_match('/"display_url"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/i', $embedHtml, $jsonImgMatch)) {
+                    $decodedImgUrl = json_decode('"' . $jsonImgMatch[1] . '"');
+                    if (is_string($decodedImgUrl)) {
+                        $imageBase64 = $downloadImageAsBase64($decodedImgUrl);
+                    }
+                }
+
+                // 1b. Parse HTML DOM inside /embed/captioned/ for Caption & EmbeddedMediaImage
+                if (empty($caption) && preg_match('/class=["\'][^"\']*Caption[^"\']*["\'][^>]*>(.*?)<div\s+class=["\'][^"\']*CaptionComments/is', $embedHtml, $capHtmlMatch)) {
+                    $rawCapHtml = $capHtmlMatch[1];
+                    // Remove username link at the start of caption block
+                    $rawCapHtml = preg_replace('/<a[^>]*class=["\'][^"\']*CaptionUsername[^"\']*["\'][^>]*>.*?<\/a>/is', '', $rawCapHtml);
+                    $cleaned = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $rawCapHtml));
+                    $caption = trim(html_entity_decode($cleaned, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                }
+
+                if (empty($caption) && preg_match('/class=["\']Caption["\'][^>]*>(.*?)<\/div>/is', $embedHtml, $embedCapMatch)) {
+                    $rawCapHtml = preg_replace('/<a[^>]*class=["\'][^"\']*CaptionUsername[^"\']*["\'][^>]*>.*?<\/a>/is', '', $embedCapMatch[1]);
+                    $cleaned = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $rawCapHtml));
+                    $caption = trim(html_entity_decode($cleaned, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                }
+
+                if (empty($imageBase64)) {
+                    if (preg_match('/<img[^>]+class=["\'][^"\']*EmbeddedMediaImage[^"\']*["\'][^>]+src=["\']([^"\']+)["\']/i', $embedHtml, $imgMatch)
+                        || preg_match('/<img[^>]+src=["\']([^"\']+)["\'][^>]+class=["\'][^"\']*EmbeddedMediaImage[^"\']*["\']/i', $embedHtml, $imgMatch)) {
+                        $imageBase64 = $downloadImageAsBase64($imgMatch[1]);
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Continue to Strategy 2
+        }
+
+        // Strategy 2: Fetch main post URL using Crawler User-Agent (OpenGraph meta tags)
+        if (empty($caption) || empty($imageBase64)) {
+            try {
+                $response = Http::withOptions($httpOptions)
+                    ->withHeaders($crawlerHeaders)
+                    ->timeout(12)
+                    ->get($cleanUrl);
+
+                if ($response->successful()) {
+                    $html = $response->body();
+
+                    // Extract og:description or meta name="description"
+                    if (empty($caption)) {
+                        $rawDesc = '';
+                        if (preg_match('/<meta[^>]+property=["\']og:description["\'][^>]+content=["\']([^"\']+)["\']/i', $html, $descMatch)
+                            || preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:description["\']/i', $html, $descMatch)
+                            || preg_match('/<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']+)["\']/i', $html, $descMatch)) {
+                            $rawDesc = html_entity_decode($descMatch[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                        }
+
+                        if (! empty($rawDesc)) {
+                            // Strip prefix like: '123 likes, 4 comments - username on Month Day, Year: "Caption"'
+                            if (preg_match('/:\s*["“](.+)["”]\.?$/su', $rawDesc, $capMatch)) {
+                                $caption = trim($capMatch[1]);
+                            } elseif (preg_match('/on\s+[A-Za-z]+\s+\d+,\s+\d{4}:\s*(.+)$/su', $rawDesc, $capMatch2)) {
+                                $caption = trim($capMatch2[1], " \t\n\r\0\x0B\"“”");
+                            } else {
+                                $caption = trim($rawDesc);
+                            }
+                        }
+                    }
+
+                    // Extract og:title if caption still empty
+                    if (empty($caption)) {
+                        if (preg_match('/<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']+)["\']/i', $html, $titleMatch)
+                            || preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:title["\']/i', $html, $titleMatch)) {
+                            $rawOgTitle = html_entity_decode($titleMatch[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                            if (preg_match('/on\s+Instagram:\s*["“](.+)["”]$/su', $rawOgTitle, $ogCapMatch)) {
+                                $caption = trim($ogCapMatch[1]);
+                            }
+                        }
+                    }
+
+                    // Extract og:image
+                    if (empty($imageBase64)) {
+                        if (preg_match('/<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']/i', $html, $imgMatch)
+                            || preg_match('/<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']/i', $html, $imgMatch)) {
+                            $imageBase64 = $downloadImageAsBase64($imgMatch[1]);
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // Continue to Strategy 3
+            }
+        }
+
+        // Strategy 3: Direct media endpoint fallback for thumbnail image
+        if (empty($imageBase64)) {
+            $imageBase64 = $downloadImageAsBase64("https://www.instagram.com/p/{$shortcode}/media/?size=l");
+        }
+
+        // Build clean title & excerpt from caption
+        if (! empty($caption)) {
+            $lines = array_values(array_filter(array_map('trim', explode("\n", $caption)), fn ($l) => $l !== ''));
+            $firstLine = $lines[0] ?? $caption;
+            // Remove leading hashtags if the first line is just hashtags
+            $cleanFirstLine = trim(preg_replace('/(?:#[\w-]+)+/u', '', $firstLine));
+            if (mb_strlen($cleanFirstLine) < 5 && isset($lines[1])) {
+                $cleanFirstLine = trim(preg_replace('/(?:#[\w-]+)+/u', '', $lines[1]));
+            }
+            $titleCandidate = $cleanFirstLine !== '' ? $cleanFirstLine : $firstLine;
+            $title = Str::limit($titleCandidate, 95, '');
+        }
+
+        $excerpt = '';
+        if (! empty($caption)) {
+            $cleanCaptionForExcerpt = trim(preg_replace('/\s+/', ' ', preg_replace('/#[\w-]+/u', '', $caption)));
+            $excerpt = Str::limit($cleanCaptionForExcerpt ?: $caption, 160);
+        }
+
+        // Ensure 'Instagram' or 'Media Sosial' category recommendation exists
+        $igCategory = NewsCategory::where('name', 'like', '%Instagram%')
+            ->orWhere('name', 'like', '%Sosial%')
+            ->first();
+
+        return response()->json([
+            'clean_url' => $cleanUrl,
+            'embed_url' => $embedUrl,
+            'shortcode' => $shortcode,
+            'author_username' => $authorUsername,
+            'title' => $title ?: ($authorUsername ? "Update Informasi Instagram @{$authorUsername}" : 'Update Informasi Instagram Sekolah'),
+            'caption' => $caption,
+            'excerpt' => $excerpt ?: 'Informasi dan dokumentasi kegiatan terbaru dari akun Instagram resmi sekolah.',
+            'image_base64' => $imageBase64,
+            'suggested_category_id' => $igCategory?->id,
+            'fetched_automatically' => ! empty($caption) || ! empty($imageBase64),
+        ]);
     }
 }
 

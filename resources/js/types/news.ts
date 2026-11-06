@@ -36,6 +36,8 @@ export interface NewsItem {
     attachments?: NewsAttachment[] | null;
     attachments_data?: NewsAttachment[];
     formatted_attachment_size?: string | null;
+    instagram_url?: string | null;
+    instagram_embed_url?: string | null;
     is_published: boolean;
     published_at?: string | null;
     formatted_date?: string;

@@ -6,10 +6,12 @@ import {
     ChevronLeft,
     ChevronRight,
     Download,
+    ExternalLink,
     Eye,
     FileText,
     ImageIcon,
     Images,
+    Instagram,
     Newspaper,
     Plus,
     Search,
@@ -295,6 +297,15 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                                                     alt={item.title}
                                                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                 />
+                                            ) : item.instagram_url ? (
+                                                <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-tr from-amber-500/20 via-pink-500/20 to-purple-600/20 p-6 text-center dark:from-amber-900/30 dark:via-pink-900/30 dark:to-purple-900/30">
+                                                    <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600 text-white shadow-md">
+                                                        <Instagram className="size-6" />
+                                                    </div>
+                                                    <span className="mt-2.5 text-xs font-extrabold text-pink-700 dark:text-pink-300">
+                                                        Update Instagram Sekolah
+                                                    </span>
+                                                </div>
                                             ) : (
                                                 <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center">
                                                     <div className="flex size-12 items-center justify-center rounded-2xl bg-white/80 text-[#FF6B35] shadow-xs backdrop-blur-sm dark:bg-gray-800/80">
@@ -311,6 +322,12 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                                                 {item.category && (
                                                     <span className="rounded-full bg-white/95 px-3 py-1 text-[11px] font-extrabold text-[#FF6B35] shadow-sm backdrop-blur-md dark:bg-gray-900/90 dark:text-[#FFA07A]">
                                                         {item.category.name}
+                                                    </span>
+                                                )}
+                                                {item.instagram_url && (
+                                                    <span className="flex items-center gap-1 rounded-full bg-gradient-to-r from-pink-600 via-purple-600 to-orange-500 px-2.5 py-1 text-[10px] font-extrabold text-white shadow-sm">
+                                                        <Instagram className="size-3" />
+                                                        <span>Instagram</span>
                                                     </span>
                                                 )}
                                                 {item.images_urls && item.images_urls.length > 1 && (
@@ -546,9 +563,51 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                                     </div>
 
                                     <div
-                                        className="prose prose-sm sm:prose-base max-w-none text-gray-700 leading-relaxed dark:text-gray-300 space-y-3"
+                                        className="prose prose-sm sm:prose-base max-w-none text-gray-700 leading-relaxed dark:text-gray-300 space-y-3 whitespace-pre-line"
                                         dangerouslySetInnerHTML={{ __html: readingNews.content }}
                                     />
+
+                                    {/* Embed Postingan Instagram Sekolah */}
+                                    {readingNews.instagram_url && (
+                                        <div className="mt-6 rounded-2xl border-2 border-pink-200/80 bg-gradient-to-br from-pink-50/60 via-white to-orange-50/40 p-5 dark:border-pink-900/50 dark:from-pink-950/20 dark:via-gray-900 dark:to-orange-950/20 space-y-3.5">
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600 text-white shadow-xs">
+                                                        <Instagram className="size-4.5" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-xs font-black uppercase tracking-wider text-pink-950 dark:text-pink-200">
+                                                            Postingan Instagram Resmi Sekolah
+                                                        </h4>
+                                                        <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                            Lihat unggahan asli langsung dari akun media sosial sekolah
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <a
+                                                    href={readingNews.instagram_url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-pink-600 via-purple-600 to-orange-500 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:opacity-95 transition-opacity"
+                                                >
+                                                    <ExternalLink className="size-3.5" />
+                                                    Buka di Instagram
+                                                </a>
+                                            </div>
+
+                                            {readingNews.instagram_embed_url && (
+                                                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800">
+                                                    <iframe
+                                                        src={readingNews.instagram_embed_url}
+                                                        title={readingNews.title}
+                                                        className="w-full h-[520px] border-0"
+                                                        allowTransparency={true}
+                                                        allow="encrypted-media"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {allAttachments.length > 0 && (
                                         <div className="mt-8 rounded-2xl border-2 border-red-200 bg-red-50/70 p-5 dark:border-red-900/60 dark:bg-red-950/30 space-y-3">

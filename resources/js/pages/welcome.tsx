@@ -43,6 +43,8 @@ import {
     Instagram,
     Facebook,
     Youtube,
+    ExternalLink,
+    Loader2,
 } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Button } from '@/components/ui/button';
@@ -360,6 +362,9 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
     const [quickAttachments, setQuickAttachments] = useState<Array<{ id: string; file: File; base64: string; name: string; size: number }>>([]);
     const [isCompressingImages, setIsCompressingImages] = useState<boolean>(false);
     const [isConvertingPdf, setIsConvertingPdf] = useState<boolean>(false);
+    const [isFetchingQuickInstagram, setIsFetchingQuickInstagram] = useState<boolean>(false);
+    const [lastFetchedQuickInstagramUrl, setLastFetchedQuickInstagramUrl] = useState<string>('');
+    const [quickInstagramNotice, setQuickInstagramNotice] = useState<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
     const attachmentInputRef = useRef<HTMLInputElement>(null);
 
@@ -368,6 +373,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
         category_id: string | number;
         excerpt: string;
         content: string;
+        instagram_url: string;
         is_published: boolean;
         images_base64: string[];
         attachments_base64: string[];
@@ -377,11 +383,112 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
         category_id: newsCategories[0]?.id || '',
         excerpt: '',
         content: '',
+        instagram_url: '',
         is_published: true,
         images_base64: [],
         attachments_base64: [],
         attachments_names: [],
     });
+
+    const handleFetchQuickInstagramPost = async (overrideUrl?: string) => {
+        const url = (overrideUrl !== undefined ? overrideUrl : quickNewsForm.data.instagram_url).trim();
+        if (!url) {
+            setQuickInstagramNotice({
+                type: 'error',
+                text: 'Masukkan tautan (URL) postingan atau reel Instagram terlebih dahulu.',
+            });
+            return;
+        }
+
+        if (isFetchingQuickInstagram) return;
+
+        setIsFetchingQuickInstagram(true);
+        setQuickInstagramNotice(null);
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const xsrfCookie = document.cookie
+                .split('; ')
+                .find((row) => row.startsWith('XSRF-TOKEN='))
+                ?.split('=')[1];
+
+            const res = await fetch('/news-management/fetch-instagram', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                    ...(xsrfCookie ? { 'X-XSRF-TOKEN': decodeURIComponent(xsrfCookie) } : {}),
+                },
+                body: JSON.stringify({ url }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                setQuickInstagramNotice({
+                    type: 'error',
+                    text: data.message || 'Gagal membaca tautan Instagram.',
+                });
+                return;
+            }
+
+            setLastFetchedQuickInstagramUrl(data.clean_url || url);
+
+            quickNewsForm.setData((prev) => ({
+                ...prev,
+                instagram_url: data.clean_url || url,
+                title: data.title || prev.title || 'Update Informasi Instagram Sekolah',
+                content: data.caption || prev.content || 'Simak informasi terbaru dari Instagram resmi sekolah melalui postingan terlampir.',
+                excerpt: data.excerpt || prev.excerpt || '',
+                category_id: data.suggested_category_id || prev.category_id,
+            }));
+
+            if (data.image_base64) {
+                const addedImg = {
+                    id: 'ig-cover-' + Math.random().toString(36).substring(2, 7),
+                    file: new File([], 'instagram-post.jpg', { type: 'image/jpeg' }),
+                    base64: data.image_base64,
+                };
+                setQuickImages((prev) => {
+                    const withoutOldIg = prev.filter((item) => !item.id.startsWith('ig-cover-'));
+                    const updated = [addedImg, ...withoutOldIg];
+                    quickNewsForm.setData('images_base64', updated.map((i) => i.base64));
+                    return updated;
+                });
+            }
+
+            if (data.fetched_automatically) {
+                setQuickInstagramNotice({
+                    type: 'success',
+                    text: 'Judul, ringkasan, isi berita, dan foto sampul berhasil ditarik otomatis dari Instagram!',
+                });
+            } else {
+                setQuickInstagramNotice({
+                    type: 'info',
+                    text: 'Tautan Embed Instagram berhasil dipasang! Silakan sesuaikan judul/caption atau foto sampul bila diperlukan.',
+                });
+            }
+        } catch {
+            setQuickInstagramNotice({
+                type: 'error',
+                text: 'Terjadi kesalahan saat menghubungi server untuk mengambil info Instagram.',
+            });
+        } finally {
+            setIsFetchingQuickInstagram(false);
+        }
+    };
+
+    const handleQuickInstagramUrlChange = (val: string) => {
+        quickNewsForm.setData('instagram_url', val);
+        const trimmed = val.trim();
+        if (
+            /instagram\.com\/(?:[^/]+\/)?(?:p|reel|tv)\/[A-Za-z0-9_-]+/i.test(trimmed) &&
+            trimmed !== lastFetchedQuickInstagramUrl
+        ) {
+            setLastFetchedQuickInstagramUrl(trimmed);
+            handleFetchQuickInstagramPost(trimmed);
+        }
+    };
 
     const handleQuickNewsSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -400,6 +507,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                 quickNewsForm.reset();
                 setQuickImages([]);
                 setQuickAttachments([]);
+                setQuickInstagramNotice(null);
             },
         });
     };
@@ -916,6 +1024,15 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                                         alt={item.title}
                                                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                     />
+                                                ) : item.instagram_url ? (
+                                                    <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-tr from-amber-500/20 via-pink-500/20 to-purple-600/20 p-6 text-center dark:from-amber-900/30 dark:via-pink-900/30 dark:to-purple-900/30">
+                                                        <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600 text-white shadow-md">
+                                                            <Instagram className="size-6" />
+                                                        </div>
+                                                        <span className="mt-2.5 text-xs font-extrabold text-pink-700 dark:text-pink-300">
+                                                            Update Instagram Sekolah
+                                                        </span>
+                                                    </div>
                                                 ) : (
                                                     <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center">
                                                         <div className="flex size-12 items-center justify-center rounded-2xl bg-white/80 text-[#FF6B35] shadow-xs backdrop-blur-sm dark:bg-gray-800/80">
@@ -932,6 +1049,12 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                                     {item.category && (
                                                         <span className="rounded-full bg-white/95 px-3 py-1 text-[11px] font-extrabold text-[#FF6B35] shadow-sm backdrop-blur-md dark:bg-gray-900/90 dark:text-[#FFA07A]">
                                                             {item.category.name}
+                                                        </span>
+                                                    )}
+                                                    {item.instagram_url && (
+                                                        <span className="flex items-center gap-1 rounded-full bg-gradient-to-r from-pink-600 via-purple-600 to-orange-500 px-2.5 py-1 text-[10px] font-extrabold text-white shadow-sm">
+                                                            <Instagram className="size-3" />
+                                                            <span>Instagram</span>
                                                         </span>
                                                     )}
                                                     {item.images_urls && item.images_urls.length > 1 && (
@@ -1464,9 +1587,51 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
 
                                     {/* Content */}
                                     <div
-                                        className="prose prose-sm sm:prose-base max-w-none text-gray-700 leading-relaxed dark:text-gray-300 space-y-3"
+                                        className="prose prose-sm sm:prose-base max-w-none text-gray-700 leading-relaxed dark:text-gray-300 space-y-3 whitespace-pre-line"
                                         dangerouslySetInnerHTML={{ __html: readingNews.content }}
                                     />
+
+                                    {/* Embed Postingan Instagram Sekolah */}
+                                    {readingNews.instagram_url && (
+                                        <div className="mt-6 rounded-2xl border-2 border-pink-200/80 bg-gradient-to-br from-pink-50/60 via-white to-orange-50/40 p-5 dark:border-pink-900/50 dark:from-pink-950/20 dark:via-gray-900 dark:to-orange-950/20 space-y-3.5">
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600 text-white shadow-xs">
+                                                        <Instagram className="size-4.5" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-xs font-black uppercase tracking-wider text-pink-950 dark:text-pink-200">
+                                                            Postingan Instagram Resmi Sekolah
+                                                        </h4>
+                                                        <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                            Lihat unggahan asli langsung dari akun media sosial sekolah
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <a
+                                                    href={readingNews.instagram_url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-pink-600 via-purple-600 to-orange-500 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:opacity-95 transition-opacity"
+                                                >
+                                                    <ExternalLink className="size-3.5" />
+                                                    Buka di Instagram
+                                                </a>
+                                            </div>
+
+                                            {readingNews.instagram_embed_url && (
+                                                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800">
+                                                    <iframe
+                                                        src={readingNews.instagram_embed_url}
+                                                        title={readingNews.title}
+                                                        className="w-full h-[520px] border-0"
+                                                        allowTransparency={true}
+                                                        allow="encrypted-media"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* Lampiran Dokumen PDF */}
                                     {allAttachments.length > 0 && (
@@ -1577,6 +1742,66 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
 
                             {/* Form */}
                             <form onSubmit={handleQuickNewsSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
+                                {/* Impor Cepat dari Instagram Sekolah */}
+                                <div className="rounded-2xl border-2 border-pink-200/80 bg-gradient-to-r from-pink-50/70 via-purple-50/40 to-orange-50/60 p-4 dark:border-pink-900/50 dark:from-pink-950/30 dark:via-purple-950/20 dark:to-orange-950/20">
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex size-7 items-center justify-center rounded-lg bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600 text-white shadow-xs">
+                                            <Instagram className="size-4" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-extrabold uppercase tracking-wide text-pink-900 dark:text-pink-200">
+                                                Impor / Tautkan dari Instagram Sekolah (Opsional)
+                                            </label>
+                                            <p className="text-[11px] text-gray-600 dark:text-gray-400">
+                                                Tempel link postingan atau reel Instagram untuk menarik caption & foto otomatis.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-2.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                        <input
+                                            type="url"
+                                            value={quickNewsForm.data.instagram_url}
+                                            onChange={(e) => handleQuickInstagramUrlChange(e.target.value)}
+                                            placeholder="Tempel link Instagram (otomatis tarik judul, ringkasan & foto sampul)..."
+                                            className="flex-1 rounded-xl border border-pink-200 bg-white px-3.5 py-2 text-xs font-semibold focus:border-pink-500 focus:outline-none dark:border-pink-900/60 dark:bg-gray-800 dark:text-white"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            disabled={isFetchingQuickInstagram || !quickNewsForm.data.instagram_url.trim()}
+                                            onClick={() => handleFetchQuickInstagramPost()}
+                                            className="rounded-xl bg-gradient-to-r from-pink-600 via-purple-600 to-orange-500 px-3.5 py-2 text-xs font-bold text-white hover:opacity-95 border-0 shadow-xs shrink-0"
+                                        >
+                                            {isFetchingQuickInstagram ? (
+                                                <>
+                                                    <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                                                    Menarik...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Sparkles className="mr-1.5 size-3.5" />
+                                                    Tarik dari IG
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+
+                                    {quickInstagramNotice && (
+                                        <div
+                                            className={`mt-2 rounded-xl px-3 py-1.5 text-[11px] font-semibold ${
+                                                quickInstagramNotice.type === 'success'
+                                                    ? 'bg-emerald-100/90 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-200'
+                                                    : quickInstagramNotice.type === 'error'
+                                                    ? 'bg-rose-100/90 text-rose-800 dark:bg-rose-950/70 dark:text-rose-200'
+                                                    : 'bg-blue-100/90 text-blue-800 dark:bg-blue-950/70 dark:text-blue-200'
+                                            }`}
+                                        >
+                                            {quickInstagramNotice.text}
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div>
                                     <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">
                                         Judul Berita <span className="text-red-500">*</span>
