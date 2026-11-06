@@ -214,19 +214,19 @@ export function AppSidebar() {
                             defaultOpen: true,
                             items: [
                                 {
-                                    title: 'Master Data Siswa',
+                                    title: 'Data Siswa',
                                     href: '/master?tab=students',
                                     icon: Users,
                                     isActive: activeMasterTab === 'students',
                                 },
                                 {
-                                    title: 'Master Data Guru & Staf',
+                                    title: 'Data Guru & Staf',
                                     href: '/master?tab=teachers',
                                     icon: Shield,
                                     isActive: activeMasterTab === 'teachers',
                                 },
                                 {
-                                    title: 'Master Data Kelas',
+                                    title: 'Data Kelas',
                                     href: '/master?tab=classrooms',
                                     icon: GraduationCap,
                                     isActive: activeMasterTab === 'classrooms',
