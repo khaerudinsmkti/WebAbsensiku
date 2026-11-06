@@ -9,6 +9,7 @@ use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\LatenessController;
 use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\NewsController;
+use App\Http\Controllers\PrincipalJournalController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SchoolProfileController;
 use App\Http\Controllers\SchoolSettingController;
@@ -41,6 +42,16 @@ Route::get('/manifest.json', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     // 1. Dashboard Eksekutif & Ringkasan Realtime
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Jurnal Kepala Sekolah (Hanya untuk Role Kepala Sekolah)
+    Route::middleware('role:principal')->group(function () {
+        Route::get('/principal/journals', [PrincipalJournalController::class, 'index'])->name('principal.journals.index');
+        Route::post('/principal/journals', [PrincipalJournalController::class, 'store'])->name('principal.journals.store');
+        Route::post('/principal/journals/{principalJournal}', [PrincipalJournalController::class, 'update'])->name('principal.journals.update');
+        Route::delete('/principal/journals/{principalJournal}', [PrincipalJournalController::class, 'destroy'])->name('principal.journals.destroy');
+        Route::get('/principal/journals/export/excel', [PrincipalJournalController::class, 'exportExcel'])->name('principal.journals.export-excel');
+        Route::get('/principal/journals/export/pdf', [PrincipalJournalController::class, 'exportPdf'])->name('principal.journals.export-pdf');
+    });
 
     // Modul Presensi & Rekapitulasi (Admin, Kepala Sekolah, Guru Pengajar)
     Route::middleware('role:teacher,principal')->group(function () {

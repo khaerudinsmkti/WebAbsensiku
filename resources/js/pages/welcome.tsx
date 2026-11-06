@@ -686,7 +686,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                 </Button>
 
                                 <Button asChild size="lg" variant="outline" className="rounded-2xl border-2 border-gray-200 bg-white/80 px-6 py-3 font-extrabold text-gray-700 hover:border-[#FF6B35] hover:bg-[#FFF0EB] hover:text-[#FF6B35] shadow-xs dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
-                                    <a href="#kalender">
+                                    <a href="/kalender">
                                         <CalendarDays className="mr-2 size-5 text-[#FF6B35]" />
                                         <span>Kalender Akademik</span>
                                     </a>

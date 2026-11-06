@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     Award,
+    BookOpenCheck,
     Building2,
     CalendarCheck,
     CalendarDays,
@@ -75,7 +76,8 @@ export function AppSidebar() {
     const user = props.auth?.user as { role?: string } | undefined;
     const isPublisher = user?.role === 'publisher';
     const isAdmin = user?.role === 'admin';
-    const canManageSchool = isAdmin || user?.role === 'principal';
+    const isPrincipal = user?.role === 'principal';
+    const canManageSchool = isAdmin || isPrincipal;
     const activeMasterTab = getActiveMasterTab(url);
 
     const mainNavItems: NavItem[] = isPublisher
@@ -158,6 +160,16 @@ export function AppSidebar() {
                   icon: LayoutGrid,
                   isActive: url === '/dashboard',
               },
+              ...(isPrincipal
+                  ? [
+                        {
+                            title: 'Jurnal Kepala Sekolah',
+                            href: '/principal/journals',
+                            icon: BookOpenCheck,
+                            isActive: url.startsWith('/principal/journals'),
+                        },
+                    ]
+                  : []),
               {
                   title: 'Presensi & Laporan',
                   href: '/attendances',

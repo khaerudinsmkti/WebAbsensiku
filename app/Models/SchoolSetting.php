@@ -255,14 +255,29 @@ class SchoolSetting extends Model
         }
     }
 
+    protected static ?self $cachedSetting = null;
+
+    protected static function booted(): void
+    {
+        static::saved(function (self $setting) {
+            static::$cachedSetting = $setting;
+        });
+
+        static::deleted(function () {
+            static::$cachedSetting = null;
+        });
+    }
+
     /**
-     * Get or create the singleton instance of school settings.
+     * Get or create the singleton instance of school settings (memoized per request).
      */
     public static function getSetting(): self
     {
-        static::ensureHeroAndCoreValueColumns();
+        if (static::$cachedSetting !== null) {
+            return static::$cachedSetting;
+        }
 
-        return static::firstOrCreate([], [
+        return static::$cachedSetting = static::firstOrCreate([], [
             'name' => 'SD Digital Indonesia',
             'address' => 'Jl. Pendidikan Merdeka No. 45',
             'city' => 'Jakarta Selatan',

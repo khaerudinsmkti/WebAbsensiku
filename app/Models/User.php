@@ -108,6 +108,8 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return $this->hasOne(Student::class, 'user_id');
     }
 
+    protected array $dutyTeacherCache = [];
+
     /**
      * Check if user is duty teacher today (or on a given date).
      * Admin always has duty authority.
@@ -121,7 +123,11 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         $carbonDate = $date ? Carbon::parse($date) : now();
         $dayOfWeek = $carbonDate->dayOfWeekIso; // 1 = Senin, ..., 7 = Minggu
 
-        return $this->dutySchedules()
+        if (array_key_exists($dayOfWeek, $this->dutyTeacherCache)) {
+            return $this->dutyTeacherCache[$dayOfWeek];
+        }
+
+        return $this->dutyTeacherCache[$dayOfWeek] = $this->dutySchedules()
             ->where('day_of_week', $dayOfWeek)
             ->where('is_active', true)
             ->exists();

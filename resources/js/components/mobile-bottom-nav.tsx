@@ -1,5 +1,6 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import {
+    BookOpenCheck,
     CalendarDays,
     Clock,
     Download,
@@ -86,10 +87,12 @@ export function MobileBottomNav() {
 
     // Active checks
     const isDashboardActive = url === '/dashboard';
+    const isJournalActive = url.startsWith('/principal/journals');
     const isPresensiActive = url.startsWith('/attendances') && !url.includes('/lateness') && !url.includes('/adjustments');
     const isLatenessActive = url.startsWith('/attendances/lateness');
     const isAdjustmentsActive = url.startsWith('/attendances/adjustments');
     const isOtherActive =
+        (isPrincipal && isAdjustmentsActive) ||
         url.startsWith('/reports') ||
         url.startsWith('/master') ||
         url.startsWith('/admin') ||
@@ -128,7 +131,33 @@ export function MobileBottomNav() {
                         </span>
                     </Link>
 
-                    {/* 2. Presensi Harian */}
+                    {/* 2. Jurnal Kepala Sekolah (Principal Only - Right Next to Beranda) */}
+                    {isPrincipal && (
+                        <Link
+                            href="/principal/journals"
+                            prefetch
+                            className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
+                                isJournalActive
+                                    ? 'text-[#FF6B35]'
+                                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                            }`}
+                        >
+                            <div
+                                className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
+                                    isJournalActive
+                                        ? 'bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white shadow-md shadow-[#FF6B35]/30'
+                                        : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                                }`}
+                            >
+                                <BookOpenCheck className="size-5" />
+                            </div>
+                            <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isJournalActive ? 'text-[#FF6B35]' : ''}`}>
+                                Jurnal
+                            </span>
+                        </Link>
+                    )}
+
+                    {/* Presensi Harian */}
                     <Link
                         href="/attendances"
                         prefetch
@@ -152,7 +181,7 @@ export function MobileBottomNav() {
                         </span>
                     </Link>
 
-                    {/* 3. Terlambat */}
+                    {/* Terlambat */}
                     <Link
                         href="/attendances/lateness"
                         prefetch
@@ -176,29 +205,31 @@ export function MobileBottomNav() {
                         </span>
                     </Link>
 
-                    {/* 4. Absen Khusus */}
-                    <Link
-                        href="/attendances/adjustments"
-                        prefetch
-                        className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
-                            isAdjustmentsActive
-                                ? 'text-[#FF6B35]'
-                                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                        }`}
-                    >
-                        <div
-                            className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
+                    {/* Absen Khusus (For non-principal in bottom nav; for principal moved to Lainnya) */}
+                    {!isPrincipal && (
+                        <Link
+                            href="/attendances/adjustments"
+                            prefetch
+                            className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
                                 isAdjustmentsActive
-                                    ? 'bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white shadow-md shadow-[#FF6B35]/30'
-                                    : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                                    ? 'text-[#FF6B35]'
+                                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                             }`}
                         >
-                            <CalendarDays className="size-5" />
-                        </div>
-                        <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isAdjustmentsActive ? 'text-[#FF6B35]' : ''}`}>
-                            Absen Khusus
-                        </span>
-                    </Link>
+                            <div
+                                className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
+                                    isAdjustmentsActive
+                                        ? 'bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white shadow-md shadow-[#FF6B35]/30'
+                                        : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                                }`}
+                            >
+                                <CalendarDays className="size-5" />
+                            </div>
+                            <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isAdjustmentsActive ? 'text-[#FF6B35]' : ''}`}>
+                                Absen Khusus
+                            </span>
+                        </Link>
+                    )}
 
                     {/* 5. Menu Lainnya (Drawer) */}
                     <button
@@ -261,7 +292,7 @@ export function MobileBottomNav() {
                                             {school?.name || 'AbsensiKu'}
                                         </h4>
                                         <p className="text-[11px] text-gray-500 font-medium line-clamp-1">
-                                            {user?.name} ({user?.role === 'admin' ? 'Administrator' : 'Tenaga Pendidik'})
+                                            {user?.name} ({user?.role === 'admin' ? 'Administrator' : user?.role === 'principal' ? 'Kepala Sekolah' : 'Tenaga Pendidik'})
                                         </p>
                                     </div>
                                 </div>
@@ -304,6 +335,26 @@ export function MobileBottomNav() {
                             </div>
 
                             <div className="grid grid-cols-2 gap-2">
+                                {isPrincipal && (
+                                    <Link
+                                        href="/attendances/adjustments"
+                                        onClick={() => setIsMenuOpen(false)}
+                                        className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${
+                                            isAdjustmentsActive
+                                                ? 'bg-orange-50 border-orange-300 text-[#FF6B35] font-bold dark:bg-orange-950/40 dark:border-orange-800'
+                                                : 'border-gray-200/80 hover:bg-gray-50 text-gray-700 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800/50'
+                                        }`}
+                                    >
+                                        <div className="flex size-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+                                            <CalendarDays className="size-4.5" />
+                                        </div>
+                                        <div className="text-xs font-bold leading-tight">
+                                            Absen Khusus
+                                            <div className="text-[10px] font-medium text-gray-400">Izin & Dispensasi</div>
+                                        </div>
+                                    </Link>
+                                )}
+
                                 <Link
                                     href="/reports"
                                     onClick={() => setIsMenuOpen(false)}

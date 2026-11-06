@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicHoliday;
-use App\Models\Attendance;
 use App\Models\Classroom;
 use App\Models\SchoolSetting;
 use App\Models\Student;
@@ -11,6 +10,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -38,14 +38,16 @@ class ReportController extends Controller
     protected function resolveReportData(Request $request): array
     {
         $user = $request->user();
-        $classroomsQuery = Classroom::with('homeroomTeacher')->orderBy('name');
-        if ($user->role === 'teacher' && ! $user->isDutyTeacherToday()) {
+        $isRestrictedTeacher = $user->role === 'teacher' && ! $user->isDutyTeacherToday();
+
+        $classroomsQuery = Classroom::with('homeroomTeacher:id,name,nip')->orderBy('name');
+        if ($isRestrictedTeacher) {
             $classroomsQuery->where('homeroom_teacher_id', $user->id);
         }
         $classrooms = $classroomsQuery->get();
 
         $selectedClassroomId = $request->input('classroom_id');
-        if ($user->role === 'teacher' && ! $user->isDutyTeacherToday()) {
+        if ($isRestrictedTeacher) {
             if (! $selectedClassroomId || ! $classrooms->contains('id', (int) $selectedClassroomId)) {
                 $selectedClassroomId = $classrooms->first()?->id;
             }
@@ -53,7 +55,8 @@ class ReportController extends Controller
             $selectedClassroomId = $classrooms->first()?->id;
         }
 
-        $classroom = $selectedClassroomId ? Classroom::with('homeroomTeacher')->find($selectedClassroomId) : null;
+        $selectedClassroomId = $selectedClassroomId ? (int) $selectedClassroomId : 0;
+        $classroom = $selectedClassroomId ? $classrooms->firstWhere('id', $selectedClassroomId) : null;
 
         $filterType = $request->input('filter_type', 'monthly');
         $month = (int) $request->input('month', Carbon::today()->month);
@@ -78,8 +81,37 @@ class ReportController extends Controller
         $carbonEnd = Carbon::parse($endDate);
         $daysCount = $carbonStart->diffInDays($carbonEnd) + 1;
 
-        // Fetch official holidays in this date range
-        $holidayDates = AcademicHoliday::getHolidayDatesBetween($startDate, $endDate);
+        // Single query for official holidays in this date range (reused for both matrix and periodHolidays)
+        $periodHolidays = AcademicHoliday::where(function ($q) use ($startDate, $endDate) {
+            $q->whereBetween('start_date', [$startDate, $endDate])
+                ->orWhereBetween('end_date', [$startDate, $endDate])
+                ->orWhere(function ($sub) use ($startDate, $endDate) {
+                    $sub->where('start_date', '<=', $startDate)
+                        ->where('end_date', '>=', $endDate);
+                });
+        })->orderBy('start_date')->get();
+
+        $holidayDates = [];
+        foreach ($periodHolidays as $h) {
+            $curr = Carbon::parse($h->start_date);
+            $endC = Carbon::parse($h->end_date);
+            if ($curr->lt($carbonStart)) {
+                $curr = $carbonStart->copy();
+            }
+            if ($endC->gt($carbonEnd)) {
+                $endC = $carbonEnd->copy();
+            }
+            while ($curr->lte($endC)) {
+                $dStr = $curr->toDateString();
+                $holidayDates[$dStr] = [
+                    'name' => $h->name,
+                    'type' => $h->type,
+                    'type_name' => $h->type_name,
+                    'description' => $h->description,
+                ];
+                $curr->addDay();
+            }
+        }
 
         $indoDays = [
             0 => ['name' => 'Minggu', 'initial' => 'M'],
@@ -130,154 +162,255 @@ class ReportController extends Controller
         }
 
         // Calculate effective school days (excluding weekends and official holidays)
-        $effectiveSchoolDays = collect($days)->filter(fn ($d) => ! $d['is_weekend'] && ! $d['is_holiday'])->count();
+        $effectiveSchoolDays = 0;
+        $dailyTotals = [];
+        foreach ($days as $dayInfo) {
+            if (! $dayInfo['is_weekend'] && ! $dayInfo['is_holiday']) {
+                $effectiveSchoolDays++;
+            }
+            $dailyTotals[$dayInfo['day']] = [
+                'hadir' => 0,
+                'sakit' => 0,
+                'izin' => 0,
+                'alpha' => 0,
+                'terlambat' => 0,
+                'is_sunday' => $dayInfo['is_sunday'],
+                'is_saturday' => $dayInfo['is_saturday'],
+                'is_weekend' => $dayInfo['is_weekend'],
+                'is_holiday' => $dayInfo['is_holiday'],
+                'holiday_name' => $dayInfo['holiday_name'],
+            ];
+        }
 
         $students = [];
-        $dailyTotals = [];
+        $maleCount = 0;
+        $femaleCount = 0;
+        $sumHadir = $sumSakit = $sumIzin = $sumAlpha = $sumTerlambat = $sumPulangAwal = 0;
 
         if ($selectedClassroomId) {
             $studentsData = Student::where('classroom_id', $selectedClassroomId)
                 ->where('is_active', true)
-                ->with(['attendances' => function ($q) use ($startDate, $endDate) {
-                    $q->whereBetween('date', [$startDate, $endDate])->with('adjustments');
-                }])
+                ->select('id', 'classroom_id', 'nisn', 'nis', 'name', 'gender')
                 ->orderBy('name')
                 ->get();
 
-            $students = $studentsData->map(function ($student) use ($days, $effectiveSchoolDays) {
-                $atts = $student->attendances;
-                $hadir = $atts->where('status', 'present')->count();
-                $sakit = $atts->where('status', 'sick')->count();
-                $izin = $atts->where('status', 'permit')->count();
-                $alpha = $atts->where('status', 'absent')->count();
-                $terlambat = $atts->where('is_late', true)->count();
-                $pulangAwal = $atts->filter(fn ($a) => $a->adjustments->isNotEmpty())->count();
+            $studentIds = $studentsData->pluck('id')->all();
 
-                $totalRecorded = $hadir + $sakit + $izin + $alpha;
-                // Exclude holidays and Sundays from attendance calculation
-                $denominator = $effectiveSchoolDays > 0 ? $effectiveSchoolDays : ($totalRecorded > 0 ? $totalRecorded : 1);
-                $percentage = round(($hadir / $denominator) * 100, 1);
-                if ($percentage > 100) $percentage = 100;
+            if (! empty($studentIds)) {
+                if (! empty($days)) {
+                    // Matrix mode (<= 31 days): single lightweight query without hydrating Eloquent models
+                    $rawAttendances = DB::table('attendances')
+                        ->whereIn('student_id', $studentIds)
+                        ->whereBetween('date', [$startDate, $endDate])
+                        ->selectRaw('
+                            attendances.student_id,
+                            attendances.date,
+                            attendances.status,
+                            attendances.is_late,
+                            attendances.late_minutes,
+                            attendances.check_in_time,
+                            attendances.notes,
+                            EXISTS(SELECT 1 FROM attendance_adjustments WHERE attendance_adjustments.attendance_id = attendances.id) as has_adjustment
+                        ')
+                        ->get()
+                        ->groupBy('student_id');
 
-                $attsByDate = $atts->keyBy(function ($att) {
-                    if (empty($att->date)) {
-                        return '';
-                    }
-                    return is_string($att->date) ? substr($att->date, 0, 10) : $att->date->format('Y-m-d');
-                });
-
-                $dailyAttendances = [];
-                foreach ($days as $dayInfo) {
-                    $d = $dayInfo['day'];
-                    $dateStr = $dayInfo['date'];
-                    $att = $attsByDate->get($dateStr);
-                    if ($att) {
-                        $code = match ($att->status) {
-                            'present' => $att->is_late ? 'T' : 'H',
-                            'sick' => 'S',
-                            'permit' => 'I',
-                            'absent' => 'A',
-                            default => '-',
-                        };
-                        $statusLabel = match ($att->status) {
-                            'present' => $att->is_late ? 'Terlambat (' . ($att->late_minutes ?? 0) . ' menit)' : 'Hadir Tepat Waktu',
-                            'sick' => 'Sakit' . ($att->notes ? ' (' . $att->notes . ')' : ''),
-                            'permit' => 'Izin' . ($att->notes ? ' (' . $att->notes . ')' : ''),
-                            'absent' => 'Alpa (Tanpa Keterangan)',
-                            default => '-',
-                        };
-                        $dailyAttendances[$d] = [
-                            'code' => $code,
-                            'status' => $att->status,
-                            'status_label' => $statusLabel,
-                            'is_late' => (bool) $att->is_late,
-                            'late_minutes' => $att->late_minutes ?? 0,
-                            'check_in_time' => $att->check_in_time,
-                            'notes' => $att->notes,
-                        ];
-                    } else {
-                        if ($dayInfo['is_holiday']) {
-                            $code = 'L';
-                            $status = 'holiday';
-                            $statusLabel = 'Libur: ' . ($dayInfo['holiday_name'] ?? 'Libur Resmi Sekolah');
-                        } elseif ($dayInfo['is_sunday'] || ($dayInfo['is_saturday_off'] ?? false)) {
-                            $code = '-';
-                            $status = 'weekend';
-                            $statusLabel = 'Libur Akhir Pekan';
-                        } else {
-                            $code = '.';
-                            $status = 'empty';
-                            $statusLabel = 'Belum Ada Presensi';
+                    foreach ($studentsData as $student) {
+                        if ($student->gender === 'L') {
+                            $maleCount++;
+                        } elseif ($student->gender === 'P') {
+                            $femaleCount++;
                         }
 
-                        $dailyAttendances[$d] = [
-                            'code' => $code,
-                            'status' => $status,
-                            'status_label' => $statusLabel,
-                            'is_late' => false,
-                            'late_minutes' => 0,
-                            'check_in_time' => null,
-                            'notes' => $dayInfo['holiday_name'] ?? ($dayInfo['is_weekend'] ? 'Libur Akhir Pekan' : null),
+                        $atts = $rawAttendances->get($student->id, collect());
+                        $hadir = 0;
+                        $sakit = 0;
+                        $izin = 0;
+                        $alpha = 0;
+                        $terlambat = 0;
+                        $pulangAwal = 0;
+                        $attsByDate = [];
+
+                        foreach ($atts as $att) {
+                            $dateKey = substr((string) $att->date, 0, 10);
+                            $attsByDate[$dateKey] = $att;
+
+                            if ($att->status === 'present') {
+                                $hadir++;
+                                if ($att->is_late) {
+                                    $terlambat++;
+                                }
+                            } elseif ($att->status === 'sick') {
+                                $sakit++;
+                            } elseif ($att->status === 'permit') {
+                                $izin++;
+                            } elseif ($att->status === 'absent') {
+                                $alpha++;
+                            }
+
+                            if ($att->has_adjustment) {
+                                $pulangAwal++;
+                            }
+                        }
+
+                        $totalRecorded = $hadir + $sakit + $izin + $alpha;
+                        $denominator = $effectiveSchoolDays > 0 ? $effectiveSchoolDays : ($totalRecorded > 0 ? $totalRecorded : 1);
+                        $percentage = min(100, round(($hadir / $denominator) * 100, 1));
+
+                        $dailyAttendances = [];
+                        foreach ($days as $dayInfo) {
+                            $d = $dayInfo['day'];
+                            $dateStr = $dayInfo['date'];
+                            $att = $attsByDate[$dateStr] ?? null;
+
+                            if ($att) {
+                                if ($att->status === 'present') {
+                                    $dailyTotals[$d]['hadir']++;
+                                    if ($att->is_late) {
+                                        $dailyTotals[$d]['terlambat']++;
+                                    }
+                                    $code = $att->is_late ? 'T' : 'H';
+                                    $statusLabel = $att->is_late ? 'Terlambat (' . ($att->late_minutes ?? 0) . ' menit)' : 'Hadir Tepat Waktu';
+                                } elseif ($att->status === 'sick') {
+                                    $dailyTotals[$d]['sakit']++;
+                                    $code = 'S';
+                                    $statusLabel = 'Sakit' . ($att->notes ? ' (' . $att->notes . ')' : '');
+                                } elseif ($att->status === 'permit') {
+                                    $dailyTotals[$d]['izin']++;
+                                    $code = 'I';
+                                    $statusLabel = 'Izin' . ($att->notes ? ' (' . $att->notes . ')' : '');
+                                } elseif ($att->status === 'absent') {
+                                    $dailyTotals[$d]['alpha']++;
+                                    $code = 'A';
+                                    $statusLabel = 'Alpa (Tanpa Keterangan)';
+                                } else {
+                                    $code = '-';
+                                    $statusLabel = '-';
+                                }
+
+                                $dailyAttendances[$d] = [
+                                    'code' => $code,
+                                    'status' => $att->status,
+                                    'status_label' => $statusLabel,
+                                    'is_late' => (bool) $att->is_late,
+                                    'late_minutes' => (int) ($att->late_minutes ?? 0),
+                                    'check_in_time' => $att->check_in_time,
+                                    'notes' => $att->notes,
+                                ];
+                            } else {
+                                if ($dayInfo['is_holiday']) {
+                                    $code = 'L';
+                                    $status = 'holiday';
+                                    $statusLabel = 'Libur: ' . ($dayInfo['holiday_name'] ?? 'Libur Resmi Sekolah');
+                                } elseif ($dayInfo['is_sunday'] || ($dayInfo['is_saturday_off'] ?? false)) {
+                                    $code = '-';
+                                    $status = 'weekend';
+                                    $statusLabel = 'Libur Akhir Pekan';
+                                } else {
+                                    $code = '.';
+                                    $status = 'empty';
+                                    $statusLabel = 'Belum Ada Presensi';
+                                }
+
+                                $dailyAttendances[$d] = [
+                                    'code' => $code,
+                                    'status' => $status,
+                                    'status_label' => $statusLabel,
+                                    'is_late' => false,
+                                    'late_minutes' => 0,
+                                    'check_in_time' => null,
+                                    'notes' => $dayInfo['holiday_name'] ?? ($dayInfo['is_weekend'] ? 'Libur Akhir Pekan' : null),
+                                ];
+                            }
+                        }
+
+                        $sumHadir += $hadir;
+                        $sumSakit += $sakit;
+                        $sumIzin += $izin;
+                        $sumAlpha += $alpha;
+                        $sumTerlambat += $terlambat;
+                        $sumPulangAwal += $pulangAwal;
+
+                        $students[] = [
+                            'id' => $student->id,
+                            'nisn' => $student->nisn,
+                            'nis' => $student->nis,
+                            'name' => $student->name,
+                            'gender' => $student->gender,
+                            'hadir' => $hadir,
+                            'sakit' => $sakit,
+                            'izin' => $izin,
+                            'alpha' => $alpha,
+                            'terlambat' => $terlambat,
+                            'pulang_awal' => $pulangAwal,
+                            'percentage' => $percentage,
+                            'daily_attendances' => $dailyAttendances,
+                        ];
+                    }
+                } else {
+                    // Summary-only mode (> 31 days / Yearly): aggregate directly in SQL without loading thousands of rows
+                    $aggByStudent = DB::table('attendances')
+                        ->whereIn('student_id', $studentIds)
+                        ->whereBetween('date', [$startDate, $endDate])
+                        ->groupBy('student_id')
+                        ->selectRaw("
+                            student_id,
+                            SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as hadir,
+                            SUM(CASE WHEN status = 'sick' THEN 1 ELSE 0 END) as sakit,
+                            SUM(CASE WHEN status = 'permit' THEN 1 ELSE 0 END) as izin,
+                            SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as alpha,
+                            SUM(CASE WHEN is_late = 1 THEN 1 ELSE 0 END) as terlambat,
+                            SUM(CASE WHEN EXISTS(SELECT 1 FROM attendance_adjustments WHERE attendance_adjustments.attendance_id = attendances.id) THEN 1 ELSE 0 END) as pulang_awal
+                        ")
+                        ->get()
+                        ->keyBy('student_id');
+
+                    foreach ($studentsData as $student) {
+                        if ($student->gender === 'L') {
+                            $maleCount++;
+                        } elseif ($student->gender === 'P') {
+                            $femaleCount++;
+                        }
+
+                        $agg = $aggByStudent->get($student->id);
+                        $hadir = (int) ($agg->hadir ?? 0);
+                        $sakit = (int) ($agg->sakit ?? 0);
+                        $izin = (int) ($agg->izin ?? 0);
+                        $alpha = (int) ($agg->alpha ?? 0);
+                        $terlambat = (int) ($agg->terlambat ?? 0);
+                        $pulangAwal = (int) ($agg->pulang_awal ?? 0);
+
+                        $totalRecorded = $hadir + $sakit + $izin + $alpha;
+                        $denominator = $totalRecorded > 0 ? $totalRecorded : 1;
+                        $percentage = min(100, round(($hadir / $denominator) * 100, 1));
+
+                        $sumHadir += $hadir;
+                        $sumSakit += $sakit;
+                        $sumIzin += $izin;
+                        $sumAlpha += $alpha;
+                        $sumTerlambat += $terlambat;
+                        $sumPulangAwal += $pulangAwal;
+
+                        $students[] = [
+                            'id' => $student->id,
+                            'nisn' => $student->nisn,
+                            'nis' => $student->nis,
+                            'name' => $student->name,
+                            'gender' => $student->gender,
+                            'hadir' => $hadir,
+                            'sakit' => $sakit,
+                            'izin' => $izin,
+                            'alpha' => $alpha,
+                            'terlambat' => $terlambat,
+                            'pulang_awal' => $pulangAwal,
+                            'percentage' => $percentage,
+                            'daily_attendances' => [],
                         ];
                     }
                 }
-
-                return [
-                    'id' => $student->id,
-                    'nisn' => $student->nisn,
-                    'nis' => $student->nis,
-                    'name' => $student->name,
-                    'gender' => $student->gender,
-                    'hadir' => $hadir,
-                    'sakit' => $sakit,
-                    'izin' => $izin,
-                    'alpha' => $alpha,
-                    'terlambat' => $terlambat,
-                    'pulang_awal' => $pulangAwal,
-                    'percentage' => $percentage,
-                    'daily_attendances' => $dailyAttendances,
-                ];
-            });
-
-            foreach ($days as $dayInfo) {
-                $d = $dayInfo['day'];
-                $dDate = $dayInfo['date'];
-                $h = 0; $s = 0; $i = 0; $a = 0; $t = 0;
-                foreach ($studentsData as $st) {
-                    $att = $st->attendances->first(function ($attendance) use ($dDate) {
-                        if (empty($attendance->date)) {
-                            return false;
-                        }
-                        $attDateStr = is_string($attendance->date) ? substr($attendance->date, 0, 10) : $attendance->date->format('Y-m-d');
-                        return $attDateStr === $dDate;
-                    });
-
-                    if ($att) {
-                        if ($att->status === 'present') {
-                            $h++;
-                            if ($att->is_late) $t++;
-                        } elseif ($att->status === 'sick') $s++;
-                        elseif ($att->status === 'permit') $i++;
-                        elseif ($att->status === 'absent') $a++;
-                    }
-                }
-                $dailyTotals[$d] = [
-                    'hadir' => $h,
-                    'sakit' => $s,
-                    'izin' => $i,
-                    'alpha' => $a,
-                    'terlambat' => $t,
-                    'is_sunday' => $dayInfo['is_sunday'],
-                    'is_saturday' => $dayInfo['is_saturday'],
-                    'is_weekend' => $dayInfo['is_weekend'],
-                    'is_holiday' => $dayInfo['is_holiday'],
-                    'holiday_name' => $dayInfo['holiday_name'],
-                ];
             }
         }
 
-        $maleCount = collect($students)->where('gender', 'L')->count();
-        $femaleCount = collect($students)->where('gender', 'P')->count();
         $genderStats = [
             'male' => $maleCount,
             'female' => $femaleCount,
@@ -286,23 +419,14 @@ class ReportController extends Controller
 
         $summary = [
             'total_students' => count($students),
-            'total_hadir' => collect($students)->sum('hadir'),
-            'total_sakit' => collect($students)->sum('sakit'),
-            'total_izin' => collect($students)->sum('izin'),
-            'total_alpha' => collect($students)->sum('alpha'),
-            'total_terlambat' => collect($students)->sum('terlambat'),
-            'total_pulang_awal' => collect($students)->sum('pulang_awal'),
+            'total_hadir' => $sumHadir,
+            'total_sakit' => $sumSakit,
+            'total_izin' => $sumIzin,
+            'total_alpha' => $sumAlpha,
+            'total_terlambat' => $sumTerlambat,
+            'total_pulang_awal' => $sumPulangAwal,
             'effective_school_days' => $effectiveSchoolDays,
         ];
-
-        $periodHolidays = AcademicHoliday::where(function ($q) use ($startDate, $endDate) {
-            $q->whereBetween('start_date', [$startDate, $endDate])
-                ->orWhereBetween('end_date', [$startDate, $endDate])
-                ->orWhere(function ($sub) use ($startDate, $endDate) {
-                    $sub->where('start_date', '<=', $startDate)
-                        ->where('end_date', '>=', $endDate);
-                });
-        })->orderBy('start_date')->get();
 
         return [
             'classrooms' => $classrooms,
@@ -344,7 +468,7 @@ class ReportController extends Controller
             'dailyTotals' => $data['dailyTotals'],
             'summary' => $data['summary'],
             'genderStats' => $data['genderStats'],
-            'monthNames' => $data['monthNames'],
+            'monthNames' => $this->monthNames,
             'periodHolidays' => $data['periodHolidays'],
         ]);
     }
@@ -482,11 +606,11 @@ class ReportController extends Controller
                     $cellClass = $isWeekendOrHoliday ? 'weekend' : 'footer-total';
                     $output .= '<td class="' . $cellClass . '">' . ($isWeekendOrHoliday ? '-' : $tot) . '</td>';
                 }
-                $output .= '<td class="footer-total">' . collect($students)->sum('hadir') . '</td>';
-                $output .= '<td class="footer-total">' . collect($students)->sum('sakit') . '</td>';
-                $output .= '<td class="footer-total">' . collect($students)->sum('izin') . '</td>';
-                $output .= '<td class="footer-total">' . collect($students)->sum('alpha') . '</td>';
-                $output .= '<td class="footer-total">' . collect($students)->sum('terlambat') . '</td>';
+                $output .= '<td class="footer-total">' . $data['summary']['total_hadir'] . '</td>';
+                $output .= '<td class="footer-total">' . $data['summary']['total_sakit'] . '</td>';
+                $output .= '<td class="footer-total">' . $data['summary']['total_izin'] . '</td>';
+                $output .= '<td class="footer-total">' . $data['summary']['total_alpha'] . '</td>';
+                $output .= '<td class="footer-total">' . $data['summary']['total_terlambat'] . '</td>';
                 $output .= '<td class="footer-total">-</td>';
                 $output .= '</tr>';
                 $output .= '</tfoot>';

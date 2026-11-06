@@ -53,7 +53,7 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'contact_success' => fn () => $request->session()->get('contact_success'),
             ],
-            'school' => fn () => \App\Models\SchoolSetting::getSetting(),
+            'school' => fn () => $school,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
