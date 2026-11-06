@@ -69,22 +69,38 @@ class SchoolSetting extends Model
 
     public function getLogoUrlAttribute(): ?string
     {
-        return $this->logo_path ? asset('storage/' . $this->logo_path) : null;
+        if (! $this->logo_path) {
+            return null;
+        }
+
+        return '/storage/' . ltrim($this->logo_path, '/');
     }
 
     public function getPrincipalPhotoUrlAttribute(): ?string
     {
-        return $this->principal_photo_path ? asset('storage/' . $this->principal_photo_path) : null;
+        if (! $this->principal_photo_path) {
+            return null;
+        }
+
+        return '/storage/' . ltrim($this->principal_photo_path, '/');
     }
 
     public function getProfileImageUrlAttribute(): ?string
     {
-        return $this->profile_image_path ? asset('storage/' . $this->profile_image_path) : null;
+        if (! $this->profile_image_path) {
+            return null;
+        }
+
+        return '/storage/' . ltrim($this->profile_image_path, '/');
     }
 
     public function getHeroImageUrlAttribute(): ?string
     {
-        return $this->hero_image_path ? asset('storage/' . $this->hero_image_path) : null;
+        if (! $this->hero_image_path) {
+            return null;
+        }
+
+        return '/storage/' . ltrim($this->hero_image_path, '/');
     }
 
     public static function defaultHeroPillars(): array
@@ -261,10 +277,12 @@ class SchoolSetting extends Model
     {
         static::saved(function (self $setting) {
             static::$cachedSetting = $setting;
+            \App\Services\PwaManifestService::syncManifest();
         });
 
         static::deleted(function () {
             static::$cachedSetting = null;
+            \App\Services\PwaManifestService::syncManifest();
         });
     }
 

@@ -11,8 +11,12 @@ interface SchoolSettingProp {
 export function PwaInstallPrompt() {
     const { props } = usePage();
     const school = props.school as SchoolSettingProp | undefined;
-    const appName = school?.name || 'AbsensiKu';
+    const globalSchoolName = typeof window !== 'undefined' ? (window as any).__SCHOOL_NAME__ : '';
+    const globalSchoolLogo = typeof window !== 'undefined' ? (window as any).__SCHOOL_LOGO__ : null;
+    const appName = school?.name || globalSchoolName || 'AbsensiKu SD';
+    const logoUrl = school?.logo_url || globalSchoolLogo;
 
+    const [imgFailed, setImgFailed] = useState(false);
     const [isInstalled, setIsInstalled] = useState(true); // default true to avoid flash before checking
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [isDismissed, setIsDismissed] = useState(false);
@@ -127,15 +131,16 @@ export function PwaInstallPrompt() {
         >
             <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                    {school?.logo_url ? (
+                    {logoUrl && !imgFailed ? (
                         <img
-                            src={school.logo_url}
+                            src={logoUrl}
                             alt={appName}
+                            onError={() => setImgFailed(true)}
                             className="size-11 rounded-xl object-contain border border-gray-200 bg-white p-1 shadow-sm dark:border-gray-700"
                         />
                     ) : (
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white font-black text-sm shadow-brand">
-                            AK
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white font-black text-xs shadow-brand">
+                            {appName.split(' ').filter(Boolean).slice(0, 2).map((w: string) => w[0]?.toUpperCase()).join('') || 'AK'}
                         </div>
                     )}
                     <div className="leading-tight">

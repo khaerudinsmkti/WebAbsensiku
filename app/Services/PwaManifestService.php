@@ -43,8 +43,23 @@ class PwaManifestService
             'purpose' => 'maskable',
         ];
 
-        // 4. Jika logo sekolah adalah SVG murni, sertakan sebagai scalable icon
-        if ($school->logo_path) {
+        // 4. Jika logo sekolah ada, sertakan file logo sekolah asli dengan resolusinya
+        if ($school->logo_path && file_exists(storage_path('app/public/' . $school->logo_path))) {
+            $logoFullPath = storage_path('app/public/' . $school->logo_path);
+            $imgInfo = @getimagesize($logoFullPath);
+            $mime = $imgInfo['mime'] ?? 'image/png';
+            $w = $imgInfo[0] ?? null;
+            $h = $imgInfo[1] ?? null;
+
+            if ($w && $h) {
+                $icons[] = [
+                    'src' => '/storage/' . ltrim($school->logo_path, '/') . '?v=' . $version,
+                    'sizes' => "{$w}x{$h}",
+                    'type' => $mime,
+                    'purpose' => 'any',
+                ];
+            }
+        } elseif ($school->logo_path) {
             $logoExtension = strtolower(pathinfo($school->logo_path, PATHINFO_EXTENSION));
             if ($logoExtension === 'svg') {
                 $icons[] = [

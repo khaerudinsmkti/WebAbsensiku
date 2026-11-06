@@ -16,22 +16,28 @@
     ],
     "icons": [
         {
-            "src": "/icons/icon-192x192.png?v=1793932119",
+            "src": "/icons/icon-192x192.png?v=1794006468",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "/icons/icon-512x512.png?v=1793932119",
+            "src": "/icons/icon-512x512.png?v=1794006468",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "/icons/icon-maskable-512x512.png?v=1793932119",
+            "src": "/icons/icon-maskable-512x512.png?v=1794006468",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
+        },
+        {
+            "src": "/storage/school/BPHos9pbv6sOfyp0v9QWhCTxfCKJHho74pd79rzX.png?v=1794006468",
+            "sizes": "420x476",
+            "type": "image/png",
+            "purpose": "any"
         }
     ]
 }

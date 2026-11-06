@@ -26,10 +26,16 @@ export function MobileBottomNav() {
     const { url, props } = usePage();
     const user = props.auth?.user as { name?: string; role?: string } | undefined;
     const school = props.school as SchoolSettingProp | undefined;
+    const globalSchoolName = typeof window !== 'undefined' ? (window as any).__SCHOOL_NAME__ : '';
+    const globalSchoolLogo = typeof window !== 'undefined' ? (window as any).__SCHOOL_LOGO__ : null;
+    const appName = school?.name || globalSchoolName || 'AbsensiKu SD';
+    const logoUrl = school?.logo_url || globalSchoolLogo;
+
     const isAdmin = user?.role === 'admin';
     const isPrincipal = user?.role === 'principal';
     const canManageSchool = isAdmin || isPrincipal;
 
+    const [imgFailed, setImgFailed] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [isInstallable, setIsInstallable] = useState(false);
@@ -281,20 +287,21 @@ export function MobileBottomNav() {
                             <div className="w-12 h-1.5 rounded-full bg-gray-300 dark:bg-gray-700 mb-3" />
                             <div className="flex items-center justify-between w-full">
                                 <div className="flex items-center gap-3">
-                                    {school?.logo_url ? (
+                                    {logoUrl && !imgFailed ? (
                                         <img
-                                            src={school.logo_url}
-                                            alt={school.name || 'Logo Sekolah'}
+                                            src={logoUrl}
+                                            alt={appName}
+                                            onError={() => setImgFailed(true)}
                                             className="size-10 rounded-xl object-contain border border-gray-200 bg-white p-0.5 shadow-sm dark:border-gray-700"
                                         />
                                     ) : (
-                                        <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white font-black text-sm shadow-brand">
-                                            AK
+                                        <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white font-black text-xs shadow-brand">
+                                            {appName.split(' ').filter(Boolean).slice(0, 2).map((w: string) => w[0]?.toUpperCase()).join('') || 'AK'}
                                         </div>
                                     )}
                                     <div className="leading-tight">
                                         <h4 className="text-sm font-extrabold text-gray-900 dark:text-white line-clamp-1">
-                                            {school?.name || 'AbsensiKu'}
+                                            {appName}
                                         </h4>
                                         <p className="text-[11px] text-gray-500 font-medium line-clamp-1">
                                             {user?.name} ({user?.role === 'admin' ? 'Administrator' : user?.role === 'principal' ? 'Kepala Sekolah' : 'Tenaga Pendidik'})
@@ -315,12 +322,21 @@ export function MobileBottomNav() {
                         {!isStandalone && (
                             <div className="mb-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 p-3.5 text-white shadow-lg shadow-orange-500/25 flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
-                                    <div className="flex size-9 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                                        <Download className="size-5 text-white" />
+                                    <div className="flex size-9 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm overflow-hidden p-1">
+                                        {logoUrl && !imgFailed ? (
+                                            <img
+                                                src={logoUrl}
+                                                alt={appName}
+                                                onError={() => setImgFailed(true)}
+                                                className="size-7 rounded-lg object-contain bg-white p-0.5 shadow-sm"
+                                            />
+                                        ) : (
+                                            <Download className="size-5 text-white" />
+                                        )}
                                     </div>
                                     <div>
-                                        <h5 className="text-xs font-black">Install Aplikasi {school?.name || 'AbsensiKu'}</h5>
-                                        <p className="text-[10px] text-white/90">Akses cepat seperti aplikasi di ponsel Anda</p>
+                                        <h5 className="text-xs font-black">Install Aplikasi {appName}</h5>
+                                        <p className="text-[10px] text-white/90">Akses cepat portal presensi {appName}</p>
                                     </div>
                                 </div>
                                 <button

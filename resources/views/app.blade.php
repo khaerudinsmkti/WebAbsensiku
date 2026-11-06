@@ -33,13 +33,14 @@
 
         @php
             $schoolSetting = \App\Models\SchoolSetting::getSetting();
-            $schoolLogoUrl = $schoolSetting->logo_url;
+            $schoolLogoUrl = $schoolSetting->logo_path ? '/storage/' . ltrim($schoolSetting->logo_path, '/') : null;
             $appName = $schoolSetting->name ?: config('app.name', 'AbsensiKu SD');
             $pwaVersion = $schoolSetting->updated_at ? $schoolSetting->updated_at->timestamp : (file_exists(public_path('manifest.json')) ? filemtime(public_path('manifest.json')) : time());
         @endphp
 
         <script>
             window.__SCHOOL_NAME__ = @json($appName);
+            window.__SCHOOL_LOGO__ = @json($schoolLogoUrl);
         </script>
 
         {{-- Dynamic Favicon & Icons from School Settings --}}
@@ -48,13 +49,13 @@
             <link rel="shortcut icon" href="{{ $schoolLogoUrl }}?v={{ $pwaVersion }}">
             <link rel="apple-touch-icon" href="{{ $schoolLogoUrl }}?v={{ $pwaVersion }}">
         @else
-            <link rel="icon" href="/favicon.ico?v={{ $pwaVersion }}" sizes="any">
-            <link rel="icon" href="/favicon.svg?v={{ $pwaVersion }}" type="image/svg+xml">
-            <link rel="apple-touch-icon" href="/apple-touch-icon.png?v={{ $pwaVersion }}">
+            <link rel="icon" href="/icons/icon-192x192.png?v={{ $pwaVersion }}" type="image/png">
+            <link rel="shortcut icon" href="/icons/icon-192x192.png?v={{ $pwaVersion }}">
+            <link rel="apple-touch-icon" href="/icons/icon-192x192.png?v={{ $pwaVersion }}">
         @endif
 
         {{-- PWA Manifest & Meta Tags (Judul Aplikasi & Logo Dinamis dari Pengaturan Sekolah) --}}
-        <link rel="manifest" href="/manifest.json">
+        <link rel="manifest" href="/manifest.json?v={{ $pwaVersion }}">
         <meta name="theme-color" content="#FF6B35">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
