@@ -74,14 +74,19 @@ export function MobileBottomNav() {
 
     const handleInstallPWA = async () => {
         if (deferredPrompt) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                setIsInstallable(false);
+            try {
+                await deferredPrompt.prompt();
+                const choice = await deferredPrompt.userChoice;
+                if (choice?.outcome === 'accepted') {
+                    setIsInstallable(false);
+                }
+            } catch (err) {
+                console.warn('[PWA] Install prompt error:', err);
+                alert('Untuk menginstall aplikasi di ponsel Anda:\n1. Buka menu browser (ikon titik tiga ⋮ atau tombol Share di Safari/Chrome).\n2. Pilih "Tambahkan ke Layar Utama" (Add to Home screen) atau "Install Aplikasi".');
             }
             setDeferredPrompt(null);
         } else {
-            alert('Untuk menginstall aplikasi di ponsel Anda:\n1. Buka menu browser (ikon titik tiga atau tombol Share di Safari/Chrome).\n2. Pilih "Tambahkan ke Layar Utama" (Add to Home screen) atau "Install Aplikasi".');
+            alert('Untuk menginstall aplikasi di ponsel Anda:\n1. Buka menu browser (ikon titik tiga ⋮ atau tombol Share di Safari/Chrome).\n2. Pilih "Tambahkan ke Layar Utama" (Add to Home screen) atau "Install Aplikasi".');
         }
     };
 

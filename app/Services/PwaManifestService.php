@@ -19,49 +19,42 @@ class PwaManifestService
 
         $icons = [];
 
-        // 1. Primary Dynamic School Logo (if configured)
-        if ($school->logo_url) {
-            $logoExtension = pathinfo($school->logo_path ?? '', PATHINFO_EXTENSION);
-            $mime = match (strtolower($logoExtension)) {
-                'svg' => 'image/svg+xml',
-                'webp' => 'image/webp',
-                'jpg', 'jpeg' => 'image/jpeg',
-                default => 'image/png',
-            };
-
-            $icons[] = [
-                'src' => $school->logo_url . '?v=' . $version,
-                'sizes' => 'any',
-                'type' => $mime,
-                'purpose' => 'any',
-            ];
-            $icons[] = [
-                'src' => $school->logo_url . '?v=' . $version,
-                'sizes' => 'any',
-                'type' => $mime,
-                'purpose' => 'maskable',
-            ];
-        }
-
-        // 2. Standard Responsive PWA Icons (Generated/Synced from school logo)
+        // 1. Standard 192x192 PNG Icon (Wajib untuk Home Screen & Chrome Android WebAPK)
         $icons[] = [
             'src' => '/icons/icon-192x192.png?v=' . $version,
             'sizes' => '192x192',
             'type' => 'image/png',
             'purpose' => 'any',
         ];
+
+        // 2. Standard 512x512 PNG Icon (Wajib untuk Splash Screen & Chrome Android)
         $icons[] = [
             'src' => '/icons/icon-512x512.png?v=' . $version,
             'sizes' => '512x512',
             'type' => 'image/png',
             'purpose' => 'any',
         ];
+
+        // 3. Standard 512x512 Maskable PNG Icon (Adaptive Icon dengan safe zone padding untuk Android)
         $icons[] = [
             'src' => '/icons/icon-maskable-512x512.png?v=' . $version,
             'sizes' => '512x512',
             'type' => 'image/png',
             'purpose' => 'maskable',
         ];
+
+        // 4. Jika logo sekolah adalah SVG murni, sertakan sebagai scalable icon
+        if ($school->logo_path) {
+            $logoExtension = strtolower(pathinfo($school->logo_path, PATHINFO_EXTENSION));
+            if ($logoExtension === 'svg') {
+                $icons[] = [
+                    'src' => '/storage/' . ltrim($school->logo_path, '/') . '?v=' . $version,
+                    'sizes' => 'any',
+                    'type' => 'image/svg+xml',
+                    'purpose' => 'any',
+                ];
+            }
+        }
 
         return [
             'id' => '/?source=pwa',
@@ -74,6 +67,7 @@ class PwaManifestService
             'orientation' => 'portrait-primary',
             'background_color' => '#FFFFFF',
             'theme_color' => '#FF6B35',
+            'prefer_related_applications' => false,
             'categories' => ['education', 'productivity'],
             'icons' => $icons,
         ];
@@ -152,7 +146,9 @@ class PwaManifestService
                 $dstY = (int) round(($size - $newH) / 2);
 
                 imagecopyresampled($img, $src, $dstX, $dstY, 0, 0, $newW, $newH, $origW, $origH);
-                imagedestroy($src);
+                if (PHP_VERSION_ID < 80000) {
+                    imagedestroy($src);
+                }
             }
         } else {
             // Default branded fallback icon
@@ -161,6 +157,8 @@ class PwaManifestService
         }
 
         imagepng($img, $targetPath, 9);
-        imagedestroy($img);
+        if (PHP_VERSION_ID < 80000) {
+            imagedestroy($img);
+        }
     }
 }

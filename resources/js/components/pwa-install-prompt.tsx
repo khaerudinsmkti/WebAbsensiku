@@ -92,11 +92,16 @@ export function PwaInstallPrompt() {
 
     const handleInstallClick = async () => {
         if (deferredPrompt) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                setIsInstalled(true);
-                localStorage.setItem('pwa_installed', 'true');
+            try {
+                await deferredPrompt.prompt();
+                const choice = await deferredPrompt.userChoice;
+                if (choice?.outcome === 'accepted') {
+                    setIsInstalled(true);
+                    localStorage.setItem('pwa_installed', 'true');
+                }
+            } catch (err) {
+                console.warn('[PWA] Prompt installation error:', err);
+                setShowInstructions(true);
             }
             setDeferredPrompt(null);
         } else {

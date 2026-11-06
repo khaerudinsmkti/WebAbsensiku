@@ -9,23 +9,12 @@
     "orientation": "portrait-primary",
     "background_color": "#FFFFFF",
     "theme_color": "#FF6B35",
+    "prefer_related_applications": false,
     "categories": [
         "education",
         "productivity"
     ],
     "icons": [
-        {
-            "src": "http://localhost:8000/storage/school/BPHos9pbv6sOfyp0v9QWhCTxfCKJHho74pd79rzX.png?v=1793932119",
-            "sizes": "any",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "http://localhost:8000/storage/school/BPHos9pbv6sOfyp0v9QWhCTxfCKJHho74pd79rzX.png?v=1793932119",
-            "sizes": "any",
-            "type": "image/png",
-            "purpose": "maskable"
-        },
         {
             "src": "/icons/icon-192x192.png?v=1793932119",
             "sizes": "192x192",

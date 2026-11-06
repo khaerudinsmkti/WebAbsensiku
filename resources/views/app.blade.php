@@ -54,7 +54,7 @@
         @endif
 
         {{-- PWA Manifest & Meta Tags (Judul Aplikasi & Logo Dinamis dari Pengaturan Sekolah) --}}
-        <link rel="manifest" href="/manifest.json?v={{ $pwaVersion }}">
+        <link rel="manifest" href="/manifest.json">
         <meta name="theme-color" content="#FF6B35">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
