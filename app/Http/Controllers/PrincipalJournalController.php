@@ -49,9 +49,10 @@ class PrincipalJournalController extends Controller
         PrincipalJournal::ensureTableExists();
 
         $search = trim((string) $request->input('search', ''));
-        $filterType = (string) $request->input('filter_type', 'monthly'); // all, monthly, date, range
+        $filterType = (string) $request->input('filter_type', 'monthly'); // all, monthly, weekly, date, range
         $month = (int) $request->input('month', Carbon::today()->month);
         $year = (int) $request->input('year', Carbon::today()->year);
+        $week = (int) $request->input('week', (int) ceil(Carbon::today()->day / 7));
         $date = (string) $request->input('date', Carbon::today()->toDateString());
         $startDate = (string) $request->input('start_date', Carbon::today()->startOfMonth()->toDateString());
         $endDate = (string) $request->input('end_date', Carbon::today()->toDateString());
@@ -74,6 +75,21 @@ class PrincipalJournalController extends Controller
             $mEnd = Carbon::createFromDate($year, $month, 1)->endOfMonth()->toDateString();
             $query->whereBetween('activity_date', [$mStart, $mEnd]);
             $periodLabel = 'Bulan ' . ($this->monthNames[$month] ?? '') . ' ' . $year;
+        } elseif ($filterType === 'weekly') {
+            $monthCarbon = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+            $daysInMonth = $monthCarbon->daysInMonth;
+            $maxWeek = (int) ceil($daysInMonth / 7);
+            $week = max(1, min($week, $maxWeek));
+
+            $startDay = (($week - 1) * 7) + 1;
+            $endDay = min($week * 7, $daysInMonth);
+
+            $wStart = Carbon::createFromDate($year, $month, $startDay)->toDateString();
+            $wEnd = Carbon::createFromDate($year, $month, $endDay)->toDateString();
+            $query->whereBetween('activity_date', [$wStart, $wEnd]);
+
+            $monthName = $this->monthNames[$month] ?? '';
+            $periodLabel = "Minggu ke-{$week} {$monthName} {$year} ({$startDay}-{$endDay} {$monthName})";
         } elseif ($filterType === 'date') {
             if ($date !== '') {
                 $query->whereDate('activity_date', $date);
@@ -96,6 +112,7 @@ class PrincipalJournalController extends Controller
                 'filter_type' => $filterType,
                 'month' => $month,
                 'year' => $year,
+                'week' => $week,
                 'date' => $date,
                 'start_date' => $startDate,
                 'end_date' => $endDate,
@@ -332,9 +349,9 @@ class PrincipalJournalController extends Controller
     }
 
     /**
-     * Export filtered Principal Journals to Excel (.xls).
+     * Export filtered Principal Journals to Excel (.xlsx) with embedded documentation images.
      */
-    public function exportExcel(Request $request): StreamedResponse
+    public function exportExcel(Request $request): StreamedResponse|\Symfony\Component\HttpFoundation\BinaryFileResponse
     {
         $this->ensurePrincipalOnly($request);
 
@@ -345,87 +362,422 @@ class PrincipalJournalController extends Controller
         $user = $request->user();
 
         $safePeriod = str_replace([' ', '/', '.'], '_', $periodLabel);
-        $fileName = "Jurnal_Kepala_Sekolah_{$safePeriod}.xls";
+        $fileName = "Jurnal_Kepala_Sekolah_{$safePeriod}.xlsx";
 
-        return response()->streamDownload(function () use ($journals, $periodLabel, $school, $user) {
-            $handle = fopen('php://output', 'w');
-            fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
+        $tempFile = tempnam(sys_get_temp_dir(), 'jurnal_ks_') . '.xlsx';
+        $this->buildExcelXlsxWithImages($tempFile, $journals, $periodLabel, $school, $user);
 
-            $output = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
-            $output .= '<head>';
-            $output .= '<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />';
-            $output .= '<style>';
-            $output .= 'table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; width: 100%; }';
-            $output .= 'th, td { border: 1px solid #94A3B8; padding: 8px 10px; vertical-align: top; }';
-            $output .= 'th { background-color: #EA580C; color: #FFFFFF; font-weight: bold; text-align: center; }';
-            $output .= '.text-center { text-align: center; }';
-            $output .= '.font-bold { font-weight: bold; }';
-            $output .= '.meta-title { font-size: 15px; font-weight: bold; color: #0F172A; text-align: center; border: none; }';
-            $output .= '.meta-sub { font-size: 11px; color: #475569; text-align: center; border: none; }';
-            $output .= '</style>';
-            $output .= '</head><body>';
+        return response()->download($tempFile, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ])->deleteFileAfterSend(true);
+    }
 
-            $output .= '<table>';
-            $output .= '<tr><td colspan="5" class="meta-title">' . htmlspecialchars(strtoupper($school->name ?? 'SEKOLAH DIGITAL')) . '</td></tr>';
-            $output .= '<tr><td colspan="5" class="meta-title">JURNAL KEGIATAN KEPALA SEKOLAH</td></tr>';
-            $output .= '<tr><td colspan="5" class="meta-sub">Periode: ' . htmlspecialchars($periodLabel) . ' | Nama Kepala Sekolah: ' . htmlspecialchars($school->principal_name ?: ($user->name ?? '-')) . '</td></tr>';
-            $output .= '<tr><td colspan="5" style="border:none;">&nbsp;</td></tr>';
-            $output .= '</table>';
+    /**
+     * Build a native OpenXML (.xlsx) file with embedded documentation photos in Column E.
+     */
+    protected function buildExcelXlsxWithImages(string $targetPath, $journals, string $periodLabel, $school, $user): void
+    {
+        $zip = new \ZipArchive();
+        $zip->open($targetPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
-            $output .= '<table>';
-            $output .= '<thead>';
-            $output .= '<tr>';
-            $output .= '<th style="width:45px;">No</th>';
-            $output .= '<th style="width:150px;">Hari / Tanggal</th>';
-            $output .= '<th style="width:240px;">Kegiatan yang Diikuti</th>';
-            $output .= '<th style="width:380px;">Isi / Uraian Kegiatan</th>';
-            $output .= '<th style="width:160px;">Dokumentasi</th>';
-            $output .= '</tr>';
-            $output .= '</thead>';
-            $output .= '<tbody>';
+        $xmlEsc = fn (?string $str) => htmlspecialchars(
+            preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', (string) $str) ?? '',
+            ENT_XML1 | ENT_QUOTES,
+            'UTF-8'
+        );
 
-            if ($journals->isEmpty()) {
-                $output .= '<tr><td colspan="5" class="text-center">Belum ada data jurnal kegiatan pada periode ini.</td></tr>';
-            } else {
-                $no = 1;
-                foreach ($journals as $journal) {
-                    $photoCount = is_array($journal->images) ? count($journal->images) : ($journal->image_path ? 1 : 0);
-                    $docText = $photoCount > 0 ? "{$photoCount} Foto Terlampir" : 'Tidak ada foto';
-                    $output .= '<tr>';
-                    $output .= '<td class="text-center font-bold">' . $no++ . '</td>';
-                    $output .= '<td>' . htmlspecialchars($journal->formatted_date) . '</td>';
-                    $output .= '<td class="font-bold">' . htmlspecialchars($journal->activity_name) . '</td>';
-                    $output .= '<td>' . nl2br(htmlspecialchars($journal->activity_content)) . '</td>';
-                    $output .= '<td class="text-center">' . htmlspecialchars($docText) . '</td>';
-                    $output .= '</tr>';
+        $cellInlineStr = function (string $cellRef, string $text, int $styleIdx) use ($xmlEsc): string {
+            return '<c r="' . $cellRef . '" s="' . $styleIdx . '" t="inlineStr"><is><t xml:space="preserve">' . $xmlEsc($text) . '</t></is></c>';
+        };
+
+        $cellNum = function (string $cellRef, int|float $num, int $styleIdx): string {
+            return '<c r="' . $cellRef . '" s="' . $styleIdx . '"><v>' . $num . '</v></c>';
+        };
+
+        $schoolTitle = strtoupper($school->name ?? 'SEKOLAH DIGITAL');
+        $principalName = $school->principal_name ?: ($user->name ?? '-');
+        $principalNip = $school->principal_nip ?: ($user->nip ?? '-');
+        $subTitle = "Periode: {$periodLabel} | Nama Kepala Sekolah: {$principalName}";
+
+        $sheetRowsXml = '';
+        $mergeCells = [
+            'A1:E1',
+            'A2:E2',
+            'A3:E3',
+        ];
+
+        // Row 1: School Name
+        $sheetRowsXml .= '<row r="1" ht="22" customHeight="1">'
+            . $cellInlineStr('A1', $schoolTitle, 1)
+            . $cellInlineStr('B1', '', 1)
+            . $cellInlineStr('C1', '', 1)
+            . $cellInlineStr('D1', '', 1)
+            . $cellInlineStr('E1', '', 1)
+            . '</row>';
+
+        // Row 2: Report Title
+        $sheetRowsXml .= '<row r="2" ht="22" customHeight="1">'
+            . $cellInlineStr('A2', 'JURNAL KEGIATAN KEPALA SEKOLAH', 1)
+            . $cellInlineStr('B2', '', 1)
+            . $cellInlineStr('C2', '', 1)
+            . $cellInlineStr('D2', '', 1)
+            . $cellInlineStr('E2', '', 1)
+            . '</row>';
+
+        // Row 3: Subtitle
+        $sheetRowsXml .= '<row r="3" ht="18" customHeight="1">'
+            . $cellInlineStr('A3', $subTitle, 2)
+            . $cellInlineStr('B3', '', 2)
+            . $cellInlineStr('C3', '', 2)
+            . $cellInlineStr('D3', '', 2)
+            . $cellInlineStr('E3', '', 2)
+            . '</row>';
+
+        // Row 4: Empty spacer
+        $sheetRowsXml .= '<row r="4" ht="12" customHeight="1"/>';
+
+        // Row 5: Table Header
+        $sheetRowsXml .= '<row r="5" ht="28" customHeight="1">'
+            . $cellInlineStr('A5', 'No', 3)
+            . $cellInlineStr('B5', 'Hari / Tanggal', 3)
+            . $cellInlineStr('C5', 'Kegiatan yang Diikuti', 3)
+            . $cellInlineStr('D5', 'Isi / Uraian Kegiatan', 3)
+            . $cellInlineStr('E5', 'Dokumentasi', 3)
+            . '</row>';
+
+        $currentRow = 6;
+        $drawings = [];
+        $picCounter = 1;
+
+        if ($journals->isEmpty()) {
+            $mergeCells[] = "A{$currentRow}:E{$currentRow}";
+            $sheetRowsXml .= '<row r="' . $currentRow . '" ht="26" customHeight="1">'
+                . $cellInlineStr("A{$currentRow}", 'Belum ada data jurnal kegiatan pada periode ini.', 7)
+                . $cellInlineStr("B{$currentRow}", '', 7)
+                . $cellInlineStr("C{$currentRow}", '', 7)
+                . $cellInlineStr("D{$currentRow}", '', 7)
+                . $cellInlineStr("E{$currentRow}", '', 7)
+                . '</row>';
+            $currentRow++;
+        } else {
+            $no = 1;
+            foreach ($journals as $journal) {
+                $paths = is_array($journal->images) && ! empty($journal->images)
+                    ? $journal->images
+                    : ($journal->image_path ? [$journal->image_path] : []);
+
+                $validImages = [];
+                foreach ($paths as $relPath) {
+                    $fullPath = storage_path('app/public/' . $relPath);
+                    if (is_file($fullPath)) {
+                        $prepared = $this->prepareImageForExcel($fullPath, 140, 100);
+                        if ($prepared !== null) {
+                            $validImages[] = $prepared;
+                        }
+                    }
                 }
+
+                // Estimate row height needed for text vs embedded photo grid (2 photos per row in Column E)
+                $contentLines = substr_count((string) $journal->activity_content, "\n") + 1;
+                $wrappedLines = (int) ceil(mb_strlen((string) $journal->activity_content) / 60);
+                $textLines = max($contentLines, $wrappedLines, 2);
+                $textHeightPt = max(32, $textLines * 15 + 12);
+
+                $photoCount = count($validImages);
+                $photoRowsCount = $photoCount > 0 ? (int) ceil($photoCount / 2) : 0;
+                // Each photo row is 100px + 8px gap = 108px (~81pt), plus 10px top/bottom padding
+                $photoHeightPx = $photoRowsCount > 0 ? ($photoRowsCount * 108 + 8) : 0;
+                $photoHeightPt = (int) ceil($photoHeightPx * 0.75);
+
+                $rowHeightPt = max($textHeightPt, $photoHeightPt, 32);
+                if ($rowHeightPt > 409) {
+                    $rowHeightPt = 409; // Excel maximum single-row height in points
+                }
+
+                $docCellText = $photoCount > 0 ? '' : 'Tidak ada foto';
+
+                $sheetRowsXml .= '<row r="' . $currentRow . '" ht="' . $rowHeightPt . '" customHeight="1">'
+                    . $cellNum("A{$currentRow}", $no++, 5)
+                    . $cellInlineStr("B{$currentRow}", (string) $journal->formatted_date, 4)
+                    . $cellInlineStr("C{$currentRow}", (string) $journal->activity_name, 6)
+                    . $cellInlineStr("D{$currentRow}", str_replace("\r\n", "\n", (string) $journal->activity_content), 4)
+                    . $cellInlineStr("E{$currentRow}", $docCellText, 7)
+                    . '</row>';
+
+                // Anchor each photo inside Column E (0-based col = 4, 0-based row = $currentRow - 1)
+                foreach ($validImages as $idx => $imgData) {
+                    $gridCol = $idx % 2;
+                    $gridRow = intdiv($idx, 2);
+
+                    // Center image inside its 140x100 slot
+                    $slotX = 8 + ($gridCol * 148) + intdiv(140 - $imgData['width'], 2);
+                    $slotY = 6 + ($gridRow * 108) + intdiv(100 - $imgData['height'], 2);
+
+                    $mediaName = "image{$picCounter}.jpg";
+                    $zip->addFromString("xl/media/{$mediaName}", $imgData['bytes']);
+
+                    $drawings[] = [
+                        'id' => $picCounter,
+                        'media' => $mediaName,
+                        'col' => 4,
+                        'row' => $currentRow - 1,
+                        'colOff' => $slotX * 9525,
+                        'rowOff' => $slotY * 9525,
+                        'cx' => $imgData['width'] * 9525,
+                        'cy' => $imgData['height'] * 9525,
+                    ];
+                    $picCounter++;
+                }
+
+                $currentRow++;
+            }
+        }
+
+        // Blank spacer before signature
+        $currentRow++;
+
+        // Signature rows in Column D:E
+        $cityDate = ($school->city ?? 'Jakarta') . ', ' . Carbon::today()->locale('id')->isoFormat('D MMMM Y');
+        $headmasterTitle = 'Kepala Sekolah ' . ($school->name ?? '');
+
+        $mergeCells[] = "D{$currentRow}:E{$currentRow}";
+        $sheetRowsXml .= '<row r="' . $currentRow . '" ht="18" customHeight="1">'
+            . $cellInlineStr("D{$currentRow}", $cityDate, 8)
+            . $cellInlineStr("E{$currentRow}", '', 8)
+            . '</row>';
+        $currentRow++;
+
+        $mergeCells[] = "D{$currentRow}:E{$currentRow}";
+        $sheetRowsXml .= '<row r="' . $currentRow . '" ht="18" customHeight="1">'
+            . $cellInlineStr("D{$currentRow}", $headmasterTitle, 8)
+            . $cellInlineStr("E{$currentRow}", '', 8)
+            . '</row>';
+        $currentRow += 4;
+
+        $mergeCells[] = "D{$currentRow}:E{$currentRow}";
+        $sheetRowsXml .= '<row r="' . $currentRow . '" ht="18" customHeight="1">'
+            . $cellInlineStr("D{$currentRow}", $principalName, 9)
+            . $cellInlineStr("E{$currentRow}", '', 9)
+            . '</row>';
+        $currentRow++;
+
+        $mergeCells[] = "D{$currentRow}:E{$currentRow}";
+        $sheetRowsXml .= '<row r="' . $currentRow . '" ht="18" customHeight="1">'
+            . $cellInlineStr("D{$currentRow}", 'NIP. ' . $principalNip, 8)
+            . $cellInlineStr("E{$currentRow}", '', 8)
+            . '</row>';
+
+        $hasDrawings = ! empty($drawings);
+
+        // 1. [Content_Types].xml
+        $contentTypesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            . '<Default Extension="xml" ContentType="application/xml"/>'
+            . '<Default Extension="jpg" ContentType="image/jpeg"/>'
+            . '<Default Extension="jpeg" ContentType="image/jpeg"/>'
+            . '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+            . '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+            . '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+            . ($hasDrawings ? '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>' : '')
+            . '</Types>';
+        $zip->addFromString('[Content_Types].xml', $contentTypesXml);
+
+        // 2. _rels/.rels
+        $rootRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+            . '</Relationships>';
+        $zip->addFromString('_rels/.rels', $rootRelsXml);
+
+        // 3. xl/workbook.xml & xl/_rels/workbook.xml.rels
+        $workbookXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            . '<sheets><sheet name="Jurnal Kepala Sekolah" sheetId="1" r:id="rId1"/></sheets>'
+            . '</workbook>';
+        $zip->addFromString('xl/workbook.xml', $workbookXml);
+
+        $workbookRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+            . '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+            . '</Relationships>';
+        $zip->addFromString('xl/_rels/workbook.xml.rels', $workbookRelsXml);
+
+        // 4. xl/styles.xml
+        $stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            . '<fonts count="5">'
+            . '<font><sz val="11"/><color rgb="FF0F172A"/><name val="Arial"/></font>'
+            . '<font><b/><sz val="14"/><color rgb="FF0F172A"/><name val="Arial"/></font>'
+            . '<font><sz val="10"/><color rgb="FF475569"/><name val="Arial"/></font>'
+            . '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>'
+            . '<font><b/><sz val="11"/><color rgb="FF0F172A"/><name val="Arial"/></font>'
+            . '</fonts>'
+            . '<fills count="3">'
+            . '<fill><patternFill patternType="none"/></fill>'
+            . '<fill><patternFill patternType="gray125"/></fill>'
+            . '<fill><patternFill patternType="solid"><fgColor rgb="FFEA580C"/><bgColor indexed="64"/></patternFill></fill>'
+            . '</fills>'
+            . '<borders count="2">'
+            . '<border><left/><right/><top/><bottom/><diagonal/></border>'
+            . '<border>'
+            . '<left style="thin"><color rgb="FF94A3B8"/></left>'
+            . '<right style="thin"><color rgb="FF94A3B8"/></right>'
+            . '<top style="thin"><color rgb="FF94A3B8"/></top>'
+            . '<bottom style="thin"><color rgb="FF94A3B8"/></bottom>'
+            . '<diagonal/>'
+            . '</border>'
+            . '</borders>'
+            . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+            . '<cellXfs count="10">'
+            . '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+            . '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+            . '<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+            . '<xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="4" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="4" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="top" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top" wrapText="1"/></xf>'
+            . '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+            . '<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+            . '</cellXfs>'
+            . '</styleSheet>';
+        $zip->addFromString('xl/styles.xml', $stylesXml);
+
+        // 5. xl/worksheets/sheet1.xml
+        $mergeXml = '<mergeCells count="' . count($mergeCells) . '">';
+        foreach ($mergeCells as $ref) {
+            $mergeXml .= '<mergeCell ref="' . $ref . '"/>';
+        }
+        $mergeXml .= '</mergeCells>';
+
+        $sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            . '<sheetViews><sheetView workbookViewId="0"/></sheetViews>'
+            . '<sheetFormatPr defaultRowHeight="18"/>'
+            . '<cols>'
+            . '<col min="1" max="1" width="7" customWidth="1"/>'
+            . '<col min="2" max="2" width="24" customWidth="1"/>'
+            . '<col min="3" max="3" width="35" customWidth="1"/>'
+            . '<col min="4" max="4" width="55" customWidth="1"/>'
+            . '<col min="5" max="5" width="44" customWidth="1"/>'
+            . '</cols>'
+            . '<sheetData>' . $sheetRowsXml . '</sheetData>'
+            . $mergeXml
+            . '<pageMargins left="0.5" right="0.5" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>'
+            . ($hasDrawings ? '<drawing r:id="rId1"/>' : '')
+            . '</worksheet>';
+        $zip->addFromString('xl/worksheets/sheet1.xml', $sheetXml);
+
+        // 6. Drawings if photos exist
+        if ($hasDrawings) {
+            $sheetRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/>'
+                . '</Relationships>';
+            $zip->addFromString('xl/worksheets/_rels/sheet1.xml.rels', $sheetRelsXml);
+
+            $drawingXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                . '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">';
+            $drawingRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+                . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">';
+
+            foreach ($drawings as $d) {
+                $rId = 'rId' . $d['id'];
+                $drawingRelsXml .= '<Relationship Id="' . $rId . '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/' . $d['media'] . '"/>';
+
+                $drawingXml .= '<xdr:oneCellAnchor>'
+                    . '<xdr:from>'
+                    . '<xdr:col>' . $d['col'] . '</xdr:col>'
+                    . '<xdr:colOff>' . $d['colOff'] . '</xdr:colOff>'
+                    . '<xdr:row>' . $d['row'] . '</xdr:row>'
+                    . '<xdr:rowOff>' . $d['rowOff'] . '</xdr:rowOff>'
+                    . '</xdr:from>'
+                    . '<xdr:ext cx="' . $d['cx'] . '" cy="' . $d['cy'] . '"/>'
+                    . '<xdr:pic>'
+                    . '<xdr:nvPicPr>'
+                    . '<xdr:cNvPr id="' . $d['id'] . '" name="Dokumentasi ' . $d['id'] . '"/>'
+                    . '<xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr>'
+                    . '</xdr:nvPicPr>'
+                    . '<xdr:blipFill>'
+                    . '<a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="' . $rId . '"/>'
+                    . '<a:stretch><a:fillRect/></a:stretch>'
+                    . '</xdr:blipFill>'
+                    . '<xdr:spPr>'
+                    . '<a:xfrm><a:off x="0" y="0"/><a:ext cx="' . $d['cx'] . '" cy="' . $d['cy'] . '"/></a:xfrm>'
+                    . '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+                    . '</xdr:spPr>'
+                    . '</xdr:pic>'
+                    . '<xdr:clientData/>'
+                    . '</xdr:oneCellAnchor>';
             }
 
-            $output .= '</tbody>';
-            $output .= '</table>';
+            $drawingXml .= '</xdr:wsDr>';
+            $drawingRelsXml .= '</Relationships>';
 
-            $output .= '<br/>';
-            $output .= '<table>';
-            $output .= '<tr>';
-            $output .= '<td colspan="3" style="border:none;"></td>';
-            $output .= '<td colspan="2" style="border:none; text-align:center;">'
-                . htmlspecialchars($school->city ?? 'Jakarta') . ', ' . Carbon::today()->locale('id')->isoFormat('D MMMM Y')
-                . '<br/>Kepala Sekolah ' . htmlspecialchars($school->name ?? '')
-                . '<br/><br/><br/><br/><b>' . htmlspecialchars($school->principal_name ?: ($user->name ?? '-')) . '</b>'
-                . '<br/>NIP. ' . htmlspecialchars($school->principal_nip ?: ($user->nip ?? '-'))
-                . '</td>';
-            $output .= '</tr>';
-            $output .= '</table>';
+            $zip->addFromString('xl/drawings/drawing1.xml', $drawingXml);
+            $zip->addFromString('xl/drawings/_rels/drawing1.xml.rels', $drawingRelsXml);
+        }
 
-            $output .= '</body></html>';
+        $zip->close();
+    }
 
-            fwrite($handle, $output);
-            fclose($handle);
-        }, $fileName, [
-            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
-            'Cache-Control' => 'max-age=0',
-        ]);
+    /**
+     * Prepare an image file as proportional JPEG bytes + target pixel dimensions for Excel embedding (no crop).
+     *
+     * @return array{bytes: string, width: int, height: int}|null
+     */
+    protected function prepareImageForExcel(string $fullPath, int $maxWidth = 140, int $maxHeight = 100): ?array
+    {
+        $raw = @file_get_contents($fullPath);
+        if ($raw === false || strlen($raw) === 0) {
+            return null;
+        }
+
+        if (function_exists('imagecreatefromstring')) {
+            $src = @imagecreatefromstring($raw);
+            if ($src !== false) {
+                $srcW = max(1, imagesx($src));
+                $srcH = max(1, imagesy($src));
+
+                $ratio = min($maxWidth / $srcW, $maxHeight / $srcH, 1.0);
+                $dstW = max(1, (int) round($srcW * $ratio));
+                $dstH = max(1, (int) round($srcH * $ratio));
+
+                $dst = imagecreatetruecolor($dstW, $dstH);
+                $white = imagecolorallocate($dst, 255, 255, 255);
+                imagefill($dst, 0, 0, $white);
+                imagecopyresampled($dst, $src, 0, 0, 0, 0, $dstW, $dstH, $srcW, $srcH);
+
+                ob_start();
+                imagejpeg($dst, null, 82);
+                $jpegBytes = ob_get_clean();
+
+                imagedestroy($src);
+                imagedestroy($dst);
+
+                if ($jpegBytes !== false && strlen($jpegBytes) > 0) {
+                    return [
+                        'bytes' => $jpegBytes,
+                        'width' => $dstW,
+                        'height' => $dstH,
+                    ];
+                }
+            }
+        }
+
+        $info = @getimagesize($fullPath);
+        $srcW = max(1, (int) ($info[0] ?? $maxWidth));
+        $srcH = max(1, (int) ($info[1] ?? $maxHeight));
+        $ratio = min($maxWidth / $srcW, $maxHeight / $srcH, 1.0);
+
+        return [
+            'bytes' => $raw,
+            'width' => max(1, (int) round($srcW * $ratio)),
+            'height' => max(1, (int) round($srcH * $ratio)),
+        ];
     }
 
     /**
