@@ -582,17 +582,11 @@ export default function PrincipalJournalsPage({
                                 { id: 'weekly', label: 'Filter Mingguan' },
                                 { id: 'date', label: 'Filter Tanggal' },
                                 { id: 'range', label: 'Rentang Tanggal' },
-                                { id: 'all', label: 'Semua Data' },
                             ].map((tab) => (
                                 <button
                                     key={tab.id}
                                     type="button"
-                                    onClick={() => {
-                                        setFilterType(tab.id);
-                                        if (tab.id === 'all') {
-                                            handleApplyFilters('all');
-                                        }
-                                    }}
+                                    onClick={() => setFilterType(tab.id)}
                                     className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
                                         filterType === tab.id
                                             ? 'bg-[#FF6B35] text-white shadow-xs'

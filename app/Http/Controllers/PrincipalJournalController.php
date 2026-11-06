@@ -49,7 +49,10 @@ class PrincipalJournalController extends Controller
         PrincipalJournal::ensureTableExists();
 
         $search = trim((string) $request->input('search', ''));
-        $filterType = (string) $request->input('filter_type', 'monthly'); // all, monthly, weekly, date, range
+        $filterType = (string) $request->input('filter_type', 'monthly'); // monthly, weekly, date, range
+        if (! in_array($filterType, ['monthly', 'weekly', 'date', 'range'], true)) {
+            $filterType = 'monthly';
+        }
         $month = (int) $request->input('month', Carbon::today()->month);
         $year = (int) $request->input('year', Carbon::today()->year);
         $week = (int) $request->input('week', (int) ceil(Carbon::today()->day / 7));
@@ -68,7 +71,7 @@ class PrincipalJournalController extends Controller
             });
         }
 
-        $periodLabel = 'Semua Periode';
+        $periodLabel = 'Bulan ' . ($this->monthNames[$month] ?? '') . ' ' . $year;
 
         if ($filterType === 'monthly') {
             $mStart = Carbon::createFromDate($year, $month, 1)->startOfMonth()->toDateString();
@@ -100,8 +103,6 @@ class PrincipalJournalController extends Controller
                 $query->whereBetween('activity_date', [$startDate, $endDate]);
                 $periodLabel = Carbon::parse($startDate)->format('d/m/Y') . ' s.d. ' . Carbon::parse($endDate)->format('d/m/Y');
             }
-        } else {
-            $filterType = 'all';
         }
 
         return [
