@@ -10,7 +10,7 @@ import { login } from '@/routes';
 
 const store = {
     form: () => ({
-        action: '/register',
+        action: '/registeruser',
         method: 'post' as const,
     }),
 };

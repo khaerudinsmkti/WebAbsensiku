@@ -28,6 +28,11 @@ Route::get('/kontak', [WelcomeController::class, 'contact'])->name('public.conta
 Route::post('/kontak/kirim', [ContactController::class, 'publicStore'])->name('contact.public.store');
 Route::redirect('/register', '/login');
 
+Route::middleware(['guest:' . config('fortify.guard', 'web')])->group(function () {
+    Route::get('/registeruser', [\Laravel\Fortify\Http\Controllers\RegisteredUserController::class, 'create'])->name('register');
+    Route::post('/registeruser', [\Laravel\Fortify\Http\Controllers\RegisteredUserController::class, 'store'])->name('register.store');
+});
+
 Route::get('/manifest.json', function () {
     $manifestData = \App\Services\PwaManifestService::getManifestData();
 
