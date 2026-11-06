@@ -74,6 +74,7 @@ interface PrincipalJournalProps {
         filter_type: string;
         month: number;
         year: number;
+        week?: number;
         date: string;
         start_date: string;
         end_date: string;
@@ -205,6 +206,7 @@ export default function PrincipalJournalsPage({
     const [filterType, setFilterType] = useState(filters.filter_type || 'monthly');
     const [month, setMonth] = useState<number>(filters.month || new Date().getMonth() + 1);
     const [year, setYear] = useState<number>(filters.year || new Date().getFullYear());
+    const [week, setWeek] = useState<number>(filters.week || Math.ceil(new Date().getDate() / 7));
     const [date, setDate] = useState(filters.date || new Date().toISOString().slice(0, 10));
     const [startDate, setStartDate] = useState(filters.start_date || new Date().toISOString().slice(0, 10));
     const [endDate, setEndDate] = useState(filters.end_date || new Date().toISOString().slice(0, 10));
@@ -248,8 +250,9 @@ export default function PrincipalJournalsPage({
         return {
             search: search || undefined,
             filter_type: activeType,
-            month: activeType === 'monthly' ? month : undefined,
-            year: activeType === 'monthly' ? year : undefined,
+            month: activeType === 'monthly' || activeType === 'weekly' ? month : undefined,
+            year: activeType === 'monthly' || activeType === 'weekly' ? year : undefined,
+            week: activeType === 'weekly' ? week : undefined,
             date: activeType === 'date' ? date : undefined,
             start_date: activeType === 'range' ? startDate : undefined,
             end_date: activeType === 'range' ? endDate : undefined,
@@ -267,12 +270,14 @@ export default function PrincipalJournalsPage({
         const now = new Date();
         const curMonth = now.getMonth() + 1;
         const curYear = now.getFullYear();
+        const curWeek = Math.ceil(now.getDate() / 7);
         const todayStr = now.toISOString().slice(0, 10);
 
         setSearch('');
         setFilterType('monthly');
         setMonth(curMonth);
         setYear(curYear);
+        setWeek(curWeek);
         setDate(todayStr);
         router.get(
             '/principal/journals',
@@ -288,6 +293,10 @@ export default function PrincipalJournalsPage({
         if (filterType === 'monthly') {
             params.set('month', String(month));
             params.set('year', String(year));
+        } else if (filterType === 'weekly') {
+            params.set('month', String(month));
+            params.set('year', String(year));
+            params.set('week', String(week));
         } else if (filterType === 'date') {
             params.set('date', date);
         } else if (filterType === 'range') {
@@ -449,6 +458,19 @@ export default function PrincipalJournalsPage({
 
     const yearOptions = Array.from({ length: 7 }, (_, idx) => new Date().getFullYear() - 3 + idx);
 
+    const daysInSelectedMonth = new Date(year, month, 0).getDate();
+    const maxWeeksInMonth = Math.ceil(daysInSelectedMonth / 7);
+    const activeMonthLabel = monthNames[month] || '';
+    const weekOptions = Array.from({ length: maxWeeksInMonth }, (_, idx) => {
+        const w = idx + 1;
+        const startDay = (w - 1) * 7 + 1;
+        const endDay = Math.min(w * 7, daysInSelectedMonth);
+        return {
+            value: w,
+            label: `Minggu ke-${w} (${startDay} - ${endDay} ${activeMonthLabel})`,
+        };
+    });
+
     return (
         <>
             <Head title="Jurnal Kepala Sekolah" />
@@ -557,6 +579,7 @@ export default function PrincipalJournalsPage({
                             </span>
                             {[
                                 { id: 'monthly', label: 'Filter Bulanan' },
+                                { id: 'weekly', label: 'Filter Mingguan' },
                                 { id: 'date', label: 'Filter Tanggal' },
                                 { id: 'range', label: 'Rentang Tanggal' },
                                 { id: 'all', label: 'Semua Data' },
@@ -589,8 +612,24 @@ export default function PrincipalJournalsPage({
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                         {/* Specific Period Inputs */}
                         <div className="flex flex-wrap items-center gap-2.5">
-                            {filterType === 'monthly' && (
+                            {(filterType === 'monthly' || filterType === 'weekly') && (
                                 <>
+                                    {filterType === 'weekly' && (
+                                        <div className="flex items-center gap-1.5">
+                                            <label className="text-xs font-bold text-gray-500">Minggu:</label>
+                                            <select
+                                                value={Math.min(week, maxWeeksInMonth)}
+                                                onChange={(e) => setWeek(Number(e.target.value))}
+                                                className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-bold text-gray-800 focus:border-[#FF6B35] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                            >
+                                                {weekOptions.map((opt) => (
+                                                    <option key={opt.value} value={opt.value}>
+                                                        {opt.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
                                     <div className="flex items-center gap-1.5">
                                         <label className="text-xs font-bold text-gray-500">Bulan:</label>
                                         <select
