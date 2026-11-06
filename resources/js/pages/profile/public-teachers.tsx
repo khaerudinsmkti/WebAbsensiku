@@ -150,7 +150,7 @@ export default function PublicTeachersIndex({ teachers, statuses = [], filters }
                                     Profil Guru {schoolName}
                                 </h1>
                                 <p className="mt-1.5 max-w-2xl text-xs text-[#6B7280] sm:text-sm dark:text-[#9CA3AF]">
-                                    Galeri foto dan biodata lengkap dewan guru, guru mata pelajaran, serta wali kelas yang berdedikasi mendidik siswa-siswi kami.
+                                    Galeri foto dan biodata lengkap dewan guru, jabatan / tugas, serta wali kelas yang berdedikasi mendidik siswa-siswi kami.
                                 </p>
                             </div>
 
@@ -310,7 +310,7 @@ export default function PublicTeachersIndex({ teachers, statuses = [], filters }
                                                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-0.5 sm:gap-2">
                                                     <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400 shrink-0 text-[10px] sm:text-[11px]">
                                                         <BookOpen className="size-3 text-[#FF6B35]" />
-                                                        Guru Pelajaran
+                                                        Jabatan
                                                     </span>
                                                     <span className="font-bold text-gray-900 sm:text-right text-[10px] sm:text-[11px] dark:text-white">
                                                         {teacher.subject || 'Guru Kelas'}
@@ -443,7 +443,7 @@ export default function PublicTeachersIndex({ teachers, statuses = [], filters }
                                         <span className="font-extrabold text-gray-900 dark:text-white">{selectedTeacher.name}</span>
                                     </div>
                                     <div className="flex items-center justify-between py-2.5">
-                                        <span className="font-semibold text-gray-500 dark:text-gray-400">Guru Pelajaran</span>
+                                        <span className="font-semibold text-gray-500 dark:text-gray-400">Jabatan</span>
                                         <span className="font-extrabold text-gray-900 dark:text-white">
                                             {selectedTeacher.subject || 'Guru Kelas'}
                                         </span>

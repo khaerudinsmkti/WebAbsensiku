@@ -321,7 +321,7 @@ export default function TeacherProfilesManagement({
                                 Kelola Profil & Biodata Guru
                             </h1>
                             <p className="text-xs text-[#6B7280] dark:text-[#9CA3AF]">
-                                Kelola foto dan biodata guru (Nama Lengkap, Guru Pelajaran, Wali Kelas, Status PNS/PPPK/KKI) untuk halaman publik.
+                                Kelola foto dan biodata guru (Nama Lengkap, Jabatan, Wali Kelas, Status PNS/PPPK/KKI) untuk halaman publik.
                             </p>
                         </div>
                     </div>
@@ -386,7 +386,7 @@ export default function TeacherProfilesManagement({
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
-                            placeholder="Cari nama guru, mata pelajaran, wali kelas, atau status..."
+                            placeholder="Cari nama guru, jabatan, wali kelas, atau status..."
                             className="w-full rounded-xl border border-gray-200 bg-gray-50/70 py-2 pl-9 pr-4 text-xs font-medium focus:border-[#FF6B35] focus:bg-white focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                         />
                     </div>
@@ -506,7 +506,7 @@ export default function TeacherProfilesManagement({
                                         <div className="flex items-center justify-between gap-2">
                                             <span className="flex items-center gap-1 text-gray-400">
                                                 <BookOpen className="size-3 text-[#FF6B35]" />
-                                                Pelajaran:
+                                                Jabatan:
                                             </span>
                                             <span className="font-bold text-gray-800 dark:text-gray-200 truncate">
                                                 {teacher.subject || 'Guru Kelas'}
@@ -698,11 +698,11 @@ export default function TeacherProfilesManagement({
                                 {form.errors.name && <p className="mt-1 text-xs text-red-500">{form.errors.name}</p>}
                             </div>
 
-                            {/* Guru Pelajaran & Wali Kelas */}
+                            {/* Jabatan & Wali Kelas */}
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
                                     <label className="block text-xs font-extrabold text-gray-700 dark:text-gray-200 mb-1">
-                                        Guru Pelajaran / Jabatan <span className="text-red-500">*</span>
+                                        Jabatan <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="text"
@@ -710,7 +710,7 @@ export default function TeacherProfilesManagement({
                                         required
                                         value={form.data.subject}
                                         onChange={(e) => form.setData('subject', e.target.value)}
-                                        placeholder="Contoh: Guru Kelas / Guru PJOK"
+                                        placeholder="Contoh: Guru Kelas / Guru PJOK / Kepala Sekolah"
                                         className="w-full rounded-xl border border-gray-200 bg-gray-50/70 px-3.5 py-2.5 text-xs font-semibold focus:border-[#FF6B35] focus:bg-white focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                                     />
                                     <datalist id="teacher-subjects-list">
