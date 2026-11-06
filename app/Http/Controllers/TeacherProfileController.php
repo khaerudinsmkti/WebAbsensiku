@@ -236,6 +236,7 @@ class TeacherProfileController extends Controller
 
     /**
      * Sync teacher profiles from Master Data Guru (users table) & Classrooms.
+     * Only adds teachers whose names do not exist yet; existing profiles are untouched.
      */
     public function syncFromMaster(): RedirectResponse
     {
@@ -248,39 +249,43 @@ class TeacherProfileController extends Controller
             ->get();
 
         $added = 0;
-        $updated = 0;
         $maxOrder = (int) TeacherProfile::max('sort_order');
 
         foreach ($users as $user) {
-            $homeroomNames = $user->homeroomClassrooms->pluck('name')->implode(', ');
-            $existing = TeacherProfile::where('user_id', $user->id)
-                ->orWhere('name', $user->name)
-                ->first();
+            $userName = trim($user->name);
 
-            if ($existing) {
-                $existing->update([
-                    'user_id' => $user->id,
-                    'homeroom_class' => $homeroomNames ?: $existing->homeroom_class,
-                ]);
-                $updated++;
-            } else {
-                $maxOrder++;
-                TeacherProfile::create([
-                    'user_id' => $user->id,
-                    'name' => $user->name,
-                    'subject' => $user->role === 'principal'
-                        ? 'Kepala Sekolah'
-                        : ($homeroomNames ? 'Guru Kelas' : 'Guru Mata Pelajaran'),
-                    'homeroom_class' => $homeroomNames ?: null,
-                    'employment_status' => 'PNS',
-                    'sort_order' => $maxOrder,
-                    'is_active' => true,
-                ]);
-                $added++;
+            // Check if profile already exists by name (case-insensitive) or by user_id
+            $exists = TeacherProfile::where('user_id', $user->id)
+                ->orWhereRaw('LOWER(TRIM(name)) = ?', [strtolower($userName)])
+                ->exists();
+
+            if ($exists) {
+                // Jangan ditimpa / diubah jika data guru sudah ada (baik input manual maupun sebelumnya)
+                continue;
             }
+
+            $homeroomNames = $user->homeroomClassrooms->pluck('name')->implode(', ');
+
+            $maxOrder++;
+            TeacherProfile::create([
+                'user_id' => $user->id,
+                'name' => $userName,
+                'subject' => $user->role === 'principal'
+                    ? 'Kepala Sekolah'
+                    : ($homeroomNames ? 'Guru Kelas' : 'Guru Mata Pelajaran'),
+                'homeroom_class' => $homeroomNames ?: null,
+                'employment_status' => 'PNS',
+                'sort_order' => $maxOrder,
+                'is_active' => true,
+            ]);
+            $added++;
         }
 
-        return back()->with('success', "Sinkronisasi selesai: {$added} profil guru baru ditambahkan dan {$updated} data diperbarui dari Master Data Guru.");
+        if ($added === 0) {
+            return back()->with('success', 'Semua data guru sudah ada di profil guru, tidak ada data yang ditimpa.');
+        }
+
+        return back()->with('success', "Sinkronisasi selesai: {$added} data guru baru berhasil ditambahkan tanpa mengubah data yang sudah ada.");
     }
 
     protected function compressAndSaveBase64Photo(string $base64Data): ?array
