@@ -22,25 +22,26 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Create or Update Admin User
-        $admin = User::first();
-        if ($admin) {
-            $admin->update([
-                'role' => 'admin',
-                'username' => $admin->username ?? 'admin',
-                'nip' => $admin->nip ?? '198001012005011001',
-            ]);
-        } else {
-            $admin = User::create([
+        // 1. Create or Update Primary Admin User (admin@vpskhaerudin.web.id)
+        $adminUsername = User::where('username', 'admin')
+            ->where('email', '!=', 'admin@vpskhaerudin.web.id')
+            ->exists() ? 'admin_vps' : 'admin';
+
+        $adminNip = User::where('nip', '198001012005011001')
+            ->where('email', '!=', 'admin@vpskhaerudin.web.id')
+            ->exists() ? null : '198001012005011001';
+
+        $admin = User::updateOrCreate(
+            ['email' => 'admin@vpskhaerudin.web.id'],
+            [
                 'name' => 'Administrator',
-                'username' => 'admin',
-                'email' => 'admin@absensiku.com',
-                'password' => Hash::make('password'),
+                'username' => $adminUsername,
+                'password' => Hash::make('Masuk,com123!'),
                 'role' => 'admin',
-                'nip' => '198001012005011001',
+                'nip' => $adminNip,
                 'email_verified_at' => now(),
-            ]);
-        }
+            ]
+        );
 
         // 2. Create Principal (Kepala Sekolah)
         $principal = User::firstOrCreate(
