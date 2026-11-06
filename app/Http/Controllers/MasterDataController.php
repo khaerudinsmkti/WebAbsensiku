@@ -85,7 +85,7 @@ class MasterDataController extends Controller
             'with_next_school' => Student::where(fn ($q) => $q->where('is_alumni', true)->orWhere('is_active', false))->whereNotNull('next_school')->where('next_school', '!=', '')->count(),
         ];
 
-        $teacherRoles = $request->user()->isPrincipal() ? ['teacher', 'principal'] : ['teacher', 'admin', 'principal'];
+        $teacherRoles = $request->user()->isPrincipal() ? ['teacher', 'principal', 'publisher'] : ['teacher', 'admin', 'principal', 'publisher'];
 
         $teachers = User::whereIn('role', $teacherRoles)
             ->with(['homeroomClassrooms', 'dutySchedules'])
