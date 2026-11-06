@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class SchoolSetting extends Model
 {
@@ -17,6 +19,13 @@ class SchoolSetting extends Model
         'vision',
         'mission',
         'profile_image_path',
+        'hero_badge',
+        'hero_title',
+        'hero_highlight',
+        'hero_description',
+        'hero_image_path',
+        'hero_pillars',
+        'core_values',
         'address',
         'city',
         'postal_code',
@@ -46,12 +55,15 @@ class SchoolSetting extends Model
         'school_days_per_week' => 'integer',
         'principal_greeting_active' => 'boolean',
         'contact_active' => 'boolean',
+        'hero_pillars' => 'array',
+        'core_values' => 'array',
     ];
 
     protected $appends = [
         'logo_url',
         'principal_photo_url',
         'profile_image_url',
+        'hero_image_url',
         'is_saturday_holiday',
     ];
 
@@ -68,6 +80,105 @@ class SchoolSetting extends Model
     public function getProfileImageUrlAttribute(): ?string
     {
         return $this->profile_image_path ? asset('storage/' . $this->profile_image_path) : null;
+    }
+
+    public function getHeroImageUrlAttribute(): ?string
+    {
+        return $this->hero_image_path ? asset('storage/' . $this->hero_image_path) : null;
+    }
+
+    public static function defaultHeroPillars(): array
+    {
+        return [
+            [
+                'title' => 'Pendidikan Karakter',
+                'description' => 'Membina akhlak mulia, kemandirian, empati, dan budi pekerti luhur sejak dini.',
+            ],
+            [
+                'title' => 'Belajar Aktif & Ceria',
+                'description' => 'Pembelajaran kontekstual yang menyenangkan dan menumbuhkan daya nalar kritis.',
+            ],
+            [
+                'title' => 'Wadah Prestasi Siswa',
+                'description' => 'Mendukung minat seni, olahraga, sains, serta kejuaraan akademik dan non-akademik.',
+            ],
+            [
+                'title' => 'Sinergi Orang Tua',
+                'description' => 'Komunikasi transparan dan kemitraan hangat antara sekolah dan keluarga.',
+            ],
+        ];
+    }
+
+    public static function defaultCoreValues(): array
+    {
+        return [
+            [
+                'title' => 'Budi Pekerti Luhur',
+                'description' => 'Membiasakan 5S (Senyum, Salam, Sapa, Sopan, Santun) serta integritas dalam bersikap.',
+            ],
+            [
+                'title' => 'Cerdas & Terampil',
+                'description' => 'Mengasah literasi, numerasi, dan keterampilan berpikir kritis menghadapi tantangan era modern.',
+            ],
+            [
+                'title' => 'Gotong Royong',
+                'description' => 'Membangun semangat empati, kerja sama kelompok, serta kepedulian terhadap sesama dan lingkungan.',
+            ],
+            [
+                'title' => 'Melek Digital',
+                'description' => 'Pemanfaatan teknologi edukasi yang ramah anak, bijak, dan aman untuk memperluas wawasan dunia.',
+            ],
+        ];
+    }
+
+    public function getHeroBadgeAttribute($value): string
+    {
+        $schoolName = $this->attributes['name'] ?? 'AbsensiKu SD';
+        return $value ?: "Selamat Datang di Portal Resmi {$schoolName}";
+    }
+
+    public function getHeroTitleAttribute($value): string
+    {
+        return $value ?: 'Mewujudkan Generasi Cerdas,';
+    }
+
+    public function getHeroHighlightAttribute($value): string
+    {
+        return $value ?: 'Kreatif, Ceria & Berakhlak Mulia';
+    }
+
+    public function getHeroDescriptionAttribute($value): string
+    {
+        $schoolName = $this->attributes['name'] ?? 'AbsensiKu SD';
+        return $value ?: "Selamat datang di pusat informasi dan warta sekolah resmi {$schoolName}. Kami berdedikasi membangun lingkungan belajar yang ramah anak, berbudaya positif, dan menginspirasi setiap siswa untuk berkembang menjadi pribadi berprestasi.";
+    }
+
+    public function getHeroPillarsAttribute($value): array
+    {
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded) && count($decoded) > 0) {
+                return $decoded;
+            }
+        } elseif (is_array($value) && count($value) > 0) {
+            return $value;
+        }
+
+        return static::defaultHeroPillars();
+    }
+
+    public function getCoreValuesAttribute($value): array
+    {
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded) && count($decoded) > 0) {
+                return $decoded;
+            }
+        } elseif (is_array($value) && count($value) > 0) {
+            return $value;
+        }
+
+        return static::defaultCoreValues();
     }
 
     public function getProfileDescriptionAttribute($value): ?string
@@ -109,10 +220,48 @@ class SchoolSetting extends Model
     }
 
     /**
+     * Ensure hero banner and core_values columns exist on school_settings table.
+     */
+    public static function ensureHeroAndCoreValueColumns(): void
+    {
+        try {
+            if (Schema::hasTable('school_settings') && ! Schema::hasColumn('school_settings', 'core_values')) {
+                Schema::table('school_settings', function (Blueprint $table) {
+                    if (! Schema::hasColumn('school_settings', 'hero_badge')) {
+                        $table->string('hero_badge')->nullable();
+                    }
+                    if (! Schema::hasColumn('school_settings', 'hero_title')) {
+                        $table->string('hero_title')->nullable();
+                    }
+                    if (! Schema::hasColumn('school_settings', 'hero_highlight')) {
+                        $table->string('hero_highlight')->nullable();
+                    }
+                    if (! Schema::hasColumn('school_settings', 'hero_description')) {
+                        $table->text('hero_description')->nullable();
+                    }
+                    if (! Schema::hasColumn('school_settings', 'hero_image_path')) {
+                        $table->string('hero_image_path')->nullable();
+                    }
+                    if (! Schema::hasColumn('school_settings', 'hero_pillars')) {
+                        $table->json('hero_pillars')->nullable();
+                    }
+                    if (! Schema::hasColumn('school_settings', 'core_values')) {
+                        $table->json('core_values')->nullable();
+                    }
+                });
+            }
+        } catch (\Throwable $e) {
+            // Ignore schema check errors if DB is read-only
+        }
+    }
+
+    /**
      * Get or create the singleton instance of school settings.
      */
     public static function getSetting(): self
     {
+        static::ensureHeroAndCoreValueColumns();
+
         return static::firstOrCreate([], [
             'name' => 'SD Digital Indonesia',
             'address' => 'Jl. Pendidikan Merdeka No. 45',

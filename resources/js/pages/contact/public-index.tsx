@@ -80,7 +80,7 @@ export default function PublicContactIndex({ contactInfo }: PublicContactProps) 
             <div className="flex min-h-screen flex-col bg-page-gradient text-[#1F2937] dark:text-neutral-100">
                 <PublicHeader />
 
-                <main className="flex-1 px-4 py-8 sm:px-6 lg:px-12">
+                <main className="flex-1 px-4 py-8 pb-24 md:pb-8 sm:px-6 lg:px-12">
                     <div className="mx-auto max-w-6xl space-y-8">
                         {/* Title Header */}
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -408,7 +408,7 @@ export default function PublicContactIndex({ contactInfo }: PublicContactProps) 
                 </main>
 
                 {/* Footer */}
-                <footer className="border-t border-[#E8E8E8] bg-white/70 py-6 mb-16 md:mb-0 text-center text-xs text-[#6B7280] backdrop-blur-md dark:border-[#2D234A] dark:bg-[#18122B]/70 dark:text-[#9CA3AF]">
+                <footer className="hidden md:block border-t border-[#E8E8E8] bg-white/70 py-6 text-center text-xs text-[#6B7280] backdrop-blur-md dark:border-[#2D234A] dark:bg-[#18122B]/70 dark:text-[#9CA3AF]">
                     <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
                         <div>
                             &copy; {new Date().getFullYear()} {schoolName}. All rights reserved.

@@ -56,6 +56,11 @@ interface SchoolProp {
     logo_url?: string | null;
 }
 
+interface HeroPillarItem {
+    title: string;
+    description: string;
+}
+
 interface WelcomeProps {
     news?: NewsItem[];
     newsCategories?: NewsCategory[];
@@ -68,7 +73,48 @@ interface WelcomeProps {
         is_active: boolean;
         photo_url?: string | null;
     };
+    heroBanner?: {
+        badge?: string | null;
+        title?: string | null;
+        highlight?: string | null;
+        description?: string | null;
+        image_url?: string | null;
+        pillars?: HeroPillarItem[] | null;
+    };
+    galleries?: Array<{
+        id: number;
+        title: string;
+        category: string;
+        description?: string | null;
+        image_url?: string | null;
+        images_urls?: string[];
+        formatted_date?: string;
+    }>;
+    totalGalleriesCount?: number;
 }
+
+const DEFAULT_HERO_PILLARS: HeroPillarItem[] = [
+    {
+        title: 'Pendidikan Karakter',
+        description:
+            'Membina akhlak mulia, kemandirian, empati, dan budi pekerti luhur sejak dini.',
+    },
+    {
+        title: 'Belajar Aktif & Ceria',
+        description:
+            'Pembelajaran kontekstual yang menyenangkan dan menumbuhkan daya nalar kritis.',
+    },
+    {
+        title: 'Wadah Prestasi Siswa',
+        description:
+            'Mendukung minat seni, olahraga, sains, serta kejuaraan akademik dan non-akademik.',
+    },
+    {
+        title: 'Sinergi Orang Tua',
+        description:
+            'Komunikasi transparan dan kemitraan hangat antara sekolah dan keluarga.',
+    },
+];
 
 interface CompressedImageResult {
     file: File;
@@ -159,7 +205,7 @@ function formatFileSize(bytes: number): string {
     return `${b.toFixed(1)} ${units[i]}`;
 }
 
-export default function Welcome({ news = [], newsCategories = [], totalNewsCount, principalGreeting }: WelcomeProps) {
+export default function Welcome({ news = [], newsCategories = [], totalNewsCount, principalGreeting, heroBanner, galleries = [], totalGalleriesCount }: WelcomeProps) {
     const { auth, school } = usePage<{ auth: any; school?: SchoolProp }>().props;
     const schoolName = school?.name || 'AbsensiKu SD';
     const logoUrl = school?.logo_url;
@@ -167,12 +213,146 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
     const isPublisherOrAdmin = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin';
     const canManageGreeting = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin' || auth?.user?.role === 'principal';
 
+    // Hero Banner Edit Modal State (Available for Publisher, Admin & Principal)
+    const [isHeroModalOpen, setIsHeroModalOpen] = useState<boolean>(false);
+    const [heroSaving, setHeroSaving] = useState<boolean>(false);
+    const heroImageRef = useRef<HTMLInputElement>(null);
+    const [editHeroBadge, setEditHeroBadge] = useState<string>(
+        heroBanner?.badge || `Selamat Datang di Portal Resmi ${schoolName}`,
+    );
+    const [editHeroTitle, setEditHeroTitle] = useState<string>(
+        heroBanner?.title || 'Mewujudkan Generasi Cerdas,',
+    );
+    const [editHeroHighlight, setEditHeroHighlight] = useState<string>(
+        heroBanner?.highlight || 'Kreatif, Ceria & Berakhlak Mulia',
+    );
+    const [editHeroDescription, setEditHeroDescription] = useState<string>(
+        heroBanner?.description ||
+            `Selamat datang di pusat informasi dan warta sekolah resmi ${schoolName}. Kami berdedikasi membangun lingkungan belajar yang ramah anak, berbudaya positif, dan menginspirasi setiap siswa untuk berkembang menjadi pribadi berprestasi.`,
+    );
+    const [editHeroImage, setEditHeroImage] = useState<File | null>(null);
+    const [editHeroImagePreview, setEditHeroImagePreview] = useState<string | null>(
+        heroBanner?.image_url || null,
+    );
+    const [removeHeroImage, setRemoveHeroImage] = useState<boolean>(false);
+    const [editHeroPillars, setEditHeroPillars] = useState<HeroPillarItem[]>(
+        heroBanner?.pillars && heroBanner.pillars.length > 0
+            ? heroBanner.pillars
+            : DEFAULT_HERO_PILLARS,
+    );
+
+    const handleHeroSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setHeroSaving(true);
+        router.post(
+            '/manage/hero-banner',
+            {
+                hero_badge: editHeroBadge,
+                hero_title: editHeroTitle,
+                hero_highlight: editHeroHighlight,
+                hero_description: editHeroDescription,
+                hero_image: editHeroImage,
+                remove_hero_image: removeHeroImage,
+                hero_pillars: JSON.stringify(editHeroPillars),
+            },
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    setIsHeroModalOpen(false);
+                },
+                onFinish: () => setHeroSaving(false),
+            },
+        );
+    };
+
+    const heroPillarsList: HeroPillarItem[] =
+        heroBanner?.pillars && heroBanner.pillars.length > 0
+            ? heroBanner.pillars
+            : DEFAULT_HERO_PILLARS;
+
+    const heroPillarStyles = [
+        {
+            icon: Star,
+            cardBorder: 'border-orange-100 hover:border-orange-300 dark:border-gray-800',
+            iconBg: 'bg-orange-100 text-[#FF6B35] dark:bg-orange-950 dark:text-[#FFA07A]',
+        },
+        {
+            icon: BookOpen,
+            cardBorder: 'border-teal-100 hover:border-teal-300 dark:border-gray-800',
+            iconBg: 'bg-teal-100 text-teal-600 dark:bg-teal-950 dark:text-teal-300',
+        },
+        {
+            icon: Award,
+            cardBorder: 'border-amber-100 hover:border-amber-300 dark:border-gray-800',
+            iconBg: 'bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-300',
+        },
+        {
+            icon: HeartHandshake,
+            cardBorder: 'border-rose-100 hover:border-rose-300 dark:border-gray-800',
+            iconBg: 'bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-300',
+        },
+    ];
+
     // State for News on Public Dashboard
     const [selectedNewsCategory, setSelectedNewsCategory] = useState<string>('all');
     const [newsSearch, setNewsSearch] = useState<string>('');
     const [readingNews, setReadingNews] = useState<NewsItem | null>(null);
     const [readingActiveImageIdx, setReadingActiveImageIdx] = useState<number>(0);
+    const [activeGallery, setActiveGallery] = useState<NonNullable<WelcomeProps['galleries']>[number] | null>(null);
+    const [activeGalleryPhotoIdx, setActiveGalleryPhotoIdx] = useState<number>(0);
+    const [galleryPage, setGalleryPage] = useState<number>(1);
+    const GALLERIES_PER_PAGE = 9;
+    const totalGalleryPages = Math.max(1, Math.ceil(galleries.length / GALLERIES_PER_PAGE));
+    const paginatedGalleries = galleries.slice(
+        (galleryPage - 1) * GALLERIES_PER_PAGE,
+        galleryPage * GALLERIES_PER_PAGE,
+    );
+    const [newsViewCounts, setNewsViewCounts] = useState<Record<number, number>>({});
     const [isGreetingExpanded, setIsGreetingExpanded] = useState<boolean>(false);
+
+    const getNewsViews = (item: NewsItem): number => {
+        return newsViewCounts[item.id] !== undefined ? newsViewCounts[item.id] : (item.views_count ?? 0);
+    };
+
+    const handleOpenNews = (item: NewsItem) => {
+        setReadingActiveImageIdx(0);
+        setReadingNews(item);
+
+        const currentViews = getNewsViews(item);
+        setNewsViewCounts((prev) => ({
+            ...prev,
+            [item.id]: currentViews + 1,
+        }));
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const xsrfCookie = document.cookie
+            .split('; ')
+            .find((row) => row.startsWith('XSRF-TOKEN='))
+            ?.split('=')[1];
+
+        fetch(`/berita/${item.id}/view`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                ...(xsrfCookie ? { 'X-XSRF-TOKEN': decodeURIComponent(xsrfCookie) } : {}),
+            },
+        })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+                if (data && typeof data.views_count === 'number') {
+                    setNewsViewCounts((prev) => ({
+                        ...prev,
+                        [item.id]: data.views_count,
+                    }));
+                }
+            })
+            .catch(() => {
+                // Ignore network error, optimistic count remains
+            });
+    };
 
     // Quick Add News Modal (Available for Publisher & Admin)
     const [isCreateNewsModalOpen, setIsCreateNewsModalOpen] = useState<boolean>(false);
@@ -341,28 +521,52 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                 <PublicHeader onOpenCreateNews={() => setIsCreateNewsModalOpen(true)} />
 
                 {/* Hero Section */}
-                <main className="flex-1">
+                <main className="flex-1 pb-20 md:pb-0">
                     <section className="relative overflow-hidden px-6 pt-12 pb-16 lg:px-12 lg:pt-16 lg:pb-24">
                         {/* Background blobs */}
                         <div className="pointer-events-none absolute -top-20 -left-20 size-[450px] rounded-full bg-[#FF6B35]/15 blur-3xl" />
                         <div className="pointer-events-none absolute top-1/2 -right-20 size-[450px] rounded-full bg-[#4ECDC4]/20 blur-3xl" />
 
                         <div className="relative z-10 mx-auto max-w-5xl text-center">
-                            <div className="inline-flex items-center gap-2 rounded-full border border-[#FF6B35]/30 bg-[#FFF0EB] px-4 py-1.5 text-xs font-bold text-[#FF6B35] shadow-xs dark:border-[#FF6B35]/30 dark:bg-[#331C1A] dark:text-[#FF8C5A]">
-                                <Sparkles className="size-4" />
-                                Selamat Datang di Portal Resmi {schoolName}
+                            <div className="flex flex-wrap items-center justify-center gap-2">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-[#FF6B35]/30 bg-[#FFF0EB] px-4 py-1.5 text-xs font-bold text-[#FF6B35] shadow-xs dark:border-[#FF6B35]/30 dark:bg-[#331C1A] dark:text-[#FF8C5A]">
+                                    <Sparkles className="size-4" />
+                                    {heroBanner?.badge || `Selamat Datang di Portal Resmi ${schoolName}`}
+                                </div>
+
+                                {canManageGreeting && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsHeroModalOpen(true)}
+                                        className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-[#FF6B35] bg-white/90 px-3.5 py-1.5 text-xs font-extrabold text-[#FF6B35] shadow-xs hover:bg-orange-50 transition-all dark:bg-gray-800 dark:hover:bg-gray-700"
+                                    >
+                                        <Sparkles className="size-3.5" />
+                                        Kelola Hero Banner
+                                    </button>
+                                )}
                             </div>
 
                             <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-[#111827] sm:text-6xl dark:text-white leading-[1.18]">
-                                Mewujudkan Generasi Cerdas,{' '}
+                                {heroBanner?.title || 'Mewujudkan Generasi Cerdas,'}{' '}
                                 <span className="bg-gradient-to-r from-[#FF6B35] via-[#F59E0B] to-[#10B981] bg-clip-text text-transparent">
-                                    Kreatif, Ceria & Berakhlak Mulia
+                                    {heroBanner?.highlight || 'Kreatif, Ceria & Berakhlak Mulia'}
                                 </span>
                             </h1>
 
                             <p className="mx-auto mt-6 max-w-2xl text-base text-[#6B7280] sm:text-lg dark:text-[#9CA3AF] leading-relaxed">
-                                Selamat datang di pusat informasi dan warta sekolah resmi {schoolName}. Kami berdedikasi membangun lingkungan belajar yang ramah anak, berbudaya positif, dan menginspirasi setiap siswa untuk berkembang menjadi pribadi berprestasi.
+                                {heroBanner?.description ||
+                                    `Selamat datang di pusat informasi dan warta sekolah resmi ${schoolName}. Kami berdedikasi membangun lingkungan belajar yang ramah anak, berbudaya positif, dan menginspirasi setiap siswa untuk berkembang menjadi pribadi berprestasi.`}
                             </p>
+
+                            {heroBanner?.image_url && (
+                                <div className="mx-auto mt-8 max-w-4xl overflow-hidden rounded-3xl border-2 border-orange-100/80 shadow-xl dark:border-gray-800">
+                                    <img
+                                        src={heroBanner.image_url}
+                                        alt={schoolName}
+                                        className="max-h-[380px] w-full object-cover"
+                                    />
+                                </div>
+                            )}
 
                             <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
                                 <Button asChild size="lg" variant="primary" className="rounded-2xl px-6 py-3 font-extrabold shadow-lg shadow-[#FF6B35]/25">
@@ -397,53 +601,28 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
 
                             {/* 4 Pilar Keunggulan Sekolah Ceria & Modern */}
                             <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-left">
-                                <div className="group rounded-2xl border border-orange-100 bg-white/85 p-5 shadow-xs backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-orange-300 hover:shadow-md dark:border-gray-800 dark:bg-[#18122B]/80">
-                                    <div className="flex size-11 items-center justify-center rounded-xl bg-orange-100 text-[#FF6B35] shadow-xs group-hover:scale-110 transition-transform dark:bg-orange-950 dark:text-[#FFA07A]">
-                                        <Star className="size-5.5" />
-                                    </div>
-                                    <h3 className="mt-3.5 text-sm font-black text-gray-900 dark:text-white">
-                                        Pendidikan Karakter
-                                    </h3>
-                                    <p className="mt-1 text-xs text-gray-500 leading-relaxed dark:text-gray-400">
-                                        Membina akhlak mulia, kemandirian, empati, dan budi pekerti luhur sejak dini.
-                                    </p>
-                                </div>
-
-                                <div className="group rounded-2xl border border-teal-100 bg-white/85 p-5 shadow-xs backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-teal-300 hover:shadow-md dark:border-gray-800 dark:bg-[#18122B]/80">
-                                    <div className="flex size-11 items-center justify-center rounded-xl bg-teal-100 text-teal-600 shadow-xs group-hover:scale-110 transition-transform dark:bg-teal-950 dark:text-teal-300">
-                                        <BookOpen className="size-5.5" />
-                                    </div>
-                                    <h3 className="mt-3.5 text-sm font-black text-gray-900 dark:text-white">
-                                        Belajar Aktif & Ceria
-                                    </h3>
-                                    <p className="mt-1 text-xs text-gray-500 leading-relaxed dark:text-gray-400">
-                                        Pembelajaran kontekstual yang menyenangkan dan menumbuhkan daya nalar kritis.
-                                    </p>
-                                </div>
-
-                                <div className="group rounded-2xl border border-amber-100 bg-white/85 p-5 shadow-xs backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-md dark:border-gray-800 dark:bg-[#18122B]/80">
-                                    <div className="flex size-11 items-center justify-center rounded-xl bg-amber-100 text-amber-600 shadow-xs group-hover:scale-110 transition-transform dark:bg-amber-950 dark:text-amber-300">
-                                        <Award className="size-5.5" />
-                                    </div>
-                                    <h3 className="mt-3.5 text-sm font-black text-gray-900 dark:text-white">
-                                        Wadah Prestasi Siswa
-                                    </h3>
-                                    <p className="mt-1 text-xs text-gray-500 leading-relaxed dark:text-gray-400">
-                                        Mendukung minat seni, olahraga, sains, serta kejuaraan akademik dan non-akademik.
-                                    </p>
-                                </div>
-
-                                <div className="group rounded-2xl border border-rose-100 bg-white/85 p-5 shadow-xs backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-rose-300 hover:shadow-md dark:border-gray-800 dark:bg-[#18122B]/80">
-                                    <div className="flex size-11 items-center justify-center rounded-xl bg-rose-100 text-rose-600 shadow-xs group-hover:scale-110 transition-transform dark:bg-rose-950 dark:text-rose-300">
-                                        <HeartHandshake className="size-5.5" />
-                                    </div>
-                                    <h3 className="mt-3.5 text-sm font-black text-gray-900 dark:text-white">
-                                        Sinergi Orang Tua
-                                    </h3>
-                                    <p className="mt-1 text-xs text-gray-500 leading-relaxed dark:text-gray-400">
-                                        Komunikasi transparan dan kemitraan hangat antara sekolah dan keluarga.
-                                    </p>
-                                </div>
+                                {heroPillarsList.map((pillar, idx) => {
+                                    const style = heroPillarStyles[idx % heroPillarStyles.length];
+                                    const PillarIcon = style.icon;
+                                    return (
+                                        <div
+                                            key={idx}
+                                            className={`group rounded-2xl border bg-white/85 p-5 shadow-xs backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md dark:bg-[#18122B]/80 ${style.cardBorder}`}
+                                        >
+                                            <div
+                                                className={`flex size-11 items-center justify-center rounded-xl shadow-xs group-hover:scale-110 transition-transform ${style.iconBg}`}
+                                            >
+                                                <PillarIcon className="size-5.5" />
+                                            </div>
+                                            <h3 className="mt-3.5 text-sm font-black text-gray-900 dark:text-white">
+                                                {pillar.title}
+                                            </h3>
+                                            <p className="mt-1 text-xs text-gray-500 leading-relaxed dark:text-gray-400">
+                                                {pillar.description}
+                                            </p>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -779,13 +958,22 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
 
                                             {/* Card Body */}
                                             <div className="flex flex-1 flex-col p-5">
-                                                <div className="flex items-center gap-2 text-[11px] text-gray-400">
-                                                    <span>{item.formatted_date}</span>
-                                                    <span>•</span>
-                                                    <span>Oleh: {item.author?.name || 'Publisher'}</span>
+                                                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-400">
+                                                    <div className="flex items-center gap-2">
+                                                        <span>{item.formatted_date}</span>
+                                                        <span>•</span>
+                                                        <span>Oleh: {item.author?.name || 'Publisher'}</span>
+                                                    </div>
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300" title="Jumlah dilihat">
+                                                        <Eye className="size-3 text-[#FF6B35]" />
+                                                        <span>{getNewsViews(item)} dilihat</span>
+                                                    </span>
                                                 </div>
 
-                                                <h3 className="mt-2 text-base font-extrabold text-[#111827] line-clamp-2 leading-snug group-hover:text-[#FF6B35] transition-colors dark:text-white">
+                                                <h3
+                                                    onClick={() => handleOpenNews(item)}
+                                                    className="mt-2 cursor-pointer text-base font-extrabold text-[#111827] line-clamp-2 leading-snug group-hover:text-[#FF6B35] transition-colors dark:text-white"
+                                                >
                                                     {item.title}
                                                 </h3>
 
@@ -797,7 +985,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                                 <div className="mt-5 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-800">
                                                     <button
                                                         type="button"
-                                                        onClick={() => setReadingNews(item)}
+                                                        onClick={() => handleOpenNews(item)}
                                                         className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FF6B35] hover:text-[#e05622] transition-colors"
                                                     >
                                                         <span>Baca Selengkapnya</span>
@@ -845,6 +1033,151 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                     </Link>
                                 </Button>
                             </div>
+                        </div>
+
+                        {/* SECTION: Galeri Foto Kegiatan Sekolah */}
+                        <div className="relative z-10 mx-auto mt-16 max-w-6xl">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-gray-200/80 pb-5 dark:border-gray-800">
+                                <div>
+                                    <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-bold text-[#FF6B35] dark:border-orange-900 dark:bg-orange-950/60 dark:text-[#FFA07A]">
+                                        <Images className="size-3.5" />
+                                        Dokumentasi & Momen Sekolah
+                                    </div>
+                                    <h2 className="mt-2.5 text-2xl font-black text-[#111827] sm:text-3xl dark:text-white">
+                                        Galeri Foto Kegiatan
+                                    </h2>
+                                    <p className="mt-1 text-xs text-[#6B7280] dark:text-[#9CA3AF]">
+                                        Kumpulan dokumentasi foto kegiatan belajar, ekstrakurikuler, dan momen berkesan warga sekolah.
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Button asChild variant="secondary" size="sm" className="rounded-xl text-xs font-bold">
+                                        <Link href="/galeri">
+                                            <span>Lihat Semua Galeri ({totalGalleriesCount ?? galleries.length})</span>
+                                            <ArrowRight className="ml-1.5 size-3.5" />
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {galleries.length === 0 ? (
+                                <div className="mt-6 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-gray-200 bg-white/60 p-10 text-center backdrop-blur-md dark:border-gray-800 dark:bg-[#18122B]/60">
+                                    <div className="flex size-12 items-center justify-center rounded-2xl bg-orange-50 text-[#FF6B35] dark:bg-orange-950/40">
+                                        <Images className="size-6" />
+                                    </div>
+                                    <h3 className="mt-3 text-sm font-bold text-gray-900 dark:text-white">
+                                        Belum Ada Foto Kegiatan
+                                    </h3>
+                                    <p className="mt-1 text-xs text-gray-500 max-w-sm dark:text-gray-400">
+                                        Dokumentasi foto kegiatan sekolah yang diunggah akan tampil di bagian ini.
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                                        {paginatedGalleries.map((gItem) => {
+                                            const photoCount = gItem.images_urls?.length || (gItem.image_url ? 1 : 0);
+                                            return (
+                                                <div
+                                                    key={gItem.id}
+                                                    onClick={() => {
+                                                        setActiveGalleryPhotoIdx(0);
+                                                        setActiveGallery(gItem);
+                                                    }}
+                                                    className="group cursor-pointer flex flex-col overflow-hidden rounded-[22px] border-2 border-[#E8E8E8] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF6B35]/40 hover:shadow-[0_12px_24px_rgba(255,107,53,0.08)] dark:border-[#2D234A] dark:bg-[#18122B]"
+                                                >
+                                                    <div className="relative h-52 w-full overflow-hidden bg-gray-100 dark:bg-gray-900">
+                                                        {gItem.image_url ? (
+                                                            <img
+                                                                src={gItem.image_url}
+                                                                alt={gItem.title}
+                                                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                            />
+                                                        ) : (
+                                                            <div className="flex h-full w-full items-center justify-center text-gray-400">
+                                                                <ImageIcon className="size-10" />
+                                                            </div>
+                                                        )}
+                                                        <div className="absolute top-3 left-3">
+                                                            <span className="rounded-full bg-white/95 px-3 py-1 text-[11px] font-extrabold text-[#FF6B35] shadow-sm backdrop-blur-md dark:bg-gray-900/90 dark:text-[#FFA07A]">
+                                                                {gItem.category}
+                                                            </span>
+                                                        </div>
+                                                        <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-black/75 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm backdrop-blur-md">
+                                                            <Images className="size-3 text-[#FF6B35]" />
+                                                            <span>{photoCount} Foto</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-1 flex-col p-4">
+                                                        <span className="text-[11px] text-gray-400">{gItem.formatted_date}</span>
+                                                        <h3 className="mt-1 line-clamp-1 text-sm font-extrabold text-gray-900 group-hover:text-[#FF6B35] transition-colors dark:text-white">
+                                                            {gItem.title}
+                                                        </h3>
+                                                        {gItem.description && (
+                                                            <p className="mt-1 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
+                                                                {gItem.description}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Pagination Galeri di Beranda (9 per halaman) */}
+                                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-xs dark:border-gray-800 dark:bg-[#18122B]">
+                                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                            Menampilkan {(galleryPage - 1) * GALLERIES_PER_PAGE + 1} -{' '}
+                                            {Math.min(galleryPage * GALLERIES_PER_PAGE, galleries.length)} dari total {galleries.length} album kegiatan (9 per halaman)
+                                        </span>
+
+                                        <div className="flex items-center gap-1.5">
+                                            <button
+                                                type="button"
+                                                disabled={galleryPage <= 1}
+                                                onClick={() => setGalleryPage((p) => Math.max(1, p - 1))}
+                                                className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                                                    galleryPage > 1
+                                                        ? 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200'
+                                                        : 'cursor-not-allowed border border-gray-100 bg-gray-50 text-gray-400 opacity-60 dark:border-gray-800 dark:bg-gray-900'
+                                                }`}
+                                            >
+                                                &laquo; Sebelumnya
+                                            </button>
+
+                                            {Array.from({ length: totalGalleryPages }, (_, idx) => idx + 1).map((pageNum) => (
+                                                <button
+                                                    key={pageNum}
+                                                    type="button"
+                                                    onClick={() => setGalleryPage(pageNum)}
+                                                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                                                        galleryPage === pageNum
+                                                            ? 'bg-[#FF6B35] text-white shadow-xs'
+                                                            : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200'
+                                                    }`}
+                                                >
+                                                    {pageNum}
+                                                </button>
+                                            ))}
+
+                                            <button
+                                                type="button"
+                                                disabled={galleryPage >= totalGalleryPages}
+                                                onClick={() => setGalleryPage((p) => Math.min(totalGalleryPages, p + 1))}
+                                                className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                                                    galleryPage < totalGalleryPages
+                                                        ? 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200'
+                                                        : 'cursor-not-allowed border border-gray-100 bg-gray-50 text-gray-400 opacity-60 dark:border-gray-800 dark:bg-gray-900'
+                                                }`}
+                                            >
+                                                Berikutnya &raquo;
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         {/* SECTION: Pintasan Halaman Kalender & Kontak Kami */}
@@ -900,7 +1233,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                 </main>
 
                 {/* Footer */}
-                <footer className="border-t border-[#E8E8E8] bg-white/70 py-6 mb-16 md:mb-0 text-center text-xs text-[#6B7280] backdrop-blur-md dark:border-[#2D234A] dark:bg-[#18122B]/70 dark:text-[#9CA3AF]">
+                <footer className="hidden md:block border-t border-[#E8E8E8] bg-white/70 py-6 text-center text-xs text-[#6B7280] backdrop-blur-md dark:border-[#2D234A] dark:bg-[#18122B]/70 dark:text-[#9CA3AF]">
                     <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
                         <div>
                             &copy; {new Date().getFullYear()} {schoolName}. All rights reserved.
@@ -909,6 +1242,111 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                 </footer>
 
                 <PwaInstallPrompt />
+
+                {/* MODAL: Lightbox Galeri Foto Kegiatan */}
+                {activeGallery && (() => {
+                    const allGalleryPhotos =
+                        activeGallery.images_urls && activeGallery.images_urls.length > 0
+                            ? activeGallery.images_urls
+                            : activeGallery.image_url
+                            ? [activeGallery.image_url]
+                            : [];
+                    const currentGalleryPhoto = allGalleryPhotos[activeGalleryPhotoIdx] || allGalleryPhotos[0];
+
+                    return (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+                            <div className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-[28px] bg-white shadow-2xl dark:bg-[#18122B]">
+                                <div className="flex items-center justify-between border-b border-gray-100 p-5 dark:border-gray-800">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-[#FF6B35] dark:bg-orange-950 dark:text-[#FFA07A]">
+                                            {activeGallery.category}
+                                        </span>
+                                        <span className="text-xs text-gray-400">{activeGallery.formatted_date}</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setActiveGallery(null);
+                                            setActiveGalleryPhotoIdx(0);
+                                        }}
+                                        className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    >
+                                        <X className="size-5" />
+                                    </button>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                                    {currentGalleryPhoto && (
+                                        <div className="relative overflow-hidden rounded-2xl bg-black/90">
+                                            <img
+                                                src={currentGalleryPhoto}
+                                                alt={activeGallery.title}
+                                                className="mx-auto max-h-[58vh] w-full object-contain"
+                                            />
+                                            {allGalleryPhotos.length > 1 && (
+                                                <>
+                                                    <span className="absolute bottom-3 right-3 rounded-lg bg-black/75 px-3 py-1 text-xs font-black text-white">
+                                                        {activeGalleryPhotoIdx + 1} / {allGalleryPhotos.length} Foto
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setActiveGalleryPhotoIdx((prev) =>
+                                                                prev > 0 ? prev - 1 : allGalleryPhotos.length - 1,
+                                                            )
+                                                        }
+                                                        className="absolute left-3 top-1/2 -translate-y-1/2 flex size-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                                                    >
+                                                        <ChevronLeft className="size-5" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setActiveGalleryPhotoIdx((prev) =>
+                                                                prev < allGalleryPhotos.length - 1 ? prev + 1 : 0,
+                                                            )
+                                                        }
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 flex size-9 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                                                    >
+                                                        <ChevronRight className="size-5" />
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {allGalleryPhotos.length > 1 && (
+                                        <div className="flex items-center gap-2 overflow-x-auto py-1">
+                                            {allGalleryPhotos.map((imgUrl, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => setActiveGalleryPhotoIdx(idx)}
+                                                    className={`relative size-16 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
+                                                        activeGalleryPhotoIdx === idx
+                                                            ? 'border-[#FF6B35] ring-2 ring-orange-200'
+                                                            : 'border-transparent opacity-60 hover:opacity-100'
+                                                    }`}
+                                                >
+                                                    <img src={imgUrl} alt={`Foto ${idx + 1}`} className="size-full object-cover" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <h2 className="text-xl font-black text-gray-900 dark:text-white">{activeGallery.title}</h2>
+                                        {activeGallery.description && (
+                                            <p className="mt-1.5 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                                                {activeGallery.description}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
 
                 {/* MODAL: Baca Berita Lengkap & Unduh PDF */}
                 {readingNews && (() => {
@@ -933,7 +1371,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                             <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-[28px] bg-white shadow-2xl dark:bg-[#18122B] overflow-hidden">
                                 {/* Modal Header */}
                                 <div className="flex items-center justify-between border-b border-gray-100 p-5 dark:border-gray-800">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-wrap items-center gap-2">
                                         {readingNews.category && (
                                             <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-[#FF6B35] dark:bg-orange-950 dark:text-[#FFA07A]">
                                                 {readingNews.category.name}
@@ -941,6 +1379,10 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                         )}
                                         <span className="text-xs text-gray-400">
                                             {readingNews.formatted_date}
+                                        </span>
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                                            <Eye className="size-3.5 text-[#FF6B35]" />
+                                            <span>{getNewsViews(readingNews)} kali dilihat</span>
                                         </span>
                                     </div>
                                     <button
@@ -1369,6 +1811,235 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                             ? 'Menyimpan...'
                                             : 'Terbitkan Berita'}
                                     </Button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal Kelola Hero Banner (Available for Publisher, Admin & Principal) */}
+                {isHeroModalOpen && canManageGreeting && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200"
+                        onClick={() => setIsHeroModalOpen(false)}
+                    >
+                        <div
+                            className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-[#18122B] dark:border dark:border-gray-800"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-4 dark:border-gray-800">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="flex size-9 items-center justify-center rounded-xl bg-orange-100 text-[#FF6B35] dark:bg-orange-950 dark:text-[#FFA07A]">
+                                        <Sparkles className="size-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-black text-gray-900 dark:text-white">
+                                            Kelola Hero Banner Beranda Publik
+                                        </h3>
+                                        <p className="text-xs text-gray-500">
+                                            Sesuaikan tampilan judul, deskripsi, foto banner, dan 4 pilar keunggulan di beranda.
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsHeroModalOpen(false)}
+                                    className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800"
+                                >
+                                    <X className="size-5" />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleHeroSubmit} className="mt-4 space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold uppercase text-gray-600 dark:text-gray-300 mb-1">
+                                        Teks Lencana (Badge Atas)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editHeroBadge}
+                                        onChange={(e) => setEditHeroBadge(e.target.value)}
+                                        placeholder={`Selamat Datang di Portal Resmi ${schoolName}`}
+                                        className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs font-semibold focus:border-[#FF6B35] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-gray-600 dark:text-gray-300 mb-1">
+                                            Judul Utama (Baris 1) <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={editHeroTitle}
+                                            onChange={(e) => setEditHeroTitle(e.target.value)}
+                                            placeholder="Mewujudkan Generasi Cerdas,"
+                                            className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs font-semibold focus:border-[#FF6B35] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold uppercase text-gray-600 dark:text-gray-300 mb-1">
+                                            Teks Sorotan (Warna Gradasi) <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={editHeroHighlight}
+                                            onChange={(e) => setEditHeroHighlight(e.target.value)}
+                                            placeholder="Kreatif, Ceria & Berakhlak Mulia"
+                                            className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs font-semibold focus:border-[#FF6B35] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold uppercase text-gray-600 dark:text-gray-300 mb-1">
+                                        Deskripsi / Sub-judul Hero Banner <span className="text-red-500">*</span>
+                                    </label>
+                                    <textarea
+                                        rows={3}
+                                        required
+                                        value={editHeroDescription}
+                                        onChange={(e) => setEditHeroDescription(e.target.value)}
+                                        className="w-full rounded-xl border border-gray-200 p-3 text-xs leading-relaxed focus:border-[#FF6B35] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                    />
+                                </div>
+
+                                {/* Optional Hero Banner Image */}
+                                <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-800/40">
+                                    <label className="block text-xs font-bold uppercase text-gray-600 dark:text-gray-300 mb-2">
+                                        Gambar / Foto Banner (Opsional)
+                                    </label>
+                                    {editHeroImagePreview ? (
+                                        <div className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700">
+                                            <img
+                                                src={editHeroImagePreview}
+                                                alt="Preview Hero"
+                                                className="h-36 w-full object-cover"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setEditHeroImage(null);
+                                                    setEditHeroImagePreview(null);
+                                                    setRemoveHeroImage(true);
+                                                    if (heroImageRef.current) {
+                                                        heroImageRef.current.value = '';
+                                                    }
+                                                }}
+                                                className="absolute right-2.5 top-2.5 flex size-7 items-center justify-center rounded-full bg-red-600 text-white shadow-sm hover:bg-red-700"
+                                            >
+                                                <X className="size-4" />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <input
+                                                type="file"
+                                                ref={heroImageRef}
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    const f = e.target.files?.[0];
+                                                    if (!f) return;
+                                                    setEditHeroImage(f);
+                                                    setRemoveHeroImage(false);
+                                                    const reader = new FileReader();
+                                                    reader.onload = (ev) =>
+                                                        setEditHeroImagePreview(ev.target?.result as string);
+                                                    reader.readAsDataURL(f);
+                                                }}
+                                                className="hidden"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => heroImageRef.current?.click()}
+                                                className="rounded-xl text-xs font-bold"
+                                            >
+                                                <UploadCloud className="mr-1.5 size-4 text-[#FF6B35]" />
+                                                Pilih Gambar Banner (Opsional)
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* 4 Pilar Keunggulan */}
+                                <div>
+                                    <label className="block text-xs font-bold uppercase text-gray-600 dark:text-gray-300 mb-2">
+                                        4 Kartu Pilar Keunggulan di Bawah Hero Banner
+                                    </label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {editHeroPillars.map((pillar, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="rounded-2xl border border-gray-200 bg-gray-50 p-3 space-y-2 dark:border-gray-700 dark:bg-gray-800/60"
+                                            >
+                                                <div className="text-[11px] font-extrabold text-[#FF6B35]">
+                                                    Pilar #{idx + 1}
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={pillar.title}
+                                                    onChange={(e) =>
+                                                        setEditHeroPillars((prev) =>
+                                                            prev.map((item, i) =>
+                                                                i === idx ? { ...item, title: e.target.value } : item,
+                                                            ),
+                                                        )
+                                                    }
+                                                    placeholder="Judul Pilar"
+                                                    className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-bold focus:border-[#FF6B35] focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                                />
+                                                <textarea
+                                                    rows={2}
+                                                    required
+                                                    value={pillar.description}
+                                                    onChange={(e) =>
+                                                        setEditHeroPillars((prev) =>
+                                                            prev.map((item, i) =>
+                                                                i === idx
+                                                                    ? { ...item, description: e.target.value }
+                                                                    : item,
+                                                            ),
+                                                        )
+                                                    }
+                                                    placeholder="Deskripsi singkat pilar..."
+                                                    className="w-full rounded-lg border border-gray-200 bg-white p-2 text-xs leading-snug focus:border-[#FF6B35] focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
+                                    <Link
+                                        href="/manage/school-profile#hero-banner"
+                                        className="text-xs font-bold text-[#FF6B35] hover:underline"
+                                    >
+                                        Buka di Menu Profil Sekolah &rarr;
+                                    </Link>
+                                    <div className="flex items-center gap-2.5">
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={() => setIsHeroModalOpen(false)}
+                                            className="rounded-xl text-xs font-bold"
+                                        >
+                                            Batal
+                                        </Button>
+                                        <Button
+                                            type="submit"
+                                            variant="primary"
+                                            disabled={heroSaving}
+                                            className="rounded-xl px-5 text-xs font-bold"
+                                        >
+                                            {heroSaving ? 'Menyimpan...' : 'Simpan Hero Banner'}
+                                        </Button>
+                                    </div>
                                 </div>
                             </form>
                         </div>

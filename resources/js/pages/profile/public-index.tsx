@@ -22,6 +22,11 @@ import { Button } from '@/components/ui/button';
 import { PublicHeader } from '@/components/public-header';
 import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
 
+interface CoreValueItem {
+    title: string;
+    description: string;
+}
+
 interface ProfileData {
     name?: string;
     school_motto?: string | null;
@@ -29,6 +34,7 @@ interface ProfileData {
     profile_description?: string | null;
     vision?: string | null;
     mission?: string | null;
+    core_values?: CoreValueItem[] | null;
     profile_image_url?: string | null;
     principal_name?: string | null;
     principal_nip?: string | null;
@@ -39,6 +45,29 @@ interface ProfileData {
     email?: string | null;
     whatsapp?: string | null;
 }
+
+const DEFAULT_CORE_VALUES: CoreValueItem[] = [
+    {
+        title: 'Budi Pekerti Luhur',
+        description:
+            'Membiasakan 5S (Senyum, Salam, Sapa, Sopan, Santun) serta integritas dalam bersikap.',
+    },
+    {
+        title: 'Cerdas & Terampil',
+        description:
+            'Mengasah literasi, numerasi, dan keterampilan berpikir kritis menghadapi tantangan era modern.',
+    },
+    {
+        title: 'Gotong Royong',
+        description:
+            'Membangun semangat empati, kerja sama kelompok, serta kepedulian terhadap sesama dan lingkungan.',
+    },
+    {
+        title: 'Melek Digital',
+        description:
+            'Pemanfaatan teknologi edukasi yang ramah anak, bijak, dan aman untuk memperluas wawasan dunia.',
+    },
+];
 
 interface PublicProfileProps {
     profile: ProfileData;
@@ -57,6 +86,34 @@ export default function PublicProfileIndex({ profile }: PublicProfileProps) {
               .filter((line) => line.length > 0)
         : [];
 
+    const coreValues: CoreValueItem[] =
+        profile.core_values && profile.core_values.length > 0
+            ? profile.core_values
+            : DEFAULT_CORE_VALUES;
+
+    const coreValueStyles = [
+        {
+            icon: HeartHandshake,
+            cardClass: 'border-orange-100 bg-orange-50/40 dark:border-gray-800 dark:bg-gray-800/40',
+            iconClass: 'bg-orange-100 text-[#FF6B35] dark:bg-orange-950 dark:text-orange-300',
+        },
+        {
+            icon: GraduationCap,
+            cardClass: 'border-blue-100 bg-blue-50/40 dark:border-gray-800 dark:bg-gray-800/40',
+            iconClass: 'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-300',
+        },
+        {
+            icon: Users,
+            cardClass: 'border-emerald-100 bg-emerald-50/40 dark:border-gray-800 dark:bg-gray-800/40',
+            iconClass: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300',
+        },
+        {
+            icon: Compass,
+            cardClass: 'border-purple-100 bg-purple-50/40 dark:border-gray-800 dark:bg-gray-800/40',
+            iconClass: 'bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-300',
+        },
+    ];
+
     return (
         <>
             <Head title="Profil & Visi Misi" />
@@ -65,7 +122,25 @@ export default function PublicProfileIndex({ profile }: PublicProfileProps) {
                 <PublicHeader />
 
                 <main className="flex-1 px-4 py-8 sm:px-6 lg:px-12 pb-24 md:pb-12">
-                    <div className="mx-auto max-w-6xl space-y-12">
+                    <div className="mx-auto max-w-6xl space-y-8">
+                        {/* Sub Menu Navigation Switcher: Profil Sekolah & Profil Guru */}
+                        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-gray-200/80 bg-white/90 p-2 shadow-2xs backdrop-blur-md dark:border-gray-800 dark:bg-[#18122B]/90 w-fit">
+                            <Link
+                                href="/profil"
+                                className="inline-flex items-center gap-2 rounded-xl bg-[#FF6B35] px-4 py-2 text-xs font-extrabold text-white shadow-xs shadow-[#FF6B35]/25 transition-all"
+                            >
+                                <Building2 className="size-4" />
+                                <span>Profil Sekolah</span>
+                            </Link>
+                            <Link
+                                href="/profil/guru"
+                                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-gray-600 hover:bg-orange-50 hover:text-[#FF6B35] transition-all dark:text-gray-300 dark:hover:bg-gray-800"
+                            >
+                                <GraduationCap className="size-4" />
+                                <span>Profil Guru</span>
+                            </Link>
+                        </div>
+
                         {/* Section 1: Hero Header Profil */}
                         <div className="relative overflow-hidden rounded-3xl border border-orange-100 bg-gradient-to-br from-white via-orange-50/40 to-amber-50/30 p-6 sm:p-10 shadow-sm dark:border-gray-800 dark:from-[#18122B]/90 dark:via-[#1e1738]/80 dark:to-[#18122B]/90">
                             {/* Decorative background blurs */}
@@ -254,56 +329,42 @@ export default function PublicProfileIndex({ profile }: PublicProfileProps) {
                                 <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                                     Nilai dasar yang kami tanamkan kepada seluruh peserta didik setiap hari.
                                 </p>
+                                {canManageProfile && (
+                                    <div className="pt-1">
+                                        <Link
+                                            href="/manage/school-profile#nilai-utama"
+                                            className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-[#FF6B35]/50 bg-orange-50/60 px-3 py-1 text-xs font-bold text-[#FF6B35] hover:bg-orange-100 dark:bg-orange-950/30"
+                                        >
+                                            <ShieldCheck className="size-3.5" />
+                                            Edit Nilai-Nilai Utama
+                                        </Link>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div className="rounded-2xl border border-orange-100 bg-orange-50/40 p-5 dark:border-gray-800 dark:bg-gray-800/40 space-y-2">
-                                    <div className="flex size-10 items-center justify-center rounded-xl bg-orange-100 text-[#FF6B35] dark:bg-orange-950 dark:text-orange-300">
-                                        <HeartHandshake className="size-5" />
-                                    </div>
-                                    <h4 className="text-sm font-black text-gray-900 dark:text-white">
-                                        Budi Pekerti Luhur
-                                    </h4>
-                                    <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-                                        Membiasakan 5S (Senyum, Salam, Sapa, Sopan, Santun) serta integritas dalam bersikap.
-                                    </p>
-                                </div>
-
-                                <div className="rounded-2xl border border-blue-100 bg-blue-50/40 p-5 dark:border-gray-800 dark:bg-gray-800/40 space-y-2">
-                                    <div className="flex size-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-300">
-                                        <GraduationCap className="size-5" />
-                                    </div>
-                                    <h4 className="text-sm font-black text-gray-900 dark:text-white">
-                                        Cerdas & Terampil
-                                    </h4>
-                                    <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-                                        Mengasah literasi, numerasi, dan keterampilan berpikir kritis menghadapi tantangan era modern.
-                                    </p>
-                                </div>
-
-                                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-5 dark:border-gray-800 dark:bg-gray-800/40 space-y-2">
-                                    <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300">
-                                        <Users className="size-5" />
-                                    </div>
-                                    <h4 className="text-sm font-black text-gray-900 dark:text-white">
-                                        Gotong Royong
-                                    </h4>
-                                    <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-                                        Membangun semangat empati, kerja sama kelompok, serta kepedulian terhadap sesama dan lingkungan.
-                                    </p>
-                                </div>
-
-                                <div className="rounded-2xl border border-purple-100 bg-purple-50/40 p-5 dark:border-gray-800 dark:bg-gray-800/40 space-y-2">
-                                    <div className="flex size-10 items-center justify-center rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-300">
-                                        <Compass className="size-5" />
-                                    </div>
-                                    <h4 className="text-sm font-black text-gray-900 dark:text-white">
-                                        Melek Digital
-                                    </h4>
-                                    <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-                                        Pemanfaatan teknologi edukasi yang ramah anak, bijak, dan aman untuk memperluas wawasan dunia.
-                                    </p>
-                                </div>
+                                {coreValues.map((item, idx) => {
+                                    const style = coreValueStyles[idx % coreValueStyles.length];
+                                    const IconComponent = style.icon;
+                                    return (
+                                        <div
+                                            key={idx}
+                                            className={`rounded-2xl border p-5 space-y-2 ${style.cardClass}`}
+                                        >
+                                            <div
+                                                className={`flex size-10 items-center justify-center rounded-xl ${style.iconClass}`}
+                                            >
+                                                <IconComponent className="size-5" />
+                                            </div>
+                                            <h4 className="text-sm font-black text-gray-900 dark:text-white">
+                                                {item.title}
+                                            </h4>
+                                            <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                                                {item.description}
+                                            </p>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -330,11 +391,6 @@ export default function PublicProfileIndex({ profile }: PublicProfileProps) {
                                         <h4 className="text-sm sm:text-base font-black text-gray-900 dark:text-white">
                                             {profile.principal_name}
                                         </h4>
-                                        {profile.principal_nip && (
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                                NIP. {profile.principal_nip}
-                                            </p>
-                                        )}
                                         <Link
                                             href="/"
                                             className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-[#FF6B35] hover:underline"
@@ -378,7 +434,7 @@ export default function PublicProfileIndex({ profile }: PublicProfileProps) {
                 </main>
 
                 {/* Footer */}
-                <footer className="border-t border-[#E8E8E8] bg-white/70 py-6 mb-16 md:mb-0 text-center text-xs text-[#6B7280] backdrop-blur-md dark:border-[#2D234A] dark:bg-[#18122B]/70 dark:text-[#9CA3AF]">
+                <footer className="hidden md:block border-t border-[#E8E8E8] bg-white/70 py-6 text-center text-xs text-[#6B7280] backdrop-blur-md dark:border-[#2D234A] dark:bg-[#18122B]/70 dark:text-[#9CA3AF]">
                     <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
                         <div>
                             &copy; {new Date().getFullYear()} {schoolName}. All rights reserved.

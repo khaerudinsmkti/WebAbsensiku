@@ -75,6 +75,50 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
     const [selectedCategory, setSelectedCategory] = useState(filters.category_id || 'all');
     const [readingNews, setReadingNews] = useState<NewsItem | null>(null);
     const [readingActiveImageIdx, setReadingActiveImageIdx] = useState<number>(0);
+    const [newsViewCounts, setNewsViewCounts] = useState<Record<number, number>>({});
+
+    const getNewsViews = (item: NewsItem): number => {
+        return newsViewCounts[item.id] !== undefined ? newsViewCounts[item.id] : (item.views_count ?? 0);
+    };
+
+    const handleOpenNews = (item: NewsItem) => {
+        setReadingActiveImageIdx(0);
+        setReadingNews(item);
+
+        const currentViews = getNewsViews(item);
+        setNewsViewCounts((prev) => ({
+            ...prev,
+            [item.id]: currentViews + 1,
+        }));
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const xsrfCookie = document.cookie
+            .split('; ')
+            .find((row) => row.startsWith('XSRF-TOKEN='))
+            ?.split('=')[1];
+
+        fetch(`/berita/${item.id}/view`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                ...(xsrfCookie ? { 'X-XSRF-TOKEN': decodeURIComponent(xsrfCookie) } : {}),
+            },
+        })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+                if (data && typeof data.views_count === 'number') {
+                    setNewsViewCounts((prev) => ({
+                        ...prev,
+                        [item.id]: data.views_count,
+                    }));
+                }
+            })
+            .catch(() => {
+                // Ignore network error, optimistic count remains
+            });
+    };
 
     const handleApplyFilters = (newCategory?: string) => {
         const cat = newCategory !== undefined ? newCategory : selectedCategory;
@@ -112,7 +156,7 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
             <div className="flex min-h-screen flex-col bg-page-gradient text-[#1F2937] dark:text-neutral-100">
                 <PublicHeader />
 
-                <main className="flex-1 px-6 py-10 lg:px-12">
+                <main className="flex-1 px-6 py-10 pb-24 md:pb-10 lg:px-12">
                     <div className="mx-auto max-w-6xl">
                         {/* Header Banner */}
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-gray-200 pb-8 dark:border-gray-800">
@@ -293,13 +337,22 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
 
                                         {/* Card Body */}
                                         <div className="flex flex-1 flex-col p-5">
-                                            <div className="flex items-center gap-2 text-[11px] text-gray-400">
-                                                <span>{item.formatted_date}</span>
-                                                <span>•</span>
-                                                <span>Oleh: {item.author?.name || 'Publisher'}</span>
+                                            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-400">
+                                                <div className="flex items-center gap-2">
+                                                    <span>{item.formatted_date}</span>
+                                                    <span>•</span>
+                                                    <span>Oleh: {item.author?.name || 'Publisher'}</span>
+                                                </div>
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300" title="Jumlah dilihat">
+                                                    <Eye className="size-3 text-[#FF6B35]" />
+                                                    <span>{getNewsViews(item)} dilihat</span>
+                                                </span>
                                             </div>
 
-                                            <h3 className="mt-2 text-base font-extrabold text-[#111827] line-clamp-2 leading-snug group-hover:text-[#FF6B35] transition-colors dark:text-white">
+                                            <h3
+                                                onClick={() => handleOpenNews(item)}
+                                                className="mt-2 cursor-pointer text-base font-extrabold text-[#111827] line-clamp-2 leading-snug group-hover:text-[#FF6B35] transition-colors dark:text-white"
+                                            >
                                                 {item.title}
                                             </h3>
 
@@ -311,7 +364,7 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                                             <div className="mt-5 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-800">
                                                 <button
                                                     type="button"
-                                                    onClick={() => setReadingNews(item)}
+                                                    onClick={() => handleOpenNews(item)}
                                                     className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FF6B35] hover:text-[#e05622] transition-colors"
                                                 >
                                                     <span>Baca Selengkapnya</span>
@@ -361,7 +414,7 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                 </main>
 
                 {/* Footer */}
-                <footer className="border-t border-[#E8E8E8] bg-white/70 py-6 mb-16 md:mb-0 text-center text-xs text-[#6B7280] backdrop-blur-md dark:border-[#2D234A] dark:bg-[#18122B]/70 dark:text-[#9CA3AF]">
+                <footer className="hidden md:block border-t border-[#E8E8E8] bg-white/70 py-6 text-center text-xs text-[#6B7280] backdrop-blur-md dark:border-[#2D234A] dark:bg-[#18122B]/70 dark:text-[#9CA3AF]">
                     <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
                         <div>
                             &copy; {new Date().getFullYear()} {schoolName}. All rights reserved.
@@ -404,7 +457,7 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
                             <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col rounded-[28px] bg-white shadow-2xl dark:bg-[#18122B] overflow-hidden">
                                 <div className="flex items-center justify-between border-b border-gray-100 p-5 dark:border-gray-800">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex flex-wrap items-center gap-2">
                                         {readingNews.category && (
                                             <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-[#FF6B35] dark:bg-orange-950 dark:text-[#FFA07A]">
                                                 {readingNews.category.name}
@@ -412,6 +465,10 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                                         )}
                                         <span className="text-xs text-gray-400">
                                             {readingNews.formatted_date}
+                                        </span>
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                                            <Eye className="size-3.5 text-[#FF6B35]" />
+                                            <span>{getNewsViews(readingNews)} kali dilihat</span>
                                         </span>
                                     </div>
                                     <button

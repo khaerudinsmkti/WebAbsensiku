@@ -9,6 +9,8 @@ import {
     Calendar,
     CalendarRange,
     CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
     Clock,
     FileText,
     School,
@@ -143,6 +145,37 @@ export default function Dashboard({
     }, []);
 
     const [topPeriod, setTopPeriod] = useState<'yearly' | 'monthly'>('yearly');
+
+    // Auto-slider state for Unmarked Classrooms (3 columns x 2 rows = 6 cards per slide)
+    const ITEMS_PER_SLIDE = 6;
+    const unmarkedSlides = useMemo(() => {
+        const chunks: UnmarkedClassroomItem[][] = [];
+        for (let i = 0; i < unmarkedClassrooms.length; i += ITEMS_PER_SLIDE) {
+            chunks.push(unmarkedClassrooms.slice(i, i + ITEMS_PER_SLIDE));
+        }
+        return chunks;
+    }, [unmarkedClassrooms]);
+
+    const totalUnmarkedSlides = unmarkedSlides.length;
+    const [currentUnmarkedSlide, setCurrentUnmarkedSlide] = useState(0);
+    const [isSliderPaused, setIsSliderPaused] = useState(false);
+
+    useEffect(() => {
+        if (currentUnmarkedSlide >= totalUnmarkedSlides && totalUnmarkedSlides > 0) {
+            setCurrentUnmarkedSlide(0);
+        }
+    }, [totalUnmarkedSlides, currentUnmarkedSlide]);
+
+    useEffect(() => {
+        if (totalUnmarkedSlides <= 1 || isSliderPaused) {
+            return;
+        }
+        const slideTimer = setInterval(() => {
+            setCurrentUnmarkedSlide((prev) => (prev + 1) % totalUnmarkedSlides);
+        }, 4000);
+
+        return () => clearInterval(slideTimer);
+    }, [totalUnmarkedSlides, isSliderPaused]);
 
     const currentTopData = useMemo(() => {
         if (!top_students) {
@@ -429,7 +462,11 @@ export default function Dashboard({
                 {canViewUnmarkedClasses && (
                     <div className="flex flex-col gap-3">
                         {unmarkedClassrooms && unmarkedClassrooms.length > 0 ? (
-                            <div className="rounded-2xl border-2 border-rose-300/80 bg-rose-50/50 p-5 shadow-sm dark:border-rose-900/50 dark:bg-rose-950/20">
+                            <div
+                                className="rounded-2xl border-2 border-rose-300/80 bg-rose-50/50 p-5 shadow-sm dark:border-rose-900/50 dark:bg-rose-950/20"
+                                onMouseEnter={() => setIsSliderPaused(true)}
+                                onMouseLeave={() => setIsSliderPaused(false)}
+                            >
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-rose-200/80 pb-3.5 mb-4 dark:border-rose-900/40">
                                     <div className="flex items-center gap-3">
                                         <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-200">
@@ -449,59 +486,128 @@ export default function Dashboard({
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="text-xs font-bold text-gray-500 dark:text-gray-400 self-start sm:self-auto">
-                                        Status: <span className="text-rose-600 font-black">{unmarkedClassrooms.length}</span> dari {totalClassroomsCount} Kelas Belum Lengkap
+
+                                    <div className="flex items-center gap-3 self-start sm:self-auto">
+                                        <div className="text-xs font-bold text-gray-500 dark:text-gray-400">
+                                            Status: <span className="text-rose-600 font-black">{unmarkedClassrooms.length}</span> dari {totalClassroomsCount} Kelas Belum Lengkap
+                                        </div>
+
+                                        {totalUnmarkedSlides > 1 && (
+                                            <div className="flex items-center gap-1.5 border-l border-rose-200/80 pl-3 dark:border-rose-900/40">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setCurrentUnmarkedSlide(
+                                                            (prev) => (prev - 1 + totalUnmarkedSlides) % totalUnmarkedSlides,
+                                                        )
+                                                    }
+                                                    className="flex size-7 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-700 transition-all hover:bg-rose-100 active:scale-95 dark:border-rose-800 dark:bg-[#18122B] dark:text-rose-300 dark:hover:bg-rose-900/40"
+                                                    aria-label="Slide sebelumnya"
+                                                >
+                                                    <ChevronLeft className="size-4" />
+                                                </button>
+                                                <span className="text-[11px] font-extrabold text-rose-700 dark:text-rose-300 min-w-[36px] text-center">
+                                                    {currentUnmarkedSlide + 1} / {totalUnmarkedSlides}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setCurrentUnmarkedSlide(
+                                                            (prev) => (prev + 1) % totalUnmarkedSlides,
+                                                        )
+                                                    }
+                                                    className="flex size-7 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-700 transition-all hover:bg-rose-100 active:scale-95 dark:border-rose-800 dark:bg-[#18122B] dark:text-rose-300 dark:hover:bg-rose-900/40"
+                                                    aria-label="Slide berikutnya"
+                                                >
+                                                    <ChevronRight className="size-4" />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {unmarkedClassrooms.map((cls) => (
-                                        <div
-                                            key={cls.id}
-                                            className="flex flex-col justify-between rounded-xl border border-rose-200/90 bg-white p-3.5 shadow-xs transition-all hover:shadow-md dark:border-rose-900/40 dark:bg-[#18122B]"
-                                        >
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-sm font-black text-gray-900 dark:text-white">
-                                                            {cls.name}
-                                                        </span>
-                                                        <span
-                                                            className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
-                                                                cls.status === 'partial'
-                                                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                                                                    : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                                                            }`}
-                                                        >
-                                                            {cls.status === 'partial' ? 'Belum Lengkap' : 'Belum Absen'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                                                        <span className="font-semibold text-gray-700 dark:text-gray-300">Wali Kelas:</span>{' '}
-                                                        {cls.homeroom_teacher?.name || 'Belum Ditentukan'}
-                                                    </div>
-                                                    <div className="text-[11px] text-gray-400 mt-0.5 font-medium">
-                                                        Tercatat: {cls.attended_students} / {cls.total_students} Siswa
-                                                    </div>
-                                                </div>
-                                            </div>
+                                {/* Slider Viewport (3 Columns x 2 Rows per Slide) */}
+                                <div className="overflow-hidden">
+                                    <div
+                                        className="flex transition-transform duration-500 ease-in-out"
+                                        style={{
+                                            transform: `translateX(-${currentUnmarkedSlide * 100}%)`,
+                                        }}
+                                    >
+                                        {unmarkedSlides.map((slideItems, slideIdx) => (
+                                            <div
+                                                key={slideIdx}
+                                                className="w-full shrink-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:grid-rows-2 gap-3"
+                                            >
+                                                {slideItems.map((cls) => (
+                                                    <div
+                                                        key={cls.id}
+                                                        className="flex flex-col justify-between rounded-xl border border-rose-200/90 bg-white p-3.5 shadow-xs transition-all hover:shadow-md dark:border-rose-900/40 dark:bg-[#18122B]"
+                                                    >
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-sm font-black text-gray-900 dark:text-white">
+                                                                        {cls.name}
+                                                                    </span>
+                                                                    <span
+                                                                        className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                                                                            cls.status === 'partial'
+                                                                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                                                                                : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                                                                        }`}
+                                                                    >
+                                                                        {cls.status === 'partial' ? 'Belum Lengkap' : 'Belum Absen'}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                                                                    <span className="font-semibold text-gray-700 dark:text-gray-300">Wali Kelas:</span>{' '}
+                                                                    {cls.homeroom_teacher?.name || 'Belum Ditentukan'}
+                                                                </div>
+                                                                <div className="text-[11px] text-gray-400 mt-0.5 font-medium">
+                                                                    Tercatat: {cls.attended_students} / {cls.total_students} Siswa
+                                                                </div>
+                                                            </div>
+                                                        </div>
 
-                                            <div className="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-800/80 flex items-center justify-end">
-                                                <Button
-                                                    asChild
-                                                    size="sm"
-                                                    variant="secondary"
-                                                    className="h-8 px-3 text-xs font-bold text-[#FF6B35] bg-orange-50 hover:bg-orange-100 border border-orange-200 dark:bg-orange-950/40 dark:border-orange-800 dark:hover:bg-orange-900/50"
-                                                >
-                                                    <Link href={`/attendances?classroom_id=${cls.id}&date=${selectedDate}`}>
-                                                        Input Presensi
-                                                        <ArrowRight className="size-3.5 ml-1" />
-                                                    </Link>
-                                                </Button>
+                                                        <div className="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-800/80 flex items-center justify-end">
+                                                            <Button
+                                                                asChild
+                                                                size="sm"
+                                                                variant="secondary"
+                                                                className="h-8 px-3 text-xs font-bold text-[#FF6B35] bg-orange-50 hover:bg-orange-100 border border-orange-200 dark:bg-orange-950/40 dark:border-orange-800 dark:hover:bg-orange-900/50"
+                                                            >
+                                                                <Link href={`/attendances?classroom_id=${cls.id}&date=${selectedDate}`}>
+                                                                    Input Presensi
+                                                                    <ArrowRight className="size-3.5 ml-1" />
+                                                                </Link>
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
+
+                                {/* Slide Indicators (Dots) */}
+                                {totalUnmarkedSlides > 1 && (
+                                    <div className="mt-4 flex items-center justify-center gap-1.5">
+                                        {unmarkedSlides.map((_, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => setCurrentUnmarkedSlide(idx)}
+                                                aria-label={`Ke slide ${idx + 1}`}
+                                                className={`h-2 rounded-full transition-all duration-300 ${
+                                                    currentUnmarkedSlide === idx
+                                                        ? 'w-6 bg-rose-600 dark:bg-rose-500'
+                                                        : 'w-2 bg-rose-300/70 hover:bg-rose-400 dark:bg-rose-800/60 dark:hover:bg-rose-700'
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         ) : !holiday && totalClassroomsCount && totalClassroomsCount > 0 ? (
                             <div className="flex items-center gap-3.5 rounded-2xl border-2 border-emerald-300/80 bg-emerald-50/60 p-4 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/30">

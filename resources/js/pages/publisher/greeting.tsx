@@ -305,6 +305,9 @@ export default function PrincipalGreetingEdit({ greeting, school_name }: Greetin
                                         placeholder="Contoh: 197205121998031004"
                                         className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs font-semibold focus:border-[#FF6B35] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                                     />
+                                    <span className="block text-[10px] text-gray-400 mt-1">
+                                        Hanya untuk keperluan dokumen/laporan internal (tidak ditampilkan di publik).
+                                    </span>
                                     {form.errors.principal_nip && (
                                         <p className="mt-1 text-xs text-red-500">{form.errors.principal_nip}</p>
                                     )}
@@ -410,11 +413,6 @@ export default function PrincipalGreetingEdit({ greeting, school_name }: Greetin
                                     <span className="text-[11px] font-semibold text-[#FF6B35] block mt-0.5">
                                         Kepala {school_name}
                                     </span>
-                                    {form.data.principal_nip && (
-                                        <span className="text-[10px] text-gray-400 block mt-0.5">
-                                            NIP. {form.data.principal_nip}
-                                        </span>
-                                    )}
                                 </div>
                             </div>
 

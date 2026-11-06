@@ -4,6 +4,7 @@ use App\Http\Controllers\AttendanceAdjustmentController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\LatenessController;
 use App\Http\Controllers\MasterDataController;
@@ -11,12 +12,16 @@ use App\Http\Controllers\NewsController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SchoolProfileController;
 use App\Http\Controllers\SchoolSettingController;
+use App\Http\Controllers\TeacherProfileController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
 Route::get('/profil', [WelcomeController::class, 'profile'])->name('public.profile');
+Route::get('/profil/guru', [WelcomeController::class, 'teacherProfiles'])->name('public.profile.teachers');
 Route::get('/berita', [WelcomeController::class, 'news'])->name('public.news');
+Route::post('/berita/{news}/view', [WelcomeController::class, 'incrementNewsView'])->name('public.news.view');
+Route::get('/galeri', [WelcomeController::class, 'gallery'])->name('public.gallery');
 Route::get('/kalender', [WelcomeController::class, 'calendar'])->name('public.calendar');
 Route::get('/kontak', [WelcomeController::class, 'contact'])->name('public.contact');
 Route::post('/kontak/kirim', [ContactController::class, 'publicStore'])->name('contact.public.store');
@@ -76,9 +81,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/publisher/principal-greeting', [\App\Http\Controllers\PrincipalGreetingController::class, 'edit'])->name('publisher.greeting.edit');
         Route::post('/publisher/principal-greeting', [\App\Http\Controllers\PrincipalGreetingController::class, 'update'])->name('publisher.greeting.update');
 
-        // Kelola Profil & Visi Misi Sekolah
+        // Kelola Profil, Nilai-Nilai Utama & Hero Banner Sekolah
         Route::get('/manage/school-profile', [SchoolProfileController::class, 'edit'])->name('school-profile.edit');
         Route::post('/manage/school-profile', [SchoolProfileController::class, 'update'])->name('school-profile.update');
+        Route::post('/manage/hero-banner', [SchoolProfileController::class, 'updateHero'])->name('hero-banner.update');
+
+        // Kelola Profil Guru & Tenaga Pendidik
+        Route::get('/manage/teacher-profiles', [TeacherProfileController::class, 'index'])->name('teacher-profiles.index');
+        Route::post('/manage/teacher-profiles', [TeacherProfileController::class, 'store'])->name('teacher-profiles.store');
+        Route::post('/manage/teacher-profiles/sync', [TeacherProfileController::class, 'syncFromMaster'])->name('teacher-profiles.sync');
+        Route::post('/manage/teacher-profiles/{teacherProfile}', [TeacherProfileController::class, 'update'])->name('teacher-profiles.update');
+        Route::delete('/manage/teacher-profiles/{teacherProfile}', [TeacherProfileController::class, 'destroy'])->name('teacher-profiles.destroy');
+
+        // Kelola Galeri Foto Kegiatan Sekolah
+        Route::get('/manage/galleries', [GalleryController::class, 'index'])->name('galleries.index');
+        Route::post('/manage/galleries', [GalleryController::class, 'store'])->name('galleries.store');
+        Route::post('/manage/galleries/{gallery}', [GalleryController::class, 'update'])->name('galleries.update');
+        Route::delete('/manage/galleries/{gallery}', [GalleryController::class, 'destroy'])->name('galleries.destroy');
 
         // Kelola Kontak Kami & Pesan Pengunjung
         Route::get('/manage/contact', [ContactController::class, 'index'])->name('contact.index');

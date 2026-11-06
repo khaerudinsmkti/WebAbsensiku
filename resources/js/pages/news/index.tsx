@@ -668,6 +668,7 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                         <th className="px-4 py-3.5">Kategori</th>
                                         <th className="px-4 py-3.5">Lampiran PDF</th>
                                         <th className="px-4 py-3.5">Status</th>
+                                        <th className="px-4 py-3.5">Dilihat</th>
                                         <th className="px-4 py-3.5">Tanggal Terbit</th>
                                         <th className="px-4 py-3.5 text-right">Aksi</th>
                                     </tr>
@@ -772,6 +773,12 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                                             Draf
                                                         </span>
                                                     )}
+                                                </td>
+                                                <td className="px-4 py-3.5">
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                                                        <Eye className="size-3" />
+                                                        <span>{item.views_count ?? 0}x</span>
+                                                    </span>
                                                 </td>
                                                 <td className="px-4 py-3.5 font-medium text-gray-600 dark:text-gray-400 text-[11px]">
                                                     {item.formatted_date || '-'}
@@ -1420,7 +1427,7 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                     </div>
                                 )}
 
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2">
                                     {previewNews.category && (
                                         <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-[#FF6B35] dark:bg-orange-950 dark:text-[#FFA07A]">
                                             {previewNews.category.name}
@@ -1428,6 +1435,10 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                     )}
                                     <span className="text-xs text-gray-400">
                                         {previewNews.formatted_date}
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+                                        <Eye className="size-3.5" />
+                                        <span>{previewNews.views_count ?? 0} kali dilihat</span>
                                     </span>
                                 </div>
 

@@ -171,23 +171,33 @@ export default function MasterIndexPage({
     teachers = [],
     dutySchedules = [],
 }: MasterPageProps) {
-    const { props } = usePage();
+    const { url, props } = usePage();
     const currentUser = props.auth?.user as { role?: string } | undefined;
     const isPrincipal = currentUser?.role === 'principal';
 
-    const [activeTab, setActiveTab] = useState<'students' | 'promotions' | 'alumni' | 'teachers' | 'classrooms' | 'duty'>(() => {
-        if (typeof window !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('tab') === 'alumni' || params.has('alumni_search') || params.has('alumni_graduation_year') || params.has('alumni_classroom_id')) {
+    const getTabFromUrl = (currentUrl: string): 'students' | 'promotions' | 'alumni' | 'teachers' | 'classrooms' | 'duty' => {
+        const queryIndex = currentUrl.indexOf('?');
+        if (queryIndex !== -1) {
+            const params = new URLSearchParams(currentUrl.slice(queryIndex));
+            const tab = params.get('tab');
+            if (tab === 'alumni' || params.has('alumni_search') || params.has('alumni_graduation_year') || params.has('alumni_classroom_id')) {
                 return 'alumni';
             }
-            if (params.get('tab') === 'promotions') return 'promotions';
-            if (params.get('tab') === 'teachers') return 'teachers';
-            if (params.get('tab') === 'classrooms') return 'classrooms';
-            if (params.get('tab') === 'duty') return 'duty';
+            if (tab === 'promotions') return 'promotions';
+            if (tab === 'teachers') return 'teachers';
+            if (tab === 'classrooms') return 'classrooms';
+            if (tab === 'duty') return 'duty';
         }
         return 'students';
-    });
+    };
+
+    const [activeTab, setActiveTab] = useState<'students' | 'promotions' | 'alumni' | 'teachers' | 'classrooms' | 'duty'>(() =>
+        getTabFromUrl(url),
+    );
+
+    useEffect(() => {
+        setActiveTab(getTabFromUrl(url));
+    }, [url]);
     const [searchTerm, setSearchTerm] = useState(search);
 
     // Promotion Tab States

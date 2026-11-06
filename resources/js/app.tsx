@@ -1,4 +1,5 @@
 import { createInertiaApp, router } from '@inertiajs/react';
+import { ScrollToTopButton } from '@/components/scroll-to-top-button';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
@@ -58,9 +59,12 @@ void createInertiaApp({
         switch (true) {
             case name === 'welcome':
             case name === 'profile/public-index':
+            case name === 'profile/public-teachers':
             case name === 'news/public-index':
+            case name === 'gallery/public-index':
             case name === 'calendar/public-index':
             case name === 'contact/public-index':
+            case name.endsWith('/public-index'):
             case name.startsWith('public/'):
                 return null;
             case name.startsWith('auth/'):
@@ -76,6 +80,7 @@ void createInertiaApp({
         return (
             <TooltipProvider delayDuration={0}>
                 {app}
+                <ScrollToTopButton />
                 <Toaster />
             </TooltipProvider>
         );

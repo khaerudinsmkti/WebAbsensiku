@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicHoliday;
+use App\Models\Gallery;
 use App\Models\News;
 use App\Models\NewsCategory;
 use App\Models\SchoolSetting;
+use App\Models\TeacherProfile;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -33,18 +35,37 @@ class WelcomeController extends Controller
         $schoolSetting = SchoolSetting::getSetting();
         $principalGreeting = [
             'name' => $schoolSetting->principal_name,
-            'nip' => $schoolSetting->principal_nip,
             'title' => $schoolSetting->principal_greeting_title ?? 'Sambutan Kepala Sekolah',
             'content' => $schoolSetting->principal_greeting,
             'is_active' => (bool) ($schoolSetting->principal_greeting_active ?? true),
             'photo_url' => $schoolSetting->principal_photo_url,
         ];
 
+        $heroBanner = [
+            'badge' => $schoolSetting->hero_badge,
+            'title' => $schoolSetting->hero_title,
+            'highlight' => $schoolSetting->hero_highlight,
+            'description' => $schoolSetting->hero_description,
+            'image_url' => $schoolSetting->hero_image_url,
+            'pillars' => $schoolSetting->hero_pillars,
+        ];
+
+        Gallery::ensureTableExists();
+        $galleries = Gallery::with('author:id,name')
+            ->published()
+            ->orderByDesc('activity_date')
+            ->orderByDesc('created_at')
+            ->get();
+        $totalGalleriesCount = $galleries->count();
+
         return Inertia::render('welcome', [
             'news' => $newsList,
             'newsCategories' => $newsCategories,
             'totalNewsCount' => $totalNewsCount,
             'principalGreeting' => $principalGreeting,
+            'heroBanner' => $heroBanner,
+            'galleries' => $galleries,
+            'totalGalleriesCount' => $totalGalleriesCount,
         ]);
     }
 
@@ -83,6 +104,66 @@ class WelcomeController extends Controller
             'filters' => [
                 'search' => $search ?? '',
                 'category_id' => $categoryId ?? 'all',
+            ],
+        ]);
+    }
+
+    /**
+     * Increment view count when a visitor opens a news article.
+     */
+    public function incrementNewsView(News $news): \Illuminate\Http\JsonResponse
+    {
+        if ($news->is_published) {
+            $news->increment('views_count');
+        }
+
+        return response()->json([
+            'views_count' => (int) $news->views_count,
+        ]);
+    }
+
+    /**
+     * Public Photo Gallery Page (Menu Galeri Kegiatan).
+     */
+    public function gallery(Request $request): Response
+    {
+        Gallery::ensureTableExists();
+
+        $search = $request->input('search');
+        $category = $request->input('category');
+
+        $query = Gallery::with('author:id,name')
+            ->published()
+            ->orderByDesc('activity_date')
+            ->orderByDesc('created_at');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%");
+            });
+        }
+
+        if ($category && $category !== 'all') {
+            $query->where('category', $category);
+        }
+
+        $galleries = $query->paginate(9)->withQueryString();
+
+        $categories = Gallery::published()
+            ->select('category')
+            ->distinct()
+            ->pluck('category')
+            ->filter()
+            ->values();
+
+        return Inertia::render('gallery/public-index', [
+            'galleries' => $galleries,
+            'categories' => $categories,
+            'filters' => [
+                'search' => $search ?? '',
+                'category' => $category ?? 'all',
             ],
         ]);
     }
@@ -260,9 +341,9 @@ class WelcomeController extends Controller
             'profile_description' => $schoolSetting->profile_description,
             'vision' => $schoolSetting->vision,
             'mission' => $schoolSetting->mission,
+            'core_values' => $schoolSetting->core_values,
             'profile_image_url' => $schoolSetting->profile_image_url,
             'principal_name' => $schoolSetting->principal_name,
-            'principal_nip' => $schoolSetting->principal_nip,
             'principal_photo_url' => $schoolSetting->principal_photo_url,
             'address' => $schoolSetting->address,
             'city' => $schoolSetting->city,
@@ -273,6 +354,52 @@ class WelcomeController extends Controller
 
         return Inertia::render('profile/public-index', [
             'profile' => $profileData,
+        ]);
+    }
+
+    /**
+     * Public Teacher Profiles Page (Sub Menu Profil Guru).
+     */
+    public function teacherProfiles(Request $request): Response
+    {
+        TeacherProfile::ensureTableExists();
+
+        $search = $request->input('search');
+        $status = $request->input('status');
+
+        $query = TeacherProfile::active()
+            ->orderBy('sort_order')
+            ->orderBy('name');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('subject', 'like', "%{$search}%")
+                    ->orWhere('homeroom_class', 'like', "%{$search}%")
+                    ->orWhere('employment_status', 'like', "%{$search}%");
+            });
+        }
+
+        if ($status && $status !== 'all') {
+            $query->where('employment_status', $status);
+        }
+
+        $teachers = $query->paginate(12)->withQueryString();
+
+        $statuses = TeacherProfile::active()
+            ->select('employment_status')
+            ->distinct()
+            ->pluck('employment_status')
+            ->filter()
+            ->values();
+
+        return Inertia::render('profile/public-teachers', [
+            'teachers' => $teachers,
+            'statuses' => $statuses,
+            'filters' => [
+                'search' => $search ?? '',
+                'status' => $status ?? 'all',
+            ],
         ]);
     }
 }
