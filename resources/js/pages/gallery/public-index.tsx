@@ -224,7 +224,7 @@ export default function PublicGalleryIndex({ galleries, categories = [], filters
                                                 setActivePhotoIdx(0);
                                                 setActiveGallery(item);
                                             }}
-                                            className="group cursor-pointer flex flex-col overflow-hidden rounded-[22px] border-2 border-[#E8E8E8] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF6B35]/40 hover:shadow-[0_12px_24px_rgba(255,107,53,0.08)] dark:border-[#2D234A] dark:bg-[#18122B]"
+                                            className="group cursor-pointer flex flex-col overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-[var(--brand-primary,#FF6B35)] hover:shadow-md dark:border-gray-800 dark:bg-[#18122B]"
                                         >
                                             <div className="relative h-56 w-full overflow-hidden bg-gray-100 dark:bg-gray-900">
                                                 {item.image_url ? (
@@ -259,13 +259,13 @@ export default function PublicGalleryIndex({ galleries, categories = [], filters
                                                         <Calendar className="size-3 text-[#FF6B35]" />
                                                         {item.formatted_date}
                                                     </span>
-                                                    <span className="inline-flex items-center gap-1 font-bold text-[#FF6B35]">
+                                                    <span className="inline-flex items-center gap-1 font-bold text-[var(--brand-primary,#FF6B35)]">
                                                         <Eye className="size-3" />
                                                         Lihat Album
                                                     </span>
                                                 </div>
 
-                                                <h3 className="mt-2 line-clamp-2 text-base font-extrabold leading-snug text-[#111827] transition-colors group-hover:text-[#FF6B35] dark:text-white">
+                                                <h3 className="mt-2 line-clamp-2 text-base font-extrabold leading-snug text-[#111827] transition-colors group-hover:text-[var(--brand-primary,#FF6B35)] dark:text-white">
                                                     {item.title}
                                                 </h3>
 

@@ -49,6 +49,7 @@ class SchoolSetting extends Model
         'start_time',
         'school_days_per_week',
         'logo_path',
+        'theme_color',
     ];
 
     protected $casts = [
@@ -65,7 +66,13 @@ class SchoolSetting extends Model
         'profile_image_url',
         'hero_image_url',
         'is_saturday_holiday',
+        'theme_data',
     ];
+
+    public function getThemeDataAttribute(): array
+    {
+        return \App\Services\ThemeService::getTheme($this->theme_color ?? 'sd-orange');
+    }
 
     public function getLogoUrlAttribute(): ?string
     {

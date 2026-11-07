@@ -394,8 +394,9 @@ export default function PublicContactIndex({ contactInfo }: PublicContactProps) 
 
                                         <Button
                                             type="submit"
+                                            variant="primary"
                                             disabled={contactForm.processing}
-                                            className="w-full sm:w-auto rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#E85D26] px-8 py-3 text-xs font-black text-white shadow-md shadow-orange-500/20 hover:from-[#E85D26] hover:to-[#D94F1A]"
+                                            className="w-full sm:w-auto rounded-xl px-8 py-3 text-xs font-black text-white shadow-brand hover:brightness-105 active:scale-95 transition-all"
                                         >
                                             <Send className="mr-1.5 size-3.5" />
                                             {contactForm.processing ? 'Mengirim...' : 'Kirim Pesan Sekarang'}

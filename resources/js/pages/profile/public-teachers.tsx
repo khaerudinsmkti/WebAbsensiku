@@ -261,7 +261,7 @@ export default function PublicTeachersIndex({ teachers, statuses = [], filters }
                                     <div
                                         key={teacher.id}
                                         onClick={() => setSelectedTeacher(teacher)}
-                                        className="group cursor-pointer flex flex-col overflow-hidden rounded-[18px] sm:rounded-[22px] border-2 border-[#E8E8E8] bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF6B35]/40 hover:shadow-[0_14px_28px_rgba(255,107,53,0.09)] dark:border-[#2D234A] dark:bg-[#18122B]"
+                                        className="group cursor-pointer flex flex-col overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-[var(--brand-primary,#FF6B35)] hover:shadow-md dark:border-gray-800 dark:bg-[#18122B]"
                                     >
                                         {/* Teacher Photo Header */}
                                         <div className="relative h-44 sm:h-56 w-full overflow-hidden bg-gradient-to-br from-orange-100/80 via-amber-50/60 to-teal-50/50 dark:from-gray-900 dark:via-purple-950/30 dark:to-gray-800">
@@ -298,10 +298,10 @@ export default function PublicTeachersIndex({ teachers, statuses = [], filters }
                                         {/* Biodata Body */}
                                         <div className="flex flex-1 flex-col p-3 sm:p-4 space-y-2.5 sm:space-y-3">
                                             <div>
-                                                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#FF6B35]">
+                                                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--brand-primary,#FF6B35)]">
                                                     Nama Lengkap
                                                 </span>
-                                                <h3 className="mt-0.5 text-xs sm:text-base font-black text-gray-900 group-hover:text-[#FF6B35] transition-colors leading-snug line-clamp-2 dark:text-white">
+                                                <h3 className="mt-0.5 text-xs sm:text-base font-black text-gray-900 group-hover:text-[var(--brand-primary,#FF6B35)] transition-colors leading-snug line-clamp-2 dark:text-white">
                                                     {teacher.name}
                                                 </h3>
                                             </div>

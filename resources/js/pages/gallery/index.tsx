@@ -521,7 +521,7 @@ export default function GalleryManagement({ galleries, categories, stats, filter
                             return (
                                 <div
                                     key={item.id}
-                                    className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs transition-all hover:-translate-y-0.5 hover:border-[#FF6B35]/50 hover:shadow-md dark:border-gray-800 dark:bg-[#18122B]"
+                                    className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs transition-all hover:-translate-y-0.5 hover:border-[var(--brand-primary,#FF6B35)] hover:shadow-md dark:border-gray-800 dark:bg-[#18122B]"
                                 >
                                     <div
                                         onClick={() => {

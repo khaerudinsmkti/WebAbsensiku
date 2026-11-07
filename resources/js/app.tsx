@@ -3,6 +3,7 @@ import { ScrollToTopButton } from '@/components/scroll-to-top-button';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
+import { applyTheme } from '@/lib/theme';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
@@ -30,15 +31,33 @@ const getSchoolName = (): string => {
     return import.meta.env.VITE_APP_NAME || 'SD Digital Indonesia';
 };
 
-// Listen to page navigation to dynamically update global school name if modified
+// Sync school name and theme dynamically across SPA page transitions
 if (typeof window !== 'undefined') {
-    router.on('navigate', (event) => {
-        const pageProps = (event as any).detail?.page?.props;
-        const nameFromProps = pageProps?.school?.name || pageProps?.name;
+    const syncThemeAndName = (pageProps: any) => {
+        if (!pageProps) return;
+        const nameFromProps = pageProps.school?.name || pageProps.name;
         if (nameFromProps) {
             (window as any).__SCHOOL_NAME__ = nameFromProps;
         }
+
+        const themeFromProps = pageProps.school?.theme_data || pageProps.setting?.theme_data;
+        if (themeFromProps) {
+            applyTheme(themeFromProps);
+        }
+    };
+
+    router.on('navigate', (event) => {
+        syncThemeAndName((event as any).detail?.page?.props);
     });
+
+    router.on('success', (event) => {
+        syncThemeAndName((event as any).detail?.page?.props);
+    });
+
+    // Initial check from window object if server injected it
+    if ((window as any).__SCHOOL_THEME__) {
+        applyTheme((window as any).__SCHOOL_THEME__);
+    }
 }
 
 void createInertiaApp({

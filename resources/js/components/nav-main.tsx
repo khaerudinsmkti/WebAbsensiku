@@ -59,7 +59,7 @@ function NavCollapsibleItem({ item }: { item: NavItem }) {
                             hasActiveChild
                                 ? 'bg-white/10 text-white font-bold hover:bg-white/15 hover:text-white'
                                 : 'text-white/80 hover:text-white hover:bg-white/10 active:bg-white/15'
-                        } data-[active=true]:bg-gradient-to-r data-[active=true]:from-[#FF6B35] data-[active=true]:to-[#FF8C5A] data-[active=true]:text-white data-[active=true]:font-bold data-[active=true]:shadow-md data-[active=true]:shadow-[#FF6B35]/30`}
+                        } data-[active=true]:bg-gradient-to-r data-[active=true]:from-[var(--brand-primary,#FF6B35)] data-[active=true]:to-[var(--brand-primary-dark,#FF8C5A)] data-[active=true]:text-white data-[active=true]:font-bold data-[active=true]:shadow-brand`}
                     >
                         {item.icon && <item.icon className="size-5" />}
                         <span>{item.title}</span>
@@ -77,7 +77,7 @@ function NavCollapsibleItem({ item }: { item: NavItem }) {
                                     <SidebarMenuSubButton
                                         asChild
                                         isActive={subActive}
-                                        className="text-white/75 hover:text-white hover:bg-white/10 active:bg-white/15 data-[active=true]:bg-gradient-to-r data-[active=true]:from-[#FF6B35] data-[active=true]:to-[#FF8C5A] data-[active=true]:text-white data-[active=true]:font-bold data-[active=true]:shadow-md data-[active=true]:shadow-[#FF6B35]/30 rounded-lg h-9 px-2.5 transition-all [&>svg]:text-current"
+                                        className="text-white/75 hover:text-white hover:bg-white/10 active:bg-white/15 data-[active=true]:bg-gradient-to-r data-[active=true]:from-[var(--brand-primary,#FF6B35)] data-[active=true]:to-[var(--brand-primary-dark,#FF8C5A)] data-[active=true]:text-white data-[active=true]:font-bold data-[active=true]:shadow-brand rounded-lg h-9 px-2.5 transition-all [&>svg]:text-current"
                                     >
                                         <Link href={subItem.href} prefetch>
                                             {subItem.icon && (
@@ -118,7 +118,7 @@ export function NavMain({ items }: { items: NavItem[] }) {
                                 asChild
                                 isActive={active}
                                 tooltip={{ children: item.title }}
-                                className="text-white/80 hover:text-white hover:bg-white/10 active:bg-white/15 data-[active=true]:bg-gradient-to-r data-[active=true]:from-[#FF6B35] data-[active=true]:to-[#FF8C5A] data-[active=true]:text-white data-[active=true]:font-bold data-[active=true]:shadow-md data-[active=true]:shadow-[#FF6B35]/30 rounded-xl h-10 px-3 transition-all"
+                                className="text-white/80 hover:text-white hover:bg-white/10 active:bg-white/15 data-[active=true]:bg-gradient-to-r data-[active=true]:from-[var(--brand-primary,#FF6B35)] data-[active=true]:to-[var(--brand-primary-dark,#FF8C5A)] data-[active=true]:text-white data-[active=true]:font-bold data-[active=true]:shadow-brand rounded-xl h-10 px-3 transition-all"
                             >
                                 <Link href={item.href} prefetch>
                                     {item.icon && <item.icon className="size-5" />}

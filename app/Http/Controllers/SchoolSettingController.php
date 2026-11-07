@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\SchoolSetting;
+use App\Services\ThemeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -20,6 +21,7 @@ class SchoolSettingController extends Controller
 
         return Inertia::render('admin/school-settings', [
             'setting' => $setting,
+            'availableThemes' => array_values(ThemeService::getThemes()),
         ]);
     }
 
@@ -28,6 +30,8 @@ class SchoolSettingController extends Controller
      */
     public function update(Request $request): RedirectResponse
     {
+        $themeKeys = implode(',', array_keys(ThemeService::getThemes()));
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'nullable|string|max:500',
@@ -41,6 +45,7 @@ class SchoolSettingController extends Controller
             'school_days_per_week' => 'nullable|integer|in:5,6',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp,svg|max:2048',
             'remove_logo' => 'nullable|boolean',
+            'theme_color' => 'nullable|string|in:' . $themeKeys,
         ]);
 
         $setting = SchoolSetting::getSetting();
@@ -71,6 +76,12 @@ class SchoolSettingController extends Controller
         $setting->principal_name = $validated['principal_name'] ?? null;
         $setting->principal_nip = $validated['principal_nip'] ?? null;
         $setting->start_time = substr($validated['start_time'], 0, 5);
+        if (isset($validated['school_days_per_week'])) {
+            $setting->school_days_per_week = (int) $validated['school_days_per_week'];
+        }
+        if (!empty($validated['theme_color'])) {
+            $setting->theme_color = $validated['theme_color'];
+        }
         $setting->save();
 
         \App\Services\PwaManifestService::syncManifest();

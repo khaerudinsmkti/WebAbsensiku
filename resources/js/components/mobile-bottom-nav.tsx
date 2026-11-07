@@ -124,20 +124,20 @@ export function MobileBottomNav() {
                         prefetch
                         className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
                             isDashboardActive
-                                ? 'text-[#FF6B35]'
+                                ? 'text-[var(--brand-primary,#FF6B35)]'
                                 : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                         }`}
                     >
                         <div
                             className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
                                 isDashboardActive
-                                    ? 'bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white shadow-md shadow-[#FF6B35]/30'
+                                    ? 'bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand'
                                     : 'hover:bg-gray-100 dark:hover:bg-white/5'
                             }`}
                         >
                             <LayoutGrid className="size-5" />
                         </div>
-                        <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isDashboardActive ? 'text-[#FF6B35]' : ''}`}>
+                        <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isDashboardActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
                             Beranda
                         </span>
                     </Link>
@@ -149,20 +149,20 @@ export function MobileBottomNav() {
                             prefetch
                             className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
                                 isJournalActive
-                                    ? 'text-[#FF6B35]'
+                                    ? 'text-[var(--brand-primary,#FF6B35)]'
                                     : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                             }`}
                         >
                             <div
                                 className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
                                     isJournalActive
-                                        ? 'bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white shadow-md shadow-[#FF6B35]/30'
+                                        ? 'bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand'
                                         : 'hover:bg-gray-100 dark:hover:bg-white/5'
                                 }`}
                             >
                                 <BookOpenCheck className="size-5" />
                             </div>
-                            <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isJournalActive ? 'text-[#FF6B35]' : ''}`}>
+                            <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isJournalActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
                                 Jurnal
                             </span>
                         </Link>
@@ -174,20 +174,20 @@ export function MobileBottomNav() {
                         prefetch
                         className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
                             isPresensiActive
-                                ? 'text-[#FF6B35]'
+                                ? 'text-[var(--brand-primary,#FF6B35)]'
                                 : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                         }`}
                     >
                         <div
                             className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
                                 isPresensiActive
-                                    ? 'bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white shadow-md shadow-[#FF6B35]/30'
+                                    ? 'bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand'
                                     : 'hover:bg-gray-100 dark:hover:bg-white/5'
                             }`}
                         >
                             <UserCheck className="size-5" />
                         </div>
-                        <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isPresensiActive ? 'text-[#FF6B35]' : ''}`}>
+                        <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isPresensiActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
                             Presensi
                         </span>
                     </Link>
@@ -198,20 +198,20 @@ export function MobileBottomNav() {
                         prefetch
                         className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
                             isLatenessActive
-                                ? 'text-[#FF6B35]'
+                                ? 'text-[var(--brand-primary,#FF6B35)]'
                                 : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                         }`}
                     >
                         <div
                             className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
                                 isLatenessActive
-                                    ? 'bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white shadow-md shadow-[#FF6B35]/30'
+                                    ? 'bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand'
                                     : 'hover:bg-gray-100 dark:hover:bg-white/5'
                             }`}
                         >
                             <Clock className="size-5" />
                         </div>
-                        <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isLatenessActive ? 'text-[#FF6B35]' : ''}`}>
+                        <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isLatenessActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
                             Terlambat
                         </span>
                     </Link>
@@ -223,20 +223,20 @@ export function MobileBottomNav() {
                             prefetch
                             className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
                                 isAdjustmentsActive
-                                    ? 'text-[#FF6B35]'
+                                    ? 'text-[var(--brand-primary,#FF6B35)]'
                                     : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                             }`}
                         >
                             <div
                                 className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
                                     isAdjustmentsActive
-                                        ? 'bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white shadow-md shadow-[#FF6B35]/30'
+                                        ? 'bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand'
                                         : 'hover:bg-gray-100 dark:hover:bg-white/5'
                                 }`}
                             >
                                 <CalendarDays className="size-5" />
                             </div>
-                            <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isAdjustmentsActive ? 'text-[#FF6B35]' : ''}`}>
+                            <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isAdjustmentsActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
                                 Absen Khusus
                             </span>
                         </Link>
@@ -248,23 +248,23 @@ export function MobileBottomNav() {
                         onClick={() => setIsMenuOpen(true)}
                         className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 relative ${
                             isOtherActive || isMenuOpen
-                                ? 'text-[#FF6B35]'
+                                ? 'text-[var(--brand-primary,#FF6B35)]'
                                 : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                         }`}
                     >
                         <div
                             className={`flex size-10 items-center justify-center rounded-2xl transition-all relative ${
                                 isOtherActive || isMenuOpen
-                                    ? 'bg-orange-50 text-[#FF6B35] border border-orange-200 dark:bg-orange-950/40 dark:border-orange-800'
+                                    ? 'bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] border border-[var(--brand-primary,#FF6B35)]/40 dark:bg-[var(--brand-primary-dark,#FF6B35)]/20 dark:border-[var(--brand-primary,#FF6B35)]/40'
                                     : 'hover:bg-gray-100 dark:hover:bg-white/5'
                             }`}
                         >
                             <Menu className="size-5" />
                             {isOtherActive && (
-                                <span className="absolute top-1 right-1 size-2 rounded-full bg-[#FF6B35] ring-2 ring-white dark:ring-[#18122B]" />
+                                <span className="absolute top-1 right-1 size-2 rounded-full bg-[var(--brand-primary,#FF6B35)] ring-2 ring-white dark:ring-[#18122B]" />
                             )}
                         </div>
-                        <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isOtherActive || isMenuOpen ? 'text-[#FF6B35]' : ''}`}>
+                        <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isOtherActive || isMenuOpen ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
                             Lainnya
                         </span>
                     </button>
@@ -295,7 +295,7 @@ export function MobileBottomNav() {
                                             className="size-10 rounded-xl object-contain border border-gray-200 bg-white p-0.5 shadow-sm dark:border-gray-700"
                                         />
                                     ) : (
-                                        <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white font-black text-xs shadow-brand">
+                                        <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white font-black text-xs shadow-brand">
                                             {appName.split(' ').filter(Boolean).slice(0, 2).map((w: string) => w[0]?.toUpperCase()).join('') || 'AK'}
                                         </div>
                                     )}
@@ -362,7 +362,7 @@ export function MobileBottomNav() {
                                         onClick={() => setIsMenuOpen(false)}
                                         className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${
                                             isAdjustmentsActive
-                                                ? 'bg-orange-50 border-orange-300 text-[#FF6B35] font-bold dark:bg-orange-950/40 dark:border-orange-800'
+                                                ? 'bg-[var(--brand-primary-light,#FFF0EB)] border-[var(--brand-primary,#FF6B35)]/40 text-[var(--brand-primary,#FF6B35)] font-bold dark:bg-[var(--brand-primary-dark,#FF6B35)]/20 dark:border-[var(--brand-primary,#FF6B35)]/40'
                                                 : 'border-gray-200/80 hover:bg-gray-50 text-gray-700 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800/50'
                                         }`}
                                     >
@@ -381,7 +381,7 @@ export function MobileBottomNav() {
                                     onClick={() => setIsMenuOpen(false)}
                                     className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${
                                         url.startsWith('/reports')
-                                            ? 'bg-orange-50 border-orange-300 text-[#FF6B35] font-bold dark:bg-orange-950/40 dark:border-orange-800'
+                                            ? 'bg-[var(--brand-primary-light,#FFF0EB)] border-[var(--brand-primary,#FF6B35)]/40 text-[var(--brand-primary,#FF6B35)] font-bold dark:bg-[var(--brand-primary-dark,#FF6B35)]/20 dark:border-[var(--brand-primary,#FF6B35)]/40'
                                             : 'border-gray-200/80 hover:bg-gray-50 text-gray-700 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800/50'
                                     }`}
                                 >
@@ -399,7 +399,7 @@ export function MobileBottomNav() {
                                     onClick={() => setIsMenuOpen(false)}
                                     className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${
                                         url.startsWith('/admin/holidays')
-                                            ? 'bg-orange-50 border-orange-300 text-[#FF6B35] font-bold dark:bg-orange-950/40 dark:border-orange-800'
+                                            ? 'bg-[var(--brand-primary-light,#FFF0EB)] border-[var(--brand-primary,#FF6B35)]/40 text-[var(--brand-primary,#FF6B35)] font-bold dark:bg-[var(--brand-primary-dark,#FF6B35)]/20 dark:border-[var(--brand-primary,#FF6B35)]/40'
                                             : 'border-gray-200/80 hover:bg-gray-50 text-gray-700 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800/50'
                                     }`}
                                 >
@@ -426,7 +426,7 @@ export function MobileBottomNav() {
                                             onClick={() => setIsMenuOpen(false)}
                                             className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${
                                                 url.startsWith('/master')
-                                                    ? 'bg-orange-50 border-orange-300 text-[#FF6B35] font-bold dark:bg-orange-950/40 dark:border-orange-800'
+                                                    ? 'bg-[var(--brand-primary-light,#FFF0EB)] border-[var(--brand-primary,#FF6B35)]/40 text-[var(--brand-primary,#FF6B35)] font-bold dark:bg-[var(--brand-primary-dark,#FF6B35)]/20 dark:border-[var(--brand-primary,#FF6B35)]/40'
                                                     : 'border-gray-200/80 hover:bg-gray-50 text-gray-700 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800/50'
                                             }`}
                                         >
@@ -444,7 +444,7 @@ export function MobileBottomNav() {
                                             onClick={() => setIsMenuOpen(false)}
                                             className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${
                                                 url.startsWith('/admin/school-settings')
-                                                    ? 'bg-orange-50 border-orange-300 text-[#FF6B35] font-bold dark:bg-orange-950/40 dark:border-orange-800'
+                                                    ? 'bg-[var(--brand-primary-light,#FFF0EB)] border-[var(--brand-primary,#FF6B35)]/40 text-[var(--brand-primary,#FF6B35)] font-bold dark:bg-[var(--brand-primary-dark,#FF6B35)]/20 dark:border-[var(--brand-primary,#FF6B35)]/40'
                                                     : 'border-gray-200/80 hover:bg-gray-50 text-gray-700 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800/50'
                                             }`}
                                         >

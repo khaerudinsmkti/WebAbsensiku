@@ -253,7 +253,7 @@ export default function AttendanceIndex({
                                 type="submit"
                                 variant="primary"
                                 disabled={processing || students.length === 0 || isBlocked}
-                                className="font-bold text-xs bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand hover:translate-y-[-1px] transition-all disabled:opacity-50"
+                                className="font-bold text-xs text-white shadow-brand hover:translate-y-[-1px] transition-all disabled:opacity-50"
                             >
                                 <Save className="size-4 mr-1.5" />
                                 {processing ? 'Menyimpan...' : 'Simpan Presensi Kelas'}
@@ -422,7 +422,7 @@ export default function AttendanceIndex({
                                     type="submit"
                                     variant="primary"
                                     disabled={processing}
-                                    className="font-bold text-xs bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand hover:translate-y-[-1px] transition-all"
+                                    className="font-bold text-xs text-white shadow-brand hover:translate-y-[-1px] transition-all"
                                 >
                                     <Save className="size-4 mr-1.5" />
                                     {processing ? 'Menyimpan...' : 'Simpan Presensi Kelas'}

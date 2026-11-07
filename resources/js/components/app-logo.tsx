@@ -17,7 +17,7 @@ export default function AppLogo() {
 
     return (
         <div className="flex items-center gap-3">
-            <div className="flex aspect-square size-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#FFE66D] text-white shadow-md shadow-[#FF6B35]/25">
+            <div className="flex aspect-square size-10 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand">
                 {school?.logo_url ? (
                     <img
                         src={school.logo_url}

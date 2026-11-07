@@ -287,7 +287,7 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                                 {news.data.map((item) => (
                                     <div
                                         key={item.id}
-                                        className="group flex flex-col overflow-hidden rounded-[22px] border-2 border-[#E8E8E8] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF6B35]/40 hover:shadow-[0_12px_24px_rgba(255,107,53,0.08)] dark:border-[#2D234A] dark:bg-[#18122B]"
+                                        className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-[var(--brand-primary,#FF6B35)] hover:shadow-md dark:border-gray-800 dark:bg-[#18122B]"
                                     >
                                         {/* Cover Image or Graphic */}
                                         <div className="relative h-48 w-full overflow-hidden bg-gradient-to-tr from-orange-100 via-amber-50 to-teal-50 dark:from-gray-900 dark:via-purple-950/30 dark:to-gray-800">
@@ -368,7 +368,7 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
 
                                             <h3
                                                 onClick={() => handleOpenNews(item)}
-                                                className="mt-2 cursor-pointer text-base font-extrabold text-[#111827] line-clamp-2 leading-snug group-hover:text-[#FF6B35] transition-colors dark:text-white"
+                                                className="mt-2 cursor-pointer text-base font-extrabold text-[#111827] line-clamp-2 leading-snug group-hover:text-[var(--brand-primary,#FF6B35)] transition-colors dark:text-white"
                                             >
                                                 {item.title}
                                             </h3>
@@ -382,7 +382,7 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                                                 <button
                                                     type="button"
                                                     onClick={() => handleOpenNews(item)}
-                                                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FF6B35] hover:text-[#e05622] transition-colors"
+                                                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--brand-primary,#FF6B35)] hover:text-[var(--brand-primary-dark,#e05622)] transition-colors"
                                                 >
                                                     <span>Baca Selengkapnya</span>
                                                     <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />

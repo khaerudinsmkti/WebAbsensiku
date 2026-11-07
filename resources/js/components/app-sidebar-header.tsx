@@ -18,7 +18,7 @@ export function AppSidebarHeader({
         <header className="sticky top-0 z-20 flex h-16 md:h-[68px] shrink-0 items-center justify-between border-b border-[#E8E8E8] bg-white/85 px-4 md:px-6 backdrop-blur-md transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-16 dark:border-[#2D234A] dark:bg-[#18122B]/85">
             {/* Desktop Left: Sidebar Trigger & Breadcrumbs */}
             <div className="hidden md:flex items-center gap-3">
-                <SidebarTrigger className="-ml-1 rounded-lg border-2 border-[#E8E8E8] bg-white hover:bg-[#FFF0EB] hover:text-[#FF6B35] dark:border-[#2D234A] dark:bg-[#18122B]" />
+                <SidebarTrigger className="-ml-1 rounded-lg border border-gray-200/80 bg-white hover:bg-[var(--brand-primary-light,#FFF0EB)] hover:text-[var(--brand-primary,#FF6B35)] shadow-2xs dark:border-gray-800 dark:bg-[#18122B]" />
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
             </div>
 
@@ -31,7 +31,7 @@ export function AppSidebarHeader({
                         className="size-10 shrink-0 rounded-xl border border-gray-200/80 bg-white p-1 object-contain shadow-xs dark:border-gray-700"
                     />
                 ) : (
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white font-black text-sm shadow-sm">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white font-black text-sm shadow-sm">
                         AK
                     </div>
                 )}

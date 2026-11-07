@@ -459,7 +459,7 @@ export default function TeacherProfilesManagement({
                         {teachers.data.map((teacher) => (
                             <div
                                 key={teacher.id}
-                                className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs transition-all hover:border-[#FF6B35]/50 hover:shadow-md dark:border-gray-800 dark:bg-[#18122B]"
+                                className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xs transition-all hover:border-[var(--brand-primary,#FF6B35)] hover:shadow-md dark:border-gray-800 dark:bg-[#18122B]"
                             >
                                 <div className="relative h-52 w-full overflow-hidden bg-gradient-to-br from-orange-100/70 via-amber-50/50 to-teal-50/40 dark:from-gray-900 dark:to-gray-800">
                                     {teacher.photo_url ? (

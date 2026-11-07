@@ -637,7 +637,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
 
                         <div className="relative z-10 mx-auto max-w-5xl text-center">
                             <div className="flex flex-wrap items-center justify-center gap-2">
-                                <div className="inline-flex items-center gap-2 rounded-full border border-[#FF6B35]/30 bg-[#FFF0EB] px-4 py-1.5 text-xs font-bold text-[#FF6B35] shadow-xs dark:border-[#FF6B35]/30 dark:bg-[#331C1A] dark:text-[#FF8C5A]">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-primary,#FF6B35)]/30 bg-[var(--brand-primary-light,#FFF0EB)] px-4 py-1.5 text-xs font-bold text-[var(--brand-primary,#FF6B35)] shadow-xs dark:border-[var(--brand-primary,#FF6B35)]/30 dark:bg-[var(--brand-primary,#FF6B35)]/15 dark:text-white">
                                     <Sparkles className="size-4" />
                                     {heroBanner?.badge || `Selamat Datang di Portal Resmi ${schoolName}`}
                                 </div>
@@ -646,7 +646,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                     <button
                                         type="button"
                                         onClick={() => setIsHeroModalOpen(true)}
-                                        className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-[#FF6B35] bg-white/90 px-3.5 py-1.5 text-xs font-extrabold text-[#FF6B35] shadow-xs hover:bg-orange-50 transition-all dark:bg-gray-800 dark:hover:bg-gray-700"
+                                        className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-[var(--brand-primary,#FF6B35)] bg-white/90 px-3.5 py-1.5 text-xs font-extrabold text-[var(--brand-primary,#FF6B35)] shadow-xs hover:bg-[var(--brand-primary-light,#FFF0EB)] transition-all dark:bg-gray-800 dark:hover:bg-gray-700"
                                     >
                                         <Sparkles className="size-3.5" />
                                         Kelola Hero Banner
@@ -656,7 +656,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
 
                             <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-[#111827] sm:text-6xl dark:text-white leading-[1.18]">
                                 {heroBanner?.title || 'Mewujudkan Generasi Cerdas,'}{' '}
-                                <span className="bg-gradient-to-r from-[#FF6B35] via-[#F59E0B] to-[#10B981] bg-clip-text text-transparent">
+                                <span className="hero-headline-gradient font-black">
                                     {heroBanner?.highlight || 'Kreatif, Ceria & Berakhlak Mulia'}
                                 </span>
                             </h1>
@@ -677,7 +677,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                             )}
 
                             <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
-                                <Button asChild size="lg" variant="primary" className="rounded-2xl px-6 py-3 font-extrabold shadow-lg shadow-[#FF6B35]/25">
+                                <Button asChild size="lg" variant="primary" className="rounded-2xl px-6 py-3 font-extrabold shadow-brand">
                                     <Link href="/berita">
                                         <Newspaper className="mr-2 size-5" />
                                         <span>Lihat Warta & Berita</span>
@@ -685,9 +685,9 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                     </Link>
                                 </Button>
 
-                                <Button asChild size="lg" variant="outline" className="rounded-2xl border-2 border-gray-200 bg-white/80 px-6 py-3 font-extrabold text-gray-700 hover:border-[#FF6B35] hover:bg-[#FFF0EB] hover:text-[#FF6B35] shadow-xs dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
+                                <Button asChild size="lg" variant="outline" className="rounded-2xl border-2 border-gray-200 bg-white/80 px-6 py-3 font-extrabold text-gray-700 hover:border-[var(--brand-primary,#FF6B35)] hover:bg-[var(--brand-primary-light,#FFF0EB)] hover:text-[var(--brand-primary,#FF6B35)] shadow-xs dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
                                     <a href="/kalender">
-                                        <CalendarDays className="mr-2 size-5 text-[#FF6B35]" />
+                                        <CalendarDays className="mr-2 size-5 text-[var(--brand-primary,#FF6B35)]" />
                                         <span>Kalender Akademik</span>
                                     </a>
                                 </Button>
@@ -766,7 +766,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                                 </div>
 
                                                 {/* Lencana Jabatan */}
-                                                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gradient-to-r from-[#FF6B35] to-[#E85D26] px-3.5 py-1 text-[11px] font-black tracking-wider text-white shadow-md">
+                                                <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gradient-to-r from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] px-3.5 py-1 text-[11px] font-black tracking-wider text-white shadow-brand">
                                                     KEPALA SEKOLAH
                                                 </div>
                                             </div>
@@ -1014,7 +1014,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                     {filteredNews.map((item) => (
                                         <div
                                             key={item.id}
-                                            className="group flex flex-col overflow-hidden rounded-[22px] border-2 border-[#E8E8E8] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF6B35]/40 hover:shadow-[0_12px_24px_rgba(255,107,53,0.08)] dark:border-[#2D234A] dark:bg-[#18122B]"
+                                            className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-[var(--brand-primary,#FF6B35)] hover:shadow-md dark:border-gray-800 dark:bg-[#18122B]"
                                         >
                                             {/* Cover Image or Themed Graphic */}
                                             <div className="relative h-48 w-full overflow-hidden bg-gradient-to-tr from-orange-100 via-amber-50 to-teal-50 dark:from-gray-900 dark:via-purple-950/30 dark:to-gray-800">
@@ -1095,7 +1095,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
 
                                                 <h3
                                                     onClick={() => handleOpenNews(item)}
-                                                    className="mt-2 cursor-pointer text-base font-extrabold text-[#111827] line-clamp-2 leading-snug group-hover:text-[#FF6B35] transition-colors dark:text-white"
+                                                    className="mt-2 cursor-pointer text-base font-extrabold text-[#111827] line-clamp-2 leading-snug group-hover:text-[var(--brand-primary,#FF6B35)] transition-colors dark:text-white"
                                                 >
                                                     {item.title}
                                                 </h3>
@@ -1208,7 +1208,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                                         setActiveGalleryPhotoIdx(0);
                                                         setActiveGallery(gItem);
                                                     }}
-                                                    className="group cursor-pointer flex flex-col overflow-hidden rounded-[22px] border-2 border-[#E8E8E8] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:border-[#FF6B35]/40 hover:shadow-[0_12px_24px_rgba(255,107,53,0.08)] dark:border-[#2D234A] dark:bg-[#18122B]"
+                                                    className="group cursor-pointer flex flex-col overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-[var(--brand-primary,#FF6B35)] hover:shadow-md dark:border-gray-800 dark:bg-[#18122B]"
                                                 >
                                                     <div className="relative h-52 w-full overflow-hidden bg-gray-100 dark:bg-gray-900">
                                                         {gItem.image_url ? (
@@ -1235,7 +1235,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
 
                                                     <div className="flex flex-1 flex-col p-4">
                                                         <span className="text-[11px] text-gray-400">{gItem.formatted_date}</span>
-                                                        <h3 className="mt-1 line-clamp-1 text-sm font-extrabold text-gray-900 group-hover:text-[#FF6B35] transition-colors dark:text-white">
+                                                        <h3 className="mt-1 line-clamp-1 text-sm font-extrabold text-gray-900 group-hover:text-[var(--brand-primary,#FF6B35)] transition-colors dark:text-white">
                                                             {gItem.title}
                                                         </h3>
                                                         {gItem.description && (

@@ -574,8 +574,8 @@ export default function Dashboard({
                                                             <Button
                                                                 asChild
                                                                 size="sm"
-                                                                variant="secondary"
-                                                                className="h-8 px-3 text-xs font-bold text-[#FF6B35] bg-orange-50 hover:bg-orange-100 border border-orange-200 dark:bg-orange-950/40 dark:border-orange-800 dark:hover:bg-orange-900/50"
+                                                                variant="outline"
+                                                                className="h-8 px-3 text-xs font-bold text-[var(--brand-primary,#FF6B35)] bg-[var(--brand-primary-light,#FFF0EB)] hover:bg-[var(--brand-primary-light,#FFF0EB)]/80 border border-[var(--brand-primary,#FF6B35)]/30 dark:bg-[var(--brand-primary)]/10 dark:border-[var(--brand-primary)]/30 dark:text-white"
                                                             >
                                                                 <Link href={`/attendances?classroom_id=${cls.id}&date=${selectedDate}`}>
                                                                     Input Presensi
@@ -726,7 +726,7 @@ export default function Dashboard({
                                 onClick={() => setTopPeriod('monthly')}
                                 className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                                     topPeriod === 'monthly'
-                                        ? 'bg-white text-[#FF6B35] shadow-sm dark:bg-[#2A2045] dark:text-[#FFA07A]'
+                                        ? 'bg-white text-[var(--brand-primary,#FF6B35)] shadow-xs dark:bg-[#2A2045] dark:text-white'
                                         : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                                 }`}
                             >
@@ -737,7 +737,7 @@ export default function Dashboard({
                                 onClick={() => setTopPeriod('yearly')}
                                 className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
                                     topPeriod === 'yearly'
-                                        ? 'bg-white text-[#FF6B35] shadow-sm dark:bg-[#2A2045] dark:text-[#FFA07A]'
+                                        ? 'bg-white text-[var(--brand-primary,#FF6B35)] shadow-xs dark:bg-[#2A2045] dark:text-white'
                                         : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                                 }`}
                             >

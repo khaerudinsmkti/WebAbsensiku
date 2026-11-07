@@ -16,6 +16,7 @@ class PwaManifestService
         $shortName = $school->name ?: 'AbsensiKu';
 
         $version = $school->updated_at ? $school->updated_at->timestamp : (file_exists(public_path('manifest.json')) ? filemtime(public_path('manifest.json')) : time());
+        $themeData = ThemeService::getTheme($school->theme_color ?? 'sd-orange');
 
         $icons = [
             [
@@ -82,7 +83,7 @@ class PwaManifestService
             'display' => 'standalone',
             'orientation' => 'portrait-primary',
             'background_color' => '#FFFFFF',
-            'theme_color' => '#FF6B35',
+            'theme_color' => $themeData['primary'],
             'prefer_related_applications' => false,
             'categories' => ['education', 'productivity'],
             'icons' => $icons,

@@ -27,8 +27,8 @@ const variantStyles: Record<
     }
 > = {
     primary: {
-        iconBg: 'bg-gradient-to-tr from-[#FFF0EB] to-[#FFE66D]/40 dark:from-[#3D1A10] dark:to-[#4D3010]',
-        iconColor: 'text-[#FF6B35]',
+        iconBg: 'bg-gradient-to-tr from-[var(--brand-primary-light,#FFF0EB)] to-[var(--brand-primary-light,#FFF0EB)]/60 dark:from-[var(--brand-primary-dark,#FF6B35)]/20 dark:to-[var(--brand-primary-dark,#FF6B35)]/40',
+        iconColor: 'text-[var(--brand-primary,#FF6B35)]',
     },
     secondary: {
         iconBg: 'bg-gradient-to-tr from-[#E8FAF9] to-[#4ECDC4]/30 dark:from-[#113835] dark:to-[#174D49]',
@@ -71,7 +71,7 @@ export function StatCard({
     return (
         <div
             className={cn(
-                'group relative flex flex-col justify-between overflow-hidden rounded-[18px] border-2 border-[#E8E8E8] bg-white p-4 sm:p-5 shadow-[0_2px_8px_rgba(0,0,0,0.03)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_-6px_rgba(255,107,53,0.12)] dark:border-[#2D234A] dark:bg-[#18122B]',
+                'group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-gray-200/80 bg-white p-4 sm:p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm dark:border-gray-800 dark:bg-[#18122B]',
                 className,
             )}
         >

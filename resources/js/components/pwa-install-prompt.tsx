@@ -139,13 +139,13 @@ export function PwaInstallPrompt() {
                             className="size-11 rounded-xl object-contain border border-gray-200 bg-white p-1 shadow-sm dark:border-gray-700"
                         />
                     ) : (
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#FF8C5A] text-white font-black text-xs shadow-brand">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white font-black text-xs shadow-brand">
                             {appName.split(' ').filter(Boolean).slice(0, 2).map((w: string) => w[0]?.toUpperCase()).join('') || 'AK'}
                         </div>
                     )}
                     <div className="leading-tight">
                         <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-black uppercase tracking-wider text-[#FF6B35]">
+                            <span className="text-xs font-black uppercase tracking-wider text-[var(--brand-primary,#FF6B35)]">
                                 Install Aplikasi
                             </span>
                             <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold text-orange-800 dark:bg-orange-950 dark:text-orange-300">
@@ -177,7 +177,7 @@ export function PwaInstallPrompt() {
             {showInstructions ? (
                 <div className="mt-3 rounded-xl bg-orange-50 dark:bg-orange-950/50 p-3 text-xs border border-orange-200 dark:border-orange-800">
                     <p className="font-bold text-gray-900 dark:text-white mb-1.5 flex items-center gap-1.5">
-                        <Info className="size-4 text-[#FF6B35]" />
+                        <Info className="size-4 text-[var(--brand-primary,#FF6B35)]" />
                         Petunjuk Instalasi:
                     </p>
                     {isInsecureOrigin ? (
@@ -209,7 +209,7 @@ export function PwaInstallPrompt() {
                     <button
                         type="button"
                         onClick={() => setShowInstructions(false)}
-                        className="mt-2.5 text-[11px] font-bold text-[#FF6B35] hover:underline"
+                        className="mt-2.5 text-[11px] font-bold text-[var(--brand-primary,#FF6B35)] hover:underline"
                     >
                         Tutup Petunjuk
                     </button>
@@ -227,9 +227,10 @@ export function PwaInstallPrompt() {
                     </Button>
                     <Button
                         type="button"
+                        variant="primary"
                         size="sm"
                         onClick={handleInstallClick}
-                        className="h-8 gap-1.5 bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand font-bold text-xs hover:opacity-95"
+                        className="h-8 gap-1.5 font-bold text-xs"
                     >
                         <Download className="size-3.5" />
                         Install Sekarang

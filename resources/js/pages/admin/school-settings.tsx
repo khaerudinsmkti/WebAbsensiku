@@ -2,18 +2,22 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import {
     Building2,
     Calendar,
+    Check,
     CheckCircle2,
     Clock,
     FileSpreadsheet,
     HelpCircle,
     Image as ImageIcon,
+    Layers,
     Mail,
     MapPin,
     MessageSquareQuote,
+    Palette,
     Phone,
     PhoneCall,
     Save,
     School,
+    Sparkles,
     Trash2,
     Upload,
     UserCheck,
@@ -21,6 +25,23 @@ import {
 import React, { useRef, useState } from 'react';
 import { PageBanner } from '@/components/page-banner';
 import { Button } from '@/components/ui/button';
+import { applyTheme } from '@/lib/theme';
+
+export interface ThemeOption {
+    id: string;
+    name: string;
+    level: string;
+    badge: string;
+    description: string;
+    primary: string;
+    primary_dark: string;
+    primary_light: string;
+    secondary: string;
+    secondary_foreground: string;
+    ring: string;
+    gradient_from: string;
+    gradient_to: string;
+}
 
 interface SchoolSetting {
     id: number;
@@ -36,16 +57,19 @@ interface SchoolSetting {
     school_days_per_week?: number;
     logo_path: string | null;
     logo_url: string | null;
+    theme_color?: string | null;
 }
 
 interface PageProps {
     setting: SchoolSetting;
+    availableThemes?: ThemeOption[];
 }
 
-export default function SchoolSettingsPage({ setting }: PageProps) {
+export default function SchoolSettingsPage({ setting, availableThemes = [] }: PageProps) {
     const { flash } = usePage<{ flash?: { success?: string; error?: string } }>().props;
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(setting.logo_url);
+    const [selectedLevel, setSelectedLevel] = useState<string>('all');
 
     const { data, setData, post, processing, errors, recentlySuccessful } = useForm({
         name: setting.name || '',
@@ -60,7 +84,22 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
         school_days_per_week: setting.school_days_per_week ?? 6,
         logo: null as File | null,
         remove_logo: false,
+        theme_color: setting.theme_color || 'sd-orange',
     });
+
+    const handleSelectTheme = (themeId: string) => {
+        setData('theme_color', themeId);
+        const selected = availableThemes.find((t) => t.id === themeId);
+        if (selected) {
+            applyTheme(selected);
+        }
+    };
+
+    const currentTheme = availableThemes.find((t) => t.id === data.theme_color) || availableThemes[0];
+
+    const filteredThemes = selectedLevel === 'all'
+        ? availableThemes
+        : availableThemes.filter((t) => t.level === selectedLevel);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -95,6 +134,17 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
         post('/admin/school-settings', {
             forceFormData: true,
             preserveScroll: true,
+            onSuccess: (page) => {
+                const updatedTheme =
+                    (page.props.setting as any)?.theme_data ||
+                    (page.props.school as any)?.theme_data;
+                if (updatedTheme) {
+                    applyTheme(updatedTheme);
+                } else {
+                    const selected = availableThemes.find((t) => t.id === data.theme_color);
+                    if (selected) applyTheme(selected);
+                }
+            },
         });
     };
 
@@ -137,7 +187,7 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                     <div className="lg:col-span-7">
                         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                             {/* Card 1: Identitas Lembaga */}
-                            <div className="rounded-[20px] border-2 border-[#E8E8E8] bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:border-[#2D234A] dark:bg-[#18122B]">
+                            <div className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-[#18122B]">
                                 <div className="mb-5 flex items-center gap-2.5 border-b border-gray-100 pb-4 dark:border-gray-800">
                                     <div className="flex size-9 items-center justify-center rounded-xl bg-orange-100 text-[#FF6B35] dark:bg-orange-950/60">
                                         <School className="size-5" />
@@ -164,7 +214,7 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                                 value={data.name}
                                                 onChange={(e) => setData('name', e.target.value)}
                                                 placeholder="Contoh: SD Digital Indonesia"
-                                                className="w-full rounded-xl border-2 border-[#E8E8E8] px-3.5 py-2 text-sm font-bold text-gray-800 placeholder-gray-400 focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/15 dark:border-gray-700 dark:bg-gray-900/50 dark:text-white"
+                                                className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs font-bold text-gray-800 placeholder-gray-400 shadow-2xs transition-all focus:border-[var(--brand-primary,#FF6B35)] focus:outline-none focus:ring-3 focus:ring-[var(--brand-primary,#FF6B35)]/15 dark:border-gray-700/80 dark:bg-gray-900/60 dark:text-white"
                                             />
                                         </div>
                                         {errors.name && (
@@ -181,7 +231,7 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                             value={data.address}
                                             onChange={(e) => setData('address', e.target.value)}
                                             placeholder="Contoh: Jl. Merdeka Belajar No. 12, Kel. Maju Jaya"
-                                            className="w-full rounded-xl border-2 border-[#E8E8E8] p-3 text-xs font-medium text-gray-800 placeholder-gray-400 focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/15 dark:border-gray-700 dark:bg-gray-900/50 dark:text-white"
+                                            className="w-full rounded-xl border border-gray-200 bg-white p-3 text-xs font-medium text-gray-800 placeholder-gray-400 shadow-2xs transition-all focus:border-[var(--brand-primary,#FF6B35)] focus:outline-none focus:ring-3 focus:ring-[var(--brand-primary,#FF6B35)]/15 dark:border-gray-700/80 dark:bg-gray-900/60 dark:text-white"
                                         />
                                         {errors.address && (
                                             <p className="mt-1 text-xs text-red-500">{errors.address}</p>
@@ -197,7 +247,7 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                             value={data.city}
                                             onChange={(e) => setData('city', e.target.value)}
                                             placeholder="Contoh: Jakarta Selatan"
-                                            className="w-full rounded-xl border-2 border-[#E8E8E8] px-3.5 py-2 text-xs font-semibold text-gray-800 placeholder-gray-400 focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/15 dark:border-gray-700 dark:bg-gray-900/50 dark:text-white"
+                                            className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-gray-800 placeholder-gray-400 shadow-2xs transition-all focus:border-[var(--brand-primary,#FF6B35)] focus:outline-none focus:ring-3 focus:ring-[var(--brand-primary,#FF6B35)]/15 dark:border-gray-700/80 dark:bg-gray-900/60 dark:text-white"
                                         />
                                         {errors.city && (
                                             <p className="mt-1 text-xs text-red-500">{errors.city}</p>
@@ -213,7 +263,7 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                             value={data.postal_code}
                                             onChange={(e) => setData('postal_code', e.target.value)}
                                             placeholder="Contoh: 12150"
-                                            className="w-full rounded-xl border-2 border-[#E8E8E8] px-3.5 py-2 text-xs font-semibold text-gray-800 placeholder-gray-400 focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/15 dark:border-gray-700 dark:bg-gray-900/50 dark:text-white"
+                                            className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-gray-800 placeholder-gray-400 shadow-2xs transition-all focus:border-[var(--brand-primary,#FF6B35)] focus:outline-none focus:ring-3 focus:ring-[var(--brand-primary,#FF6B35)]/15 dark:border-gray-700/80 dark:bg-gray-900/60 dark:text-white"
                                         />
                                     </div>
 
@@ -226,7 +276,7 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                             value={data.phone}
                                             onChange={(e) => setData('phone', e.target.value)}
                                             placeholder="Contoh: (021) 7890123"
-                                            className="w-full rounded-xl border-2 border-[#E8E8E8] px-3.5 py-2 text-xs font-semibold text-gray-800 placeholder-gray-400 focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/15 dark:border-gray-700 dark:bg-gray-900/50 dark:text-white"
+                                            className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-gray-800 placeholder-gray-400 shadow-2xs transition-all focus:border-[var(--brand-primary,#FF6B35)] focus:outline-none focus:ring-3 focus:ring-[var(--brand-primary,#FF6B35)]/15 dark:border-gray-700/80 dark:bg-gray-900/60 dark:text-white"
                                         />
                                     </div>
 
@@ -239,7 +289,7 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                             value={data.email}
                                             onChange={(e) => setData('email', e.target.value)}
                                             placeholder="Contoh: info@sddigital.sch.id"
-                                            className="w-full rounded-xl border-2 border-[#E8E8E8] px-3.5 py-2 text-xs font-semibold text-gray-800 placeholder-gray-400 focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/15 dark:border-gray-700 dark:bg-gray-900/50 dark:text-white"
+                                            className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-gray-800 placeholder-gray-400 shadow-2xs transition-all focus:border-[var(--brand-primary,#FF6B35)] focus:outline-none focus:ring-3 focus:ring-[var(--brand-primary,#FF6B35)]/15 dark:border-gray-700/80 dark:bg-gray-900/60 dark:text-white"
                                         />
                                         {errors.email && (
                                             <p className="mt-1 text-xs text-red-500">{errors.email}</p>
@@ -262,8 +312,159 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                 </div>
                             </div>
 
-                            {/* Card 2: Kepala Sekolah & Penandatangan */}
-                            <div className="rounded-[20px] border-2 border-[#E8E8E8] bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:border-[#2D234A] dark:bg-[#18122B]">
+                            {/* Card 2: Tema Warna Aplikasi (Nuansa Jenjang Sekolah) */}
+                            <div className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-[#18122B]">
+                                <div className="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-gray-100 pb-4 dark:border-gray-800">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 text-white shadow-sm">
+                                            <Palette className="size-5" />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <h2 className="text-base font-extrabold text-gray-900 dark:text-white">
+                                                    Tema Warna Aplikasi
+                                                </h2>
+                                                <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold text-orange-800 dark:bg-orange-950 dark:text-orange-300">
+                                                    Admin & Kepala Sekolah
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-500">
+                                                Pilihan tema warna bernuansa sekolah SD, SMP, SMA/SMK yang modern, elegan & kekinian
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Level Filter Tabs */}
+                                    <div className="flex flex-wrap items-center gap-1 rounded-xl bg-gray-100 p-1 dark:bg-gray-800 self-start sm:self-auto">
+                                        {[
+                                            { id: 'all', label: 'Semua' },
+                                            { id: 'SD', label: 'SD' },
+                                            { id: 'SMP', label: 'SMP' },
+                                            { id: 'SMA / SMK', label: 'SMA/SMK' },
+                                        ].map((tab) => (
+                                            <button
+                                                key={tab.id}
+                                                type="button"
+                                                onClick={() => setSelectedLevel(tab.id)}
+                                                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                                                    selectedLevel === tab.id
+                                                        ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white'
+                                                        : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                                                }`}
+                                            >
+                                                {tab.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Theme Grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                    {filteredThemes.map((theme) => {
+                                        const isSelected = data.theme_color === theme.id;
+                                        return (
+                                            <div
+                                                key={theme.id}
+                                                onClick={() => handleSelectTheme(theme.id)}
+                                                role="button"
+                                                tabIndex={0}
+                                                className={`group relative flex flex-col justify-between rounded-2xl p-3.5 cursor-pointer transition-all duration-200 text-left ${
+                                                    isSelected
+                                                        ? 'border-2 border-[var(--brand-primary,#FF6B35)] bg-[var(--brand-primary-light,#FFF0EB)]/30 shadow-xs ring-2 ring-[var(--brand-primary,#FF6B35)]/20 scale-[1.01]'
+                                                        : 'border border-gray-200/80 bg-white hover:border-gray-300 hover:shadow-xs dark:border-gray-800 dark:bg-gray-900/40 dark:hover:border-gray-700'
+                                                }`}
+                                            >
+                                                <div>
+                                                    {/* Top Bar: Gradient preview & Level Badge */}
+                                                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div
+                                                                className="h-3 w-8 rounded-full shadow-inner"
+                                                                style={{
+                                                                    background: `linear-gradient(to right, ${theme.primary}, ${theme.gradient_to || theme.primary_dark})`,
+                                                                }}
+                                                            />
+                                                            <span
+                                                                className={`rounded-md px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider ${
+                                                                    theme.level === 'SD'
+                                                                        ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300'
+                                                                        : theme.level === 'SMP'
+                                                                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
+                                                                        : 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300'
+                                                                }`}
+                                                            >
+                                                                {theme.level}
+                                                            </span>
+                                                        </div>
+
+                                                        {isSelected ? (
+                                                            <span className="flex items-center gap-1 rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm dark:bg-white dark:text-gray-900">
+                                                                <Check className="size-3" />
+                                                                Aktif
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-[10px] font-semibold text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300">
+                                                                Pilih
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Title and Badge */}
+                                                    <h4 className="text-sm font-black text-gray-900 dark:text-white line-clamp-1">
+                                                        {theme.name}
+                                                    </h4>
+                                                    <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mt-0.5">
+                                                        {theme.badge}
+                                                    </div>
+
+                                                    {/* Description */}
+                                                    <p className="mt-1.5 text-[11px] text-gray-600 dark:text-gray-300 line-clamp-2 leading-relaxed">
+                                                        {theme.description}
+                                                    </p>
+                                                </div>
+
+                                                {/* Color Swatches Pill */}
+                                                <div className="mt-3.5 pt-2.5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-[10px] font-bold text-gray-400">Palet:</span>
+                                                        <div className="flex items-center -space-x-1">
+                                                            <span
+                                                                className="size-4 rounded-full ring-2 ring-white dark:ring-gray-900 shadow-sm"
+                                                                style={{ backgroundColor: theme.primary }}
+                                                                title={`Primary: ${theme.primary}`}
+                                                            />
+                                                            <span
+                                                                className="size-4 rounded-full ring-2 ring-white dark:ring-gray-900 shadow-sm"
+                                                                style={{ backgroundColor: theme.primary_dark }}
+                                                                title={`Dark: ${theme.primary_dark}`}
+                                                            />
+                                                            <span
+                                                                className="size-4 rounded-full ring-2 ring-white dark:ring-gray-900 shadow-sm border border-gray-200"
+                                                                style={{ backgroundColor: theme.secondary }}
+                                                                title={`Secondary: ${theme.secondary}`}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <span className="font-mono text-[10px] font-semibold text-gray-400">
+                                                        {theme.primary}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Note & Info */}
+                                <div className="mt-4 rounded-xl bg-gray-50 p-3 text-xs text-gray-600 border border-gray-200/70 dark:bg-gray-900/40 dark:border-gray-800 dark:text-gray-300 flex items-center gap-2.5">
+                                    <Sparkles className="size-4 text-amber-500 shrink-0" />
+                                    <span>
+                                        <b>Pratinjau Langsung:</b> Klik salah satu tema untuk melihat perubahan seketika di layar Anda. Tema ini berlaku di seluruh aplikasi, bilah navigasi, tombol, dan aplikasi PWA.
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Card 3: Kepala Sekolah & Penandatangan */}
+                            <div className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-[#18122B]">
                                 <div className="mb-5 flex items-center gap-2.5 border-b border-gray-100 pb-4 dark:border-gray-800">
                                     <div className="flex size-9 items-center justify-center rounded-xl bg-purple-100 text-purple-600 dark:bg-purple-950/60 dark:text-purple-300">
                                         <UserCheck className="size-5" />
@@ -288,7 +489,7 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                             value={data.principal_name}
                                             onChange={(e) => setData('principal_name', e.target.value)}
                                             placeholder="Contoh: Drs. H. Mulyadi, M.Pd."
-                                            className="w-full rounded-xl border-2 border-[#E8E8E8] px-3.5 py-2 text-xs font-semibold text-gray-800 placeholder-gray-400 focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/15 dark:border-gray-700 dark:bg-gray-900/50 dark:text-white"
+                                            className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-gray-800 placeholder-gray-400 shadow-2xs transition-all focus:border-[var(--brand-primary,#FF6B35)] focus:outline-none focus:ring-3 focus:ring-[var(--brand-primary,#FF6B35)]/15 dark:border-gray-700/80 dark:bg-gray-900/60 dark:text-white"
                                         />
                                         {errors.principal_name && (
                                             <p className="mt-1 text-xs text-red-500">{errors.principal_name}</p>
@@ -304,7 +505,7 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                             value={data.principal_nip}
                                             onChange={(e) => setData('principal_nip', e.target.value)}
                                             placeholder="Contoh: 19720512 199803 1 004"
-                                            className="w-full rounded-xl border-2 border-[#E8E8E8] px-3.5 py-2 text-xs font-semibold text-gray-800 placeholder-gray-400 focus:border-[#FF6B35] focus:outline-none focus:ring-2 focus:ring-[#FF6B35]/15 dark:border-gray-700 dark:bg-gray-900/50 dark:text-white"
+                                            className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-gray-800 placeholder-gray-400 shadow-2xs transition-all focus:border-[var(--brand-primary,#FF6B35)] focus:outline-none focus:ring-3 focus:ring-[var(--brand-primary,#FF6B35)]/15 dark:border-gray-700/80 dark:bg-gray-900/60 dark:text-white"
                                         />
                                         {errors.principal_nip && (
                                             <p className="mt-1 text-xs text-red-500">{errors.principal_nip}</p>
@@ -327,8 +528,8 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                 </div>
                             </div>
 
-                            {/* Card 3: Jam Masuk Sekolah & Toleransi */}
-                            <div className="rounded-[20px] border-2 border-[#E8E8E8] bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:border-[#2D234A] dark:bg-[#18122B]">
+                            {/* Card 4: Jam Masuk Sekolah & Toleransi */}
+                            <div className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-[#18122B]">
                                 <div className="mb-5 flex items-center gap-2.5 border-b border-gray-100 pb-4 dark:border-gray-800">
                                     <div className="flex size-9 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300">
                                         <Clock className="size-5" />
@@ -354,7 +555,7 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                                 required
                                                 value={data.start_time}
                                                 onChange={(e) => setData('start_time', e.target.value)}
-                                                className="w-full rounded-xl border-2 border-[#E8E8E8] px-3.5 py-2 text-sm font-extrabold text-gray-800 focus:border-[#FF6B35] focus:outline-none dark:border-gray-700 dark:bg-gray-900/50 dark:text-white"
+                                                className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-sm font-extrabold text-gray-800 shadow-2xs transition-all focus:border-[var(--brand-primary,#FF6B35)] focus:outline-none focus:ring-3 focus:ring-[var(--brand-primary,#FF6B35)]/15 dark:border-gray-700/80 dark:bg-gray-900/60 dark:text-white"
                                             />
                                         </div>
                                         {errors.start_time && (
@@ -362,7 +563,7 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                         )}
                                     </div>
 
-                                    <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3.5 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                                    <div className="rounded-xl border border-blue-200/70 bg-blue-50/70 p-3.5 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
                                         <p className="font-semibold leading-relaxed">
                                             💡 Siswa yang dicatat tiba setelah pukul <span className="font-bold underline">{data.start_time || '07:00'}</span> akan otomatis dikalkulasikan durasi keterlambatannya (dalam menit) pada Modul Keterlambatan Siswa.
                                         </p>
@@ -375,10 +576,10 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                     </label>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <label
-                                            className={`flex items-start gap-3 rounded-xl border-2 p-3.5 cursor-pointer transition-all ${
+                                            className={`flex items-start gap-3 rounded-xl p-3.5 cursor-pointer transition-all ${
                                                 Number(data.school_days_per_week) === 5
-                                                    ? 'border-[#FF6B35] bg-orange-50/40 dark:bg-[#251B38]'
-                                                    : 'border-gray-200 hover:border-gray-300 dark:border-gray-700'
+                                                    ? 'border-2 border-[var(--brand-primary,#FF6B35)] bg-[var(--brand-primary-light,#FFF0EB)]/30 ring-2 ring-[var(--brand-primary,#FF6B35)]/20'
+                                                    : 'border border-gray-200/80 hover:border-gray-300 dark:border-gray-700'
                                             }`}
                                         >
                                             <input
@@ -400,10 +601,10 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                         </label>
 
                                         <label
-                                            className={`flex items-start gap-3 rounded-xl border-2 p-3.5 cursor-pointer transition-all ${
+                                            className={`flex items-start gap-3 rounded-xl p-3.5 cursor-pointer transition-all ${
                                                 Number(data.school_days_per_week) === 6
-                                                    ? 'border-[#FF6B35] bg-orange-50/40 dark:bg-[#251B38]'
-                                                    : 'border-gray-200 hover:border-gray-300 dark:border-gray-700'
+                                                    ? 'border-2 border-[var(--brand-primary,#FF6B35)] bg-[var(--brand-primary-light,#FFF0EB)]/30 ring-2 ring-[var(--brand-primary,#FF6B35)]/20'
+                                                    : 'border border-gray-200/80 hover:border-gray-300 dark:border-gray-700'
                                             }`}
                                         >
                                             <input
@@ -427,8 +628,8 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                 </div>
                             </div>
 
-                            {/* Card 4: Logo Sekolah */}
-                            <div className="rounded-[20px] border-2 border-[#E8E8E8] bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:border-[#2D234A] dark:bg-[#18122B]">
+                            {/* Card 5: Logo Sekolah */}
+                            <div className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-[#18122B]">
                                 <div className="mb-5 flex items-center gap-2.5 border-b border-gray-100 pb-4 dark:border-gray-800">
                                     <div className="flex size-9 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300">
                                         <ImageIcon className="size-5" />
@@ -471,7 +672,7 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                                 variant="outline"
                                                 size="sm"
                                                 onClick={() => fileInputRef.current?.click()}
-                                                className="gap-2 border-2 border-gray-200 text-xs font-bold hover:border-[#FF6B35] hover:text-[#FF6B35]"
+                                                className="gap-2 border border-gray-200 text-xs font-bold hover:border-[var(--brand-primary,#FF6B35)] hover:text-[var(--brand-primary,#FF6B35)] shadow-2xs"
                                             >
                                                 <Upload className="size-3.5" />
                                                 Pilih Berkas Logo
@@ -506,7 +707,7 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                                     type="submit"
                                     variant="primary"
                                     disabled={processing}
-                                    className="gap-2 px-6 py-2.5 text-xs font-bold bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand hover:translate-y-[-1px] transition-all"
+                                    className="gap-2 px-6 py-2.5 text-xs font-bold hover:translate-y-[-1px] transition-all"
                                 >
                                     <Save className="size-4" />
                                     {processing ? 'Menyimpan...' : 'Simpan Perubahan Pengaturan'}
@@ -515,9 +716,126 @@ export default function SchoolSettingsPage({ setting }: PageProps) {
                         </form>
                     </div>
 
-                    {/* Right Column: Live Kop Surat & Document Preview (5 cols) */}
+                    {/* Right Column: Live Theme UI Preview & Kop Surat (5 cols) */}
                     <div className="lg:col-span-5 flex flex-col gap-6">
-                        <div className="sticky top-6 rounded-[20px] border-2 border-[#E8E8E8] bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:border-[#2D234A] dark:bg-[#18122B]">
+                        {/* Live Theme UI Preview */}
+                        <div className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-[#18122B]">
+                            <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-gray-800">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="size-4 text-amber-500" />
+                                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                                        Pratinjau Tema Terpilih
+                                    </h3>
+                                </div>
+                                <span
+                                    className="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-sm"
+                                    style={{ backgroundColor: currentTheme?.primary || '#FF6B35' }}
+                                >
+                                    {currentTheme?.name || 'SD Oranye Enerjik'}
+                                </span>
+                            </div>
+
+                            {/* UI Components Sandbox */}
+                            <div className="space-y-4 rounded-xl border border-gray-100 bg-gray-50/60 p-4 dark:border-gray-800 dark:bg-gray-900/40">
+                                {/* Sample Mini Banner */}
+                                <div
+                                    className="relative overflow-hidden rounded-xl p-4 text-white shadow-sm"
+                                    style={{
+                                        background: `linear-gradient(135deg, ${currentTheme?.primary || '#FF6B35'} 0%, ${currentTheme?.gradient_to || currentTheme?.primary_dark || '#E85520'} 100%)`,
+                                    }}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-white/80">
+                                                {currentTheme?.level || 'SD'} &bull; {currentTheme?.badge || 'Ceria'}
+                                            </span>
+                                            <h4 className="text-sm font-black mt-0.5">
+                                                {data.name || 'Absensi Digital Sekolah'}
+                                            </h4>
+                                            <p className="text-[11px] text-white/90 mt-0.5">
+                                                Sistem Presensi & Manajemen Terpadu
+                                            </p>
+                                        </div>
+                                        <div className="size-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold text-base shadow-inner">
+                                            ✨
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Sample Buttons */}
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                                        Komponen Tombol & Status
+                                    </label>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <button
+                                            type="button"
+                                            className="rounded-xl px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition-all"
+                                            style={{ backgroundColor: currentTheme?.primary || '#FF6B35' }}
+                                        >
+                                            Tombol Utama
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="rounded-xl px-3.5 py-1.5 text-xs font-bold border transition-all"
+                                            style={{
+                                                backgroundColor: currentTheme?.secondary || '#FFF0EB',
+                                                color: currentTheme?.secondary_foreground || '#C84515',
+                                                borderColor: `${currentTheme?.primary || '#FF6B35'}30`,
+                                            }}
+                                        >
+                                            Tombol Sekunder
+                                        </button>
+                                        <span
+                                            className="rounded-full px-2.5 py-1 text-[10px] font-bold border"
+                                            style={{
+                                                backgroundColor: currentTheme?.secondary || '#FFF0EB',
+                                                color: currentTheme?.secondary_foreground || '#C84515',
+                                                borderColor: `${currentTheme?.primary || '#FF6B35'}40`,
+                                            }}
+                                        >
+                                            ● Hadir 98.5%
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Sample Sidebar Active Item */}
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                                        Simulasi Menu Aktif Navigasi
+                                    </label>
+                                    <div
+                                        className="flex items-center justify-between rounded-xl p-2.5 shadow-xs transition-all border"
+                                        style={{
+                                            backgroundColor: currentTheme?.secondary || '#FFF0EB',
+                                            borderColor: `${currentTheme?.primary || '#FF6B35'}40`,
+                                            color: currentTheme?.secondary_foreground || '#C84515',
+                                        }}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <div
+                                                className="size-7 rounded-lg flex items-center justify-center text-white text-xs font-black shadow-xs"
+                                                style={{ backgroundColor: currentTheme?.primary || '#FF6B35' }}
+                                            >
+                                                ✓
+                                            </div>
+                                            <span className="text-xs font-bold">
+                                                Menu Dashboard Aktif
+                                            </span>
+                                        </div>
+                                        <span
+                                            className="text-[10px] font-extrabold px-2 py-0.5 rounded-md text-white"
+                                            style={{ backgroundColor: currentTheme?.primary || '#FF6B35' }}
+                                        >
+                                            Aktif
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Paper Preview / Kop Surat */}
+                        <div className="sticky top-6 rounded-2xl border border-gray-200/80 bg-white p-6 shadow-xs dark:border-gray-800 dark:bg-[#18122B]">
                             <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-gray-800">
                                 <h3 className="text-xs font-extrabold uppercase tracking-wider text-gray-700 dark:text-gray-300">
                                     Pratinjau Kop Surat Resmi

@@ -366,7 +366,7 @@ export default function LatenessPage({
                                 type="submit"
                                 variant="primary"
                                 disabled={isBlocked || processing || !data.student_id}
-                                className="w-full mt-2 font-bold text-xs bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand hover:translate-y-[-1px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full mt-2 font-bold text-xs text-white shadow-brand hover:translate-y-[-1px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {processing ? 'Menyimpan...' : 'Catat Keterlambatan Siswa'}
                             </Button>

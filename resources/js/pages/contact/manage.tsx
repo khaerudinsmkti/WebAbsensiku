@@ -664,9 +664,10 @@ export default function ContactManage({ settings, messages, unreadCount, totalCo
                         <div className="flex justify-end">
                             <Button
                                 type="submit"
+                                variant="primary"
                                 size="lg"
                                 disabled={settingsForm.processing}
-                                className="rounded-2xl bg-gradient-to-r from-[#FF6B35] to-[#E85D26] px-8 py-3 text-sm font-black text-white shadow-lg shadow-orange-500/25 hover:from-[#E85D26] hover:to-[#D94F1A]"
+                                className="rounded-2xl px-8 py-3 text-sm font-black text-white shadow-brand hover:brightness-105 active:scale-95 transition-all"
                             >
                                 <Save className="mr-2 size-4" />
                                 {settingsForm.processing ? 'Menyimpan...' : 'Simpan Informasi Kontak'}

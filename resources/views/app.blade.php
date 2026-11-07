@@ -36,11 +36,13 @@
             $schoolLogoUrl = $schoolSetting->logo_path ? '/storage/' . ltrim($schoolSetting->logo_path, '/') : null;
             $appName = $schoolSetting->name ?: config('app.name', 'AbsensiKu SD');
             $pwaVersion = $schoolSetting->updated_at ? $schoolSetting->updated_at->timestamp : (file_exists(public_path('manifest.json')) ? filemtime(public_path('manifest.json')) : time());
+            $themeData = \App\Services\ThemeService::getTheme($schoolSetting->theme_color ?? 'sd-orange');
         @endphp
 
         <script>
             window.__SCHOOL_NAME__ = @json($appName);
             window.__SCHOOL_LOGO__ = @json($schoolLogoUrl);
+            window.__SCHOOL_THEME__ = @json($themeData);
         </script>
 
         {{-- Dynamic Favicon & Icons from School Settings --}}
@@ -56,7 +58,7 @@
 
         {{-- PWA Manifest & Meta Tags (Judul Aplikasi & Logo Dinamis dari Pengaturan Sekolah) --}}
         <link rel="manifest" href="/manifest.json?v={{ $pwaVersion }}">
-        <meta name="theme-color" content="#FF6B35">
+        <meta name="theme-color" content="{{ $themeData['primary'] }}">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -75,6 +77,9 @@
         <x-inertia::head>
             <title>{{ $appName }}</title>
         </x-inertia::head>
+
+        {{-- Dynamic School Theme Overrides (Placed at end of head to override all stylesheets) --}}
+        {!! \App\Services\ThemeService::renderThemeCss($schoolSetting->theme_color ?? 'sd-orange') !!}
     </head>
     <body class="font-sans antialiased">
         <x-inertia::app />

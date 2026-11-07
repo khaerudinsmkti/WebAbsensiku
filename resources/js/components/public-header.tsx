@@ -136,12 +136,12 @@ export function PublicHeader({ onOpenCreateNews }: PublicHeaderProps) {
                                     className="size-11 sm:size-11 shrink-0 object-contain rounded-xl bg-white p-1 shadow-md border border-[#E8E8E8] dark:border-[#2D234A]"
                                 />
                             ) : (
-                                <div className="flex size-11 sm:size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#FFE66D] text-white shadow-md shadow-[#FF6B35]/25">
+                                <div className="flex size-11 sm:size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand">
                                     <AppLogoIcon className="size-6 text-white" />
                                 </div>
                             )}
                             <div className="min-w-0">
-                                <span className="text-base sm:text-lg lg:text-xl font-black tracking-tight text-[#111827] dark:text-white leading-tight group-hover:text-[#FF6B35] transition-colors line-clamp-1">
+                                <span className="text-base sm:text-lg lg:text-xl font-black tracking-tight text-[#111827] dark:text-white leading-tight group-hover:text-[var(--brand-primary,#FF6B35)] transition-colors line-clamp-1">
                                     {schoolName}
                                 </span>
                             </div>
@@ -165,8 +165,8 @@ export function PublicHeader({ onOpenCreateNews }: PublicHeaderProps) {
                                         }
                                         className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
                                             item.isActive
-                                                ? 'border border-orange-200 bg-orange-50 font-black text-[#FF6B35] shadow-2xs dark:border-orange-900/60 dark:bg-orange-950/60 dark:text-[#FFA07A]'
-                                                : 'text-gray-700 hover:bg-gray-100 hover:text-[#FF6B35] dark:text-gray-200 dark:hover:bg-gray-800'
+                                                ? 'border border-[var(--brand-primary,#FF6B35)]/30 bg-[var(--brand-primary-light,#FFF0EB)] font-black text-[var(--brand-primary,#FF6B35)] shadow-2xs dark:border-[var(--brand-primary,#FF6B35)]/40 dark:bg-[var(--brand-primary,#FF6B35)]/20 dark:text-white'
+                                                : 'text-gray-700 hover:bg-gray-100 hover:text-[var(--brand-primary,#FF6B35)] dark:text-gray-200 dark:hover:bg-gray-800'
                                         }`}
                                     >
                                         <item.icon className="size-3.5" />
@@ -188,15 +188,15 @@ export function PublicHeader({ onOpenCreateNews }: PublicHeaderProps) {
                                                         onClick={() => setOpenDropdown(null)}
                                                         className={`flex items-start gap-3 rounded-xl p-2.5 transition-all ${
                                                             sub.isActive
-                                                                ? 'bg-orange-50 text-[#FF6B35] dark:bg-orange-950/60 dark:text-[#FFA07A]'
-                                                                : 'text-gray-700 hover:bg-gray-50 hover:text-[#FF6B35] dark:text-gray-200 dark:hover:bg-gray-800/60'
+                                                                ? 'bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] dark:bg-[var(--brand-primary,#FF6B35)]/20 dark:text-white'
+                                                                : 'text-gray-700 hover:bg-gray-50 hover:text-[var(--brand-primary,#FF6B35)] dark:text-gray-200 dark:hover:bg-gray-800/60'
                                                         }`}
                                                     >
                                                         <div
                                                             className={`flex size-8 shrink-0 items-center justify-center rounded-xl ${
                                                                 sub.isActive
-                                                                    ? 'bg-[#FF6B35] text-white shadow-xs'
-                                                                    : 'bg-orange-50 text-[#FF6B35] dark:bg-gray-800 dark:text-[#FFA07A]'
+                                                                    ? 'bg-[var(--brand-primary,#FF6B35)] text-white shadow-xs'
+                                                                    : 'bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] dark:bg-gray-800 dark:text-white'
                                                             }`}
                                                         >
                                                             <sub.icon className="size-4" />
@@ -221,8 +221,8 @@ export function PublicHeader({ onOpenCreateNews }: PublicHeaderProps) {
                                     href={item.href}
                                     className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
                                         item.isActive
-                                            ? 'border border-orange-200 bg-orange-50 font-black text-[#FF6B35] shadow-2xs dark:border-orange-900/60 dark:bg-orange-950/60 dark:text-[#FFA07A]'
-                                            : 'text-gray-700 hover:bg-gray-100 hover:text-[#FF6B35] dark:text-gray-200 dark:hover:bg-gray-800'
+                                            ? 'border border-[var(--brand-primary,#FF6B35)]/30 bg-[var(--brand-primary-light,#FFF0EB)] font-black text-[var(--brand-primary,#FF6B35)] shadow-2xs dark:border-[var(--brand-primary,#FF6B35)]/40 dark:bg-[var(--brand-primary,#FF6B35)]/20 dark:text-white'
+                                            : 'text-gray-700 hover:bg-gray-100 hover:text-[var(--brand-primary,#FF6B35)] dark:text-gray-200 dark:hover:bg-gray-800'
                                     }`}
                                 >
                                     <item.icon className="size-3.5" />
@@ -240,7 +240,7 @@ export function PublicHeader({ onOpenCreateNews }: PublicHeaderProps) {
                                 variant="outline"
                                 size="sm"
                                 onClick={onOpenCreateNews}
-                                className="hidden lg:inline-flex rounded-xl border-[#FF6B35]/40 text-xs font-bold text-[#FF6B35] hover:bg-[#FFF0EB] dark:hover:bg-[#331C1A]"
+                                className="hidden lg:inline-flex rounded-xl border-[var(--brand-primary,#FF6B35)]/40 text-xs font-bold text-[var(--brand-primary,#FF6B35)] hover:bg-[var(--brand-primary-light,#FFF0EB)] dark:hover:bg-[var(--brand-primary-dark,#FF6B35)]/20"
                             >
                                 <Plus className="mr-1 size-3.5" />
                                 Tambah Berita
@@ -252,7 +252,7 @@ export function PublicHeader({ onOpenCreateNews }: PublicHeaderProps) {
                                 asChild
                                 variant="primary"
                                 size="sm"
-                                className="rounded-xl px-3 py-1.5 text-xs font-bold shadow-xs bg-[#FF6B35] hover:bg-[#E85D26] text-white"
+                                className="rounded-xl px-3 py-1.5 text-xs font-bold shadow-xs"
                             >
                                 <Link href={auth.user?.role === 'publisher' ? '/news-management' : dashboard()}>
                                     <span>{auth.user?.role === 'publisher' ? 'Kelola' : 'Dashboard'}</span>
@@ -264,7 +264,7 @@ export function PublicHeader({ onOpenCreateNews }: PublicHeaderProps) {
                                 asChild
                                 variant="primary"
                                 size="sm"
-                                className="rounded-xl px-3 py-1.5 text-xs font-bold shadow-xs bg-[#FF6B35] hover:bg-[#E85D26] text-white"
+                                className="rounded-xl px-3 py-1.5 text-xs font-bold shadow-xs"
                             >
                                 <Link href={login()}>Masuk</Link>
                             </Button>
@@ -294,15 +294,15 @@ export function PublicHeader({ onOpenCreateNews }: PublicHeaderProps) {
                                         onClick={() => setOpenMobileSubmenu(null)}
                                         className={`flex items-center gap-3 rounded-xl p-3 border transition-all ${
                                             sub.isActive
-                                                ? 'border-orange-300 bg-orange-50 text-[#FF6B35] dark:border-orange-800 dark:bg-orange-950/50 dark:text-[#FFA07A]'
+                                                ? 'border-[var(--brand-primary,#FF6B35)]/40 bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] dark:border-[var(--brand-primary,#FF6B35)]/40 dark:bg-[var(--brand-primary,#FF6B35)]/20 dark:text-white'
                                                 : 'border-gray-100 hover:bg-gray-50 text-gray-700 dark:border-gray-800 dark:text-gray-200'
                                         }`}
                                     >
                                         <div
                                             className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
                                                 sub.isActive
-                                                    ? 'bg-[#FF6B35] text-white'
-                                                    : 'bg-orange-50 text-[#FF6B35] dark:bg-gray-800 dark:text-[#FFA07A]'
+                                                    ? 'bg-[var(--brand-primary,#FF6B35)] text-white'
+                                                    : 'bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] dark:bg-gray-800 dark:text-white'
                                             }`}
                                         >
                                             <sub.icon className="size-4.5" />

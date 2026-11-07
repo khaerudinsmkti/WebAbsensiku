@@ -1641,7 +1641,7 @@ export default function MasterIndexPage({
                                     type="button"
                                     variant="primary"
                                     onClick={openCreateStudent}
-                                    className="font-bold text-xs bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand hover:translate-y-[-1px] transition-all"
+                                    className="font-bold text-xs text-white shadow-brand hover:translate-y-[-1px] transition-all"
                                 >
                                     <Plus className="size-4 mr-1" />
                                     Tambah Siswa Baru
@@ -2139,7 +2139,7 @@ export default function MasterIndexPage({
                                                 variant="primary"
                                                 onClick={() => setShowPromoConfirmModal(true)}
                                                 disabled={selectedStudentIds.length === 0 || promoSummary.invalidCount > 0 || isSubmittingPromo}
-                                                className="bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand font-bold text-xs gap-1.5 px-5 py-2.5"
+                                                className="text-white shadow-brand font-bold text-xs gap-1.5 px-5 py-2.5 hover:brightness-105 active:scale-95 transition-all"
                                             >
                                                 <TrendingUp className="size-4" />
                                                 Proses Kenaikan Kelas ({selectedStudentIds.length} Siswa)
@@ -2222,7 +2222,7 @@ export default function MasterIndexPage({
                                             size="sm"
                                             disabled={isSubmittingPromo}
                                             onClick={handleSubmitPromotions}
-                                            className="bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand font-bold text-xs"
+                                            className="text-white shadow-brand font-bold text-xs hover:brightness-105 active:scale-95 transition-all"
                                         >
                                             {isSubmittingPromo ? 'Memproses...' : 'Ya, Proses Kenaikan Kelas'}
                                         </Button>
@@ -3128,7 +3128,7 @@ export default function MasterIndexPage({
                                     type="button"
                                     variant="primary"
                                     onClick={openCreateTeacher}
-                                    className="font-bold text-xs bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand hover:translate-y-[-1px] transition-all"
+                                    className="font-bold text-xs text-white shadow-brand hover:translate-y-[-1px] transition-all"
                                 >
                                     <Plus className="size-4 mr-1" />
                                     Tambah Guru Baru
@@ -3301,7 +3301,7 @@ export default function MasterIndexPage({
                                         type="submit"
                                         variant="primary"
                                         disabled={classForm.processing}
-                                        className="flex-1 font-bold text-xs bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand hover:translate-y-[-1px] transition-all"
+                                        className="flex-1 font-bold text-xs text-white shadow-brand hover:translate-y-[-1px] transition-all"
                                     >
                                         {classForm.processing
                                             ? 'Menyimpan...'
@@ -3556,7 +3556,7 @@ export default function MasterIndexPage({
                                                         <button
                                                             type="button"
                                                             onClick={() => setIsDayDropdownOpen(false)}
-                                                            className="text-[11px] font-bold text-white bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-3 py-1 rounded-lg hover:opacity-95 shadow-sm"
+                                                            className="text-[11px] font-bold text-white bg-[var(--brand-primary,#FF6B35)] hover:bg-[var(--brand-primary-dark,#FF8C5A)] px-3 py-1 rounded-lg hover:opacity-95 shadow-sm transition-all"
                                                         >
                                                             Tutup / Selesai
                                                         </button>
@@ -3598,7 +3598,7 @@ export default function MasterIndexPage({
                                         type="submit"
                                         variant="primary"
                                         disabled={dutyForm.processing}
-                                        className="flex-1 font-bold text-xs bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand hover:translate-y-[-1px] transition-all"
+                                        className="flex-1 font-bold text-xs text-white shadow-brand hover:translate-y-[-1px] transition-all"
                                     >
                                         {dutyForm.processing
                                             ? 'Menyimpan...'
@@ -3809,7 +3809,7 @@ export default function MasterIndexPage({
                                         variant="primary"
                                         size="sm"
                                         disabled={studentForm.processing}
-                                        className="bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand font-bold"
+                                        className="text-white shadow-brand font-bold"
                                     >
                                         {studentForm.processing ? 'Menyimpan...' : 'Simpan Data'}
                                     </Button>
@@ -4028,7 +4028,7 @@ export default function MasterIndexPage({
                                     size="sm"
                                     disabled={parsedData.length === 0}
                                     onClick={handleExecuteImport}
-                                    className="bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand font-bold"
+                                    className="text-white shadow-brand font-bold"
                                 >
                                     <CheckCircle2 className="size-4 mr-1.5" />
                                     Simpan {parsedData.length} Data Siswa
@@ -4181,7 +4181,7 @@ export default function MasterIndexPage({
                                         variant="primary"
                                         size="sm"
                                         disabled={teacherForm.processing}
-                                        className="bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand font-bold"
+                                        className="text-white shadow-brand font-bold"
                                     >
                                         {teacherForm.processing ? 'Menyimpan...' : 'Simpan Akun Guru'}
                                     </Button>
@@ -4387,7 +4387,7 @@ export default function MasterIndexPage({
                                     size="sm"
                                     disabled={parsedTeacherData.length === 0}
                                     onClick={handleExecuteTeacherImport}
-                                    className="bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand font-bold"
+                                    className="text-white shadow-brand font-bold"
                                 >
                                     <CheckCircle2 className="size-4 mr-1.5" />
                                     Simpan {parsedTeacherData.length} Data Guru
@@ -4589,7 +4589,7 @@ export default function MasterIndexPage({
                                     size="sm"
                                     disabled={parsedClassData.length === 0}
                                     onClick={handleExecuteClassImport}
-                                    className="bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand font-bold"
+                                    className="text-white shadow-brand font-bold"
                                 >
                                     <CheckCircle2 className="size-4 mr-1.5" />
                                     Simpan {parsedClassData.length} Data Rombel

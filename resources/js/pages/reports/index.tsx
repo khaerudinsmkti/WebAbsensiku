@@ -399,7 +399,7 @@ export default function ReportsPage({
                         <Button
                             type="submit"
                             variant="primary"
-                            className="bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] text-white shadow-brand font-bold text-xs px-5 py-2 ml-auto"
+                            className="text-white shadow-brand font-bold text-xs px-5 py-2 ml-auto hover:brightness-105 active:scale-95 transition-all"
                         >
                             <Filter className="size-3.5 mr-1.5" />
                             Tampilkan Laporan
