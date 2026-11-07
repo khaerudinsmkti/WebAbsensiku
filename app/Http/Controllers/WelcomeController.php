@@ -22,11 +22,10 @@ class WelcomeController extends Controller
     {
         News::ensureInstagramColumn();
 
-        // News for public homepage - 6 berita terbaru
+        // News for public homepage - seluruh berita terpublikasi untuk pagination interaktif (default 9)
         $newsList = News::with(['category', 'author:id,name,role'])
             ->published()
             ->orderByDesc('published_at')
-            ->take(6)
             ->get();
 
         $totalNewsCount = News::published()->count();
@@ -80,6 +79,10 @@ class WelcomeController extends Controller
 
         $search = $request->input('search');
         $categoryId = $request->input('category_id');
+        $perPage = (int) $request->input('per_page', 9);
+        if (!in_array($perPage, [9, 18, 27, 36])) {
+            $perPage = 9;
+        }
 
         $query = News::with(['category', 'author:id,name,role'])
             ->published()
@@ -97,7 +100,7 @@ class WelcomeController extends Controller
             $query->where('category_id', $categoryId);
         }
 
-        $newsList = $query->paginate(9)->withQueryString();
+        $newsList = $query->paginate($perPage)->withQueryString();
 
         $newsCategories = NewsCategory::withCount(['news' => fn ($q) => $q->published()])
             ->get();
@@ -108,6 +111,7 @@ class WelcomeController extends Controller
             'filters' => [
                 'search' => $search ?? '',
                 'category_id' => $categoryId ?? 'all',
+                'per_page' => $perPage,
             ],
         ]);
     }

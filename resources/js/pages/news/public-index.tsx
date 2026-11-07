@@ -52,6 +52,7 @@ interface PublicNewsProps {
     filters: {
         search: string;
         category_id: string;
+        per_page?: number;
     };
 }
 
@@ -402,29 +403,55 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                         )}
 
                         {/* Pagination Bar */}
-                        {news.last_page > 1 && (
+                        {news.total > 0 && (
                             <div className="mt-12 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-xs dark:border-gray-800 dark:bg-[#18122B]">
-                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                                    Menampilkan {news.from ?? 0} - {news.to ?? 0} dari total {news.total} berita
-                                </span>
-
-                                <div className="flex items-center gap-1.5">
-                                    {news.links.map((link, idx) => (
-                                        <button
-                                            key={idx}
-                                            disabled={!link.url || link.active}
-                                            onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
-                                            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
-                                                link.active
-                                                    ? 'bg-[#FF6B35] text-white shadow-xs'
-                                                    : link.url
-                                                    ? 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200'
-                                                    : 'cursor-not-allowed opacity-40 text-gray-400'
-                                            }`}
-                                            dangerouslySetInnerHTML={{ __html: link.label }}
-                                        />
-                                    ))}
+                                <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                    <span>
+                                        Menampilkan {news.from ?? 0} - {news.to ?? 0} dari total {news.total} berita
+                                    </span>
+                                    <div className="flex items-center gap-1.5 border-l border-gray-200 pl-3 dark:border-gray-700">
+                                        <span className="text-xs text-gray-400">Tampilkan:</span>
+                                        <select
+                                            value={filters.per_page ?? 9}
+                                            onChange={(e) => {
+                                                router.get(
+                                                    '/berita',
+                                                    {
+                                                        search: search || undefined,
+                                                        category_id: selectedCategory !== 'all' ? selectedCategory : undefined,
+                                                        per_page: e.target.value,
+                                                    },
+                                                    { preserveState: true, preserveScroll: true }
+                                                );
+                                            }}
+                                            className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-bold text-gray-700 focus:border-[var(--brand-primary,#FF6B35)] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 cursor-pointer"
+                                        >
+                                            <option value={9}>9 / halaman (Default)</option>
+                                            <option value={18}>18 / halaman</option>
+                                            <option value={27}>27 / halaman</option>
+                                        </select>
+                                    </div>
                                 </div>
+
+                                {news.last_page > 1 && (
+                                    <div className="flex items-center gap-1.5">
+                                        {news.links.map((link, idx) => (
+                                            <button
+                                                key={idx}
+                                                disabled={!link.url || link.active}
+                                                onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
+                                                className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                                                    link.active
+                                                        ? 'bg-[var(--brand-primary,#FF6B35)] text-white shadow-xs'
+                                                        : link.url
+                                                        ? 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200'
+                                                        : 'cursor-not-allowed opacity-40 text-gray-400'
+                                                }`}
+                                                dangerouslySetInnerHTML={{ __html: link.label }}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

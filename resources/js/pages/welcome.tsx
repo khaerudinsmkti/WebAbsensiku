@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
@@ -300,17 +300,21 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
     // State for News on Public Dashboard
     const [selectedNewsCategory, setSelectedNewsCategory] = useState<string>('all');
     const [newsSearch, setNewsSearch] = useState<string>('');
+    const [newsPage, setNewsPage] = useState<number>(1);
+    const [newsPerPage, setNewsPerPage] = useState<number>(6);
     const [readingNews, setReadingNews] = useState<NewsItem | null>(null);
     const [readingActiveImageIdx, setReadingActiveImageIdx] = useState<number>(0);
     const [activeGallery, setActiveGallery] = useState<NonNullable<WelcomeProps['galleries']>[number] | null>(null);
     const [activeGalleryPhotoIdx, setActiveGalleryPhotoIdx] = useState<number>(0);
     const [galleryPage, setGalleryPage] = useState<number>(1);
-    const GALLERIES_PER_PAGE = 9;
-    const totalGalleryPages = Math.max(1, Math.ceil(galleries.length / GALLERIES_PER_PAGE));
-    const paginatedGalleries = galleries.slice(
-        (galleryPage - 1) * GALLERIES_PER_PAGE,
-        galleryPage * GALLERIES_PER_PAGE,
-    );
+    const [galleryPerPage, setGalleryPerPage] = useState<number>(6);
+    const totalGalleryPages = Math.max(1, Math.ceil(galleries.length / galleryPerPage));
+    const paginatedGalleries = useMemo(() => {
+        return galleries.slice(
+            (galleryPage - 1) * galleryPerPage,
+            galleryPage * galleryPerPage,
+        );
+    }, [galleries, galleryPage, galleryPerPage]);
     const [newsViewCounts, setNewsViewCounts] = useState<Record<number, number>>({});
     const [isGreetingExpanded, setIsGreetingExpanded] = useState<boolean>(false);
 
@@ -622,6 +626,19 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
             return matchesCategory && matchesSearch;
         });
     }, [news, selectedNewsCategory, newsSearch]);
+
+    // News Pagination state (Default 9 per page)
+    const totalNewsPages = Math.max(1, Math.ceil(filteredNews.length / newsPerPage));
+    const paginatedNews = useMemo(() => {
+        return filteredNews.slice(
+            (newsPage - 1) * newsPerPage,
+            newsPage * newsPerPage,
+        );
+    }, [filteredNews, newsPage, newsPerPage]);
+
+    useEffect(() => {
+        setNewsPage(1);
+    }, [selectedNewsCategory, newsSearch, newsPerPage]);
 
     return (
         <>
@@ -1047,8 +1064,9 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                     )}
                                 </div>
                             ) : (
-                                <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                                    {filteredNews.map((item) => (
+                                <>
+                                    <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                                    {paginatedNews.map((item) => (
                                         <div
                                             key={item.id}
                                             className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-[var(--brand-primary,#FF6B35)] hover:shadow-md dark:border-gray-800 dark:bg-[#18122B]"
@@ -1169,7 +1187,89 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                         </div>
                                     ))}
                                 </div>
-                            )}
+
+                                {/* Pagination Berita di Beranda (Default 9 per halaman) */}
+                                {filteredNews.length > 0 && (
+                                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-xs dark:border-gray-800 dark:bg-[#18122B]">
+                                        <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                            <span>
+                                                Menampilkan {(newsPage - 1) * newsPerPage + 1} -{' '}
+                                                {Math.min(newsPage * newsPerPage, filteredNews.length)} dari total {filteredNews.length} berita & edaran
+                                            </span>
+                                            <div className="flex items-center gap-1.5 border-l border-gray-200 pl-3 dark:border-gray-700">
+                                                <span className="text-xs text-gray-400">Tampilkan:</span>
+                                                <select
+                                                    value={newsPerPage}
+                                                    onChange={(e) => {
+                                                        setNewsPerPage(Number(e.target.value));
+                                                        setNewsPage(1);
+                                                    }}
+                                                    className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-bold text-gray-700 focus:border-[var(--brand-primary,#FF6B35)] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 cursor-pointer"
+                                                >
+                                                    <option value={6}>6 / halaman (Default)</option>
+                                                    <option value={12}>12 / halaman</option>
+                                                    <option value={18}>18 / halaman</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {totalNewsPages > 1 && (
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    disabled={newsPage <= 1}
+                                                    onClick={() => {
+                                                        setNewsPage((p) => Math.max(1, p - 1));
+                                                        document.getElementById('berita')?.scrollIntoView({ behavior: 'smooth' });
+                                                    }}
+                                                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                                                        newsPage > 1
+                                                            ? 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 cursor-pointer'
+                                                            : 'cursor-not-allowed border border-gray-100 bg-gray-50 text-gray-400 opacity-60 dark:border-gray-800 dark:bg-gray-900'
+                                                    }`}
+                                                >
+                                                    &laquo; Sebelumnya
+                                                </button>
+
+                                                {Array.from({ length: totalNewsPages }, (_, idx) => idx + 1).map((pageNum) => (
+                                                    <button
+                                                        key={pageNum}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setNewsPage(pageNum);
+                                                            document.getElementById('berita')?.scrollIntoView({ behavior: 'smooth' });
+                                                        }}
+                                                        className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                                                            newsPage === pageNum
+                                                                ? 'bg-[var(--brand-primary,#FF6B35)] text-white shadow-xs'
+                                                                : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200'
+                                                        }`}
+                                                    >
+                                                        {pageNum}
+                                                    </button>
+                                                ))}
+
+                                                <button
+                                                    type="button"
+                                                    disabled={newsPage >= totalNewsPages}
+                                                    onClick={() => {
+                                                        setNewsPage((p) => Math.min(totalNewsPages, p + 1));
+                                                        document.getElementById('berita')?.scrollIntoView({ behavior: 'smooth' });
+                                                    }}
+                                                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                                                        newsPage < totalNewsPages
+                                                            ? 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 cursor-pointer'
+                                                            : 'cursor-not-allowed border border-gray-100 bg-gray-50 text-gray-400 opacity-60 dark:border-gray-800 dark:bg-gray-900'
+                                                    }`}
+                                                >
+                                                    Berikutnya &raquo;
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </>
+                        )}
 
                             {/* Banner CTA Lihat Semua Berita dengan Pagination */}
                             <div className="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-orange-200/80 bg-orange-50/60 p-5 backdrop-blur-sm dark:border-orange-900/40 dark:bg-orange-950/20">
@@ -1196,7 +1296,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                         </div>
 
                         {/* SECTION: Galeri Foto Kegiatan Sekolah */}
-                        <div className="relative z-10 mx-auto mt-16 max-w-6xl">
+                        <div id="galeri" className="relative z-10 mx-auto mt-16 max-w-6xl">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-gray-200/80 pb-5 dark:border-gray-800">
                                 <div>
                                     <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-bold text-[#FF6B35] dark:border-orange-900 dark:bg-orange-950/60 dark:text-[#FFA07A]">
@@ -1286,21 +1386,41 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                         })}
                                     </div>
 
-                                    {/* Pagination Galeri di Beranda (9 per halaman) */}
+                                    {/* Pagination Galeri di Beranda (Default 6 per halaman) */}
                                     <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-xs dark:border-gray-800 dark:bg-[#18122B]">
-                                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
-                                            Menampilkan {(galleryPage - 1) * GALLERIES_PER_PAGE + 1} -{' '}
-                                            {Math.min(galleryPage * GALLERIES_PER_PAGE, galleries.length)} dari total {galleries.length} album kegiatan (9 per halaman)
-                                        </span>
+                                        <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                            <span>
+                                                Menampilkan {(galleryPage - 1) * galleryPerPage + 1} -{' '}
+                                                {Math.min(galleryPage * galleryPerPage, galleries.length)} dari total {galleries.length} album kegiatan
+                                            </span>
+                                            <div className="flex items-center gap-1.5 border-l border-gray-200 pl-3 dark:border-gray-700">
+                                                <span className="text-xs text-gray-400">Tampilkan:</span>
+                                                <select
+                                                    value={galleryPerPage}
+                                                    onChange={(e) => {
+                                                        setGalleryPerPage(Number(e.target.value));
+                                                        setGalleryPage(1);
+                                                    }}
+                                                    className="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-bold text-gray-700 focus:border-[var(--brand-primary,#FF6B35)] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 cursor-pointer"
+                                                >
+                                                    <option value={6}>6 / halaman (Default)</option>
+                                                    <option value={12}>12 / halaman</option>
+                                                    <option value={18}>18 / halaman</option>
+                                                </select>
+                                            </div>
+                                        </div>
 
                                         <div className="flex items-center gap-1.5">
                                             <button
                                                 type="button"
                                                 disabled={galleryPage <= 1}
-                                                onClick={() => setGalleryPage((p) => Math.max(1, p - 1))}
+                                                onClick={() => {
+                                                    setGalleryPage((p) => Math.max(1, p - 1));
+                                                    document.getElementById('galeri')?.scrollIntoView({ behavior: 'smooth' });
+                                                }}
                                                 className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
                                                     galleryPage > 1
-                                                        ? 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200'
+                                                        ? 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 cursor-pointer'
                                                         : 'cursor-not-allowed border border-gray-100 bg-gray-50 text-gray-400 opacity-60 dark:border-gray-800 dark:bg-gray-900'
                                                 }`}
                                             >
@@ -1311,10 +1431,13 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                                 <button
                                                     key={pageNum}
                                                     type="button"
-                                                    onClick={() => setGalleryPage(pageNum)}
-                                                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                                                    onClick={() => {
+                                                        setGalleryPage(pageNum);
+                                                        document.getElementById('galeri')?.scrollIntoView({ behavior: 'smooth' });
+                                                    }}
+                                                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                                                         galleryPage === pageNum
-                                                            ? 'bg-[#FF6B35] text-white shadow-xs'
+                                                            ? 'bg-[var(--brand-primary,#FF6B35)] text-white shadow-xs'
                                                             : 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200'
                                                     }`}
                                                 >
@@ -1325,10 +1448,13 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                             <button
                                                 type="button"
                                                 disabled={galleryPage >= totalGalleryPages}
-                                                onClick={() => setGalleryPage((p) => Math.min(totalGalleryPages, p + 1))}
+                                                onClick={() => {
+                                                    setGalleryPage((p) => Math.min(totalGalleryPages, p + 1));
+                                                    document.getElementById('galeri')?.scrollIntoView({ behavior: 'smooth' });
+                                                }}
                                                 className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
                                                     galleryPage < totalGalleryPages
-                                                        ? 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200'
+                                                        ? 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 cursor-pointer'
                                                         : 'cursor-not-allowed border border-gray-100 bg-gray-50 text-gray-400 opacity-60 dark:border-gray-800 dark:bg-gray-900'
                                                 }`}
                                             >
