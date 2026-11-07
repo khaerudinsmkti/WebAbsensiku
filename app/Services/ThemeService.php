@@ -407,6 +407,15 @@ class ThemeService
                 display: inline;
             }
 
+            /* Hero Banner Modern Background Dynamic Gradient */
+            .hero-banner-wrapper {
+                background: radial-gradient(120% 65% at 50% 0%, var(--brand-primary-light, #FFF0EB) 0%, rgba(255, 255, 255, 0.5) 60%, transparent 100%) !important;
+            }
+
+            .dark .hero-banner-wrapper {
+                background: radial-gradient(120% 65% at 50% 0%, color-mix(in srgb, var(--brand-primary, #FF6B35) 16%, transparent) 0%, rgba(24, 18, 43, 0.4) 60%, transparent 100%) !important;
+            }
+
             /* Card & Element Hover Border Overrides */
             .hover\:border-\[\#FF6B35\]:hover,
             .hover\:border-\[\#FF6B35\]\/40:hover,

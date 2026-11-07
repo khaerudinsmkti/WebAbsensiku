@@ -32,7 +32,7 @@ export default function AppLogo() {
                 <span className="text-sm font-extrabold tracking-tight text-white leading-tight truncate max-w-[150px]" title={schoolName}>
                     {schoolName}
                 </span>
-                <span className="text-[10px] font-semibold text-[#FFE66D] leading-none tracking-wide truncate max-w-[150px]">
+                <span className="text-[10px] font-bold text-[var(--brand-primary-light,#FFE66D)] leading-none tracking-wide truncate max-w-[150px]">
                     {subTitle}
                 </span>
             </div>

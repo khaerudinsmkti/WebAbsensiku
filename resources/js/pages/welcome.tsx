@@ -45,6 +45,7 @@ import {
     Youtube,
     ExternalLink,
     Loader2,
+    LogIn,
 } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Button } from '@/components/ui/button';
@@ -630,10 +631,27 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
 
                 {/* Hero Section */}
                 <main className="flex-1 pb-20 md:pb-0">
-                    <section className="relative overflow-hidden px-6 pt-12 pb-16 lg:px-12 lg:pt-16 lg:pb-24">
-                        {/* Background blobs */}
-                        <div className="pointer-events-none absolute -top-20 -left-20 size-[450px] rounded-full bg-[#FF6B35]/15 blur-3xl" />
-                        <div className="pointer-events-none absolute top-1/2 -right-20 size-[450px] rounded-full bg-[#4ECDC4]/20 blur-3xl" />
+                    <section className="relative overflow-hidden px-6 pt-12 pb-16 lg:px-12 lg:pt-16 lg:pb-24 hero-banner-wrapper">
+                        {/* Modern Theme-Adaptive Ambient Mesh Background */}
+                        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+                            {/* Top Central Aurora Beam */}
+                            <div className="absolute -top-36 left-1/2 -translate-x-1/2 w-[850px] sm:w-[1100px] h-[550px] rounded-full bg-[radial-gradient(ellipse_at_center,var(--brand-primary-light,#FFF0EB)_0%,transparent_70%)] opacity-90 blur-3xl dark:opacity-25" />
+
+                            {/* Left Soft Floating Orb */}
+                            <div className="absolute -top-16 -left-20 size-[480px] rounded-full bg-[var(--brand-primary,#FF6B35)]/12 blur-[100px] dark:bg-[var(--brand-primary,#FF6B35)]/15" />
+
+                            {/* Right Complementary Orb */}
+                            <div className="absolute top-1/4 -right-20 size-[480px] rounded-full bg-[var(--brand-primary-dark,#FF8C5A)]/10 blur-[100px] dark:bg-[var(--brand-primary-dark,#FF8C5A)]/15" />
+
+                            {/* Subtle Modern Dot-Matrix Grid Texture */}
+                            <div
+                                className="absolute inset-0 opacity-[0.035] dark:opacity-[0.06]"
+                                style={{
+                                    backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+                                    backgroundSize: '24px 24px',
+                                }}
+                            />
+                        </div>
 
                         <div className="relative z-10 mx-auto max-w-5xl text-center">
                             <div className="flex flex-wrap items-center justify-center gap-2">
@@ -677,7 +695,12 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                             )}
 
                             <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
-                                <Button asChild size="lg" variant="primary" className="rounded-2xl px-6 py-3 font-extrabold shadow-brand">
+                                <Button
+                                    asChild
+                                    size="lg"
+                                    variant="primary"
+                                    className="rounded-2xl px-6 py-3 font-extrabold text-white shadow-brand hover:brightness-105 active:scale-95 transition-all duration-200"
+                                >
                                     <Link href="/berita">
                                         <Newspaper className="mr-2 size-5" />
                                         <span>Lihat Warta & Berita</span>
@@ -685,23 +708,37 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                     </Link>
                                 </Button>
 
-                                <Button asChild size="lg" variant="outline" className="rounded-2xl border-2 border-gray-200 bg-white/80 px-6 py-3 font-extrabold text-gray-700 hover:border-[var(--brand-primary,#FF6B35)] hover:bg-[var(--brand-primary-light,#FFF0EB)] hover:text-[var(--brand-primary,#FF6B35)] shadow-xs dark:border-gray-700 dark:bg-gray-800/80 dark:text-gray-200">
+                                <Button
+                                    asChild
+                                    size="lg"
+                                    className="rounded-2xl bg-gradient-to-r from-[#F59E0B] to-[#D97706] hover:from-[#D97706] hover:to-[#B45309] px-6 py-3 font-black text-white shadow-md shadow-amber-500/25 ring-2 ring-amber-400/30 hover:brightness-105 active:scale-95 transition-all duration-200 cursor-pointer"
+                                >
                                     <a href="/kalender">
-                                        <CalendarDays className="mr-2 size-5 text-[var(--brand-primary,#FF6B35)]" />
+                                        <CalendarDays className="mr-2 size-5 text-white" />
                                         <span>Kalender Akademik</span>
                                     </a>
                                 </Button>
 
                                 {auth.user ? (
-                                    <Button asChild size="lg" variant="secondary" className="rounded-2xl px-5 py-3 font-bold border border-gray-200 dark:border-gray-700">
+                                    <Button
+                                        asChild
+                                        size="lg"
+                                        className="rounded-2xl bg-gradient-to-r from-[#20B2AA] to-[#4ECDC4] hover:from-[#179B94] hover:to-[#3DBDB4] px-6 py-3 font-black text-white shadow-md shadow-teal-500/25 ring-2 ring-teal-300/30 hover:brightness-105 active:scale-95 transition-all duration-200 cursor-pointer"
+                                    >
                                         <Link href={auth.user?.role === 'publisher' ? '/news-management' : dashboard()}>
-                                            {auth.user?.role === 'publisher' ? 'Panel Berita' : 'Buka Dashboard'}
+                                            <BarChart3 className="mr-2 size-5 text-white" />
+                                            <span>{auth.user?.role === 'publisher' ? 'Panel Berita' : 'Buka Dashboard'}</span>
                                         </Link>
                                     </Button>
                                 ) : (
-                                    <Button asChild size="lg" variant="secondary" className="rounded-2xl px-5 py-3 font-bold border border-gray-200 dark:border-gray-700">
+                                    <Button
+                                        asChild
+                                        size="lg"
+                                        className="rounded-2xl bg-gradient-to-r from-[#20B2AA] to-[#4ECDC4] hover:from-[#179B94] hover:to-[#3DBDB4] px-6 py-3 font-black text-white shadow-md shadow-teal-500/25 ring-2 ring-teal-300/30 hover:brightness-105 active:scale-95 transition-all duration-200 cursor-pointer"
+                                    >
                                         <Link href={login()}>
-                                            Masuk Portal Guru & Staf
+                                            <LogIn className="mr-2 size-5 text-white" />
+                                            <span>Masuk Portal Guru & Staf</span>
                                         </Link>
                                     </Button>
                                 )}
@@ -737,10 +774,10 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                         {/* SECTION: Sambutan Kepala Sekolah (Publik) */}
                         {principalGreeting?.is_active && (principalGreeting?.content || principalGreeting?.name) && (
                             <div id="sambutan" className="relative z-10 mx-auto mt-16 max-w-6xl">
-                                <div className="relative overflow-hidden rounded-3xl border border-orange-100 bg-gradient-to-br from-white via-orange-50/40 to-amber-50/20 p-6 sm:p-10 shadow-xl shadow-orange-500/5 backdrop-blur-md dark:border-gray-800 dark:from-[#18122B]/90 dark:via-[#1e1738]/80 dark:to-[#18122B]/90">
+                                <div className="relative overflow-hidden rounded-3xl border border-[var(--brand-primary,#FF6B35)]/20 bg-gradient-to-br from-white/95 via-[var(--brand-primary-light,#FFF0EB)]/30 to-white/90 p-6 sm:p-10 shadow-xl shadow-[var(--brand-primary,#FF6B35)]/5 backdrop-blur-md dark:border-gray-800 dark:from-[#18122B]/90 dark:via-[#1e1738]/80 dark:to-[#18122B]/90">
                                     {/* Decorative subtle background elements */}
-                                    <div className="pointer-events-none absolute -right-12 -top-12 size-64 rounded-full bg-gradient-to-br from-orange-400/10 to-amber-400/5 blur-3xl dark:from-orange-500/10" />
-                                    <div className="pointer-events-none absolute -left-12 -bottom-12 size-64 rounded-full bg-gradient-to-tr from-amber-400/10 to-rose-400/5 blur-3xl dark:from-rose-500/10" />
+                                    <div className="pointer-events-none absolute -right-12 -top-12 size-64 rounded-full bg-[var(--brand-primary,#FF6B35)]/10 blur-3xl" />
+                                    <div className="pointer-events-none absolute -left-12 -bottom-12 size-64 rounded-full bg-[var(--brand-primary-dark,#FF8C5A)]/10 blur-3xl" />
 
                                     <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-8 lg:gap-12">
                                         {/* Kolom Kiri: Foto Kepala Sekolah & Info */}

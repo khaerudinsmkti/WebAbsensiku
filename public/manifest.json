@@ -8,7 +8,7 @@
     "display": "standalone",
     "orientation": "portrait-primary",
     "background_color": "#FFFFFF",
-    "theme_color": "#7C3AED",
+    "theme_color": "#0D9488",
     "prefer_related_applications": false,
     "categories": [
         "education",
@@ -16,31 +16,31 @@
     ],
     "icons": [
         {
-            "src": "/icons/icon-192x192.png?v=1794062648",
+            "src": "/icons/icon-192x192.png?v=1794064491",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "/icons/icon-maskable-192x192.png?v=1794062648",
+            "src": "/icons/icon-maskable-192x192.png?v=1794064491",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "maskable"
         },
         {
-            "src": "/icons/icon-512x512.png?v=1794062648",
+            "src": "/icons/icon-512x512.png?v=1794064491",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "/icons/icon-maskable-512x512.png?v=1794062648",
+            "src": "/icons/icon-maskable-512x512.png?v=1794064491",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
         },
         {
-            "src": "/storage/school/kSQxzcgZPawyXrEPNJP4QkEJGJ37iAXCHWEHDFwx.png?v=1794062648",
+            "src": "/storage/school/kSQxzcgZPawyXrEPNJP4QkEJGJ37iAXCHWEHDFwx.png?v=1794064491",
             "sizes": "500x500",
             "type": "image/png",
             "purpose": "any"

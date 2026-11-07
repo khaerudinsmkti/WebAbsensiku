@@ -141,7 +141,7 @@ export function PublicHeader({ onOpenCreateNews }: PublicHeaderProps) {
                                 </div>
                             )}
                             <div className="min-w-0">
-                                <span className="text-base sm:text-lg lg:text-xl font-black tracking-tight text-[#111827] dark:text-white leading-tight group-hover:text-[var(--brand-primary,#FF6B35)] transition-colors line-clamp-1">
+                                <span className="text-base sm:text-lg lg:text-xl font-black tracking-tight text-[var(--brand-primary,#FF6B35)] leading-tight group-hover:text-[var(--brand-primary-dark,#FF8C5A)] transition-colors line-clamp-1">
                                     {schoolName}
                                 </span>
                             </div>

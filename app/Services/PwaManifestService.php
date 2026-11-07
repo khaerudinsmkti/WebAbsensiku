@@ -12,7 +12,7 @@ class PwaManifestService
     public static function getManifestData(): array
     {
         $school = SchoolSetting::getSetting();
-        $name = $school->name ?: 'AbsensiKu SD';
+        $name = $school->name ?: 'AbsensiKu';
         $shortName = $school->name ?: 'AbsensiKu';
 
         $version = $school->updated_at ? $school->updated_at->timestamp : (file_exists(public_path('manifest.json')) ? filemtime(public_path('manifest.json')) : time());

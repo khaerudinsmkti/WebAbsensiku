@@ -300,7 +300,7 @@ export function MobileBottomNav() {
                                         </div>
                                     )}
                                     <div className="leading-tight">
-                                        <h4 className="text-sm font-extrabold text-gray-900 dark:text-white line-clamp-1">
+                                        <h4 className="text-sm font-extrabold text-[var(--brand-primary,#FF6B35)] line-clamp-1">
                                             {appName}
                                         </h4>
                                         <p className="text-[11px] text-gray-500 font-medium line-clamp-1">

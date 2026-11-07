@@ -192,6 +192,14 @@
     background: linear-gradient(135deg, #0F0A1C 0%, #151A2E 50%, #130D24 100%);
 }
 
+.hero-banner-wrapper {
+    background: radial-gradient(120% 65% at 50% 0%, var(--brand-primary-light, #FFF0EB) 0%, rgba(255, 255, 255, 0.5) 60%, transparent 100%);
+}
+
+.dark .hero-banner-wrapper {
+    background: radial-gradient(120% 65% at 50% 0%, color-mix(in srgb, var(--brand-primary, #FF6B35) 16%, transparent) 0%, rgba(24, 18, 43, 0.4) 60%, transparent 100%);
+}
+
 .bg-sidebar-gradient {
     background: linear-gradient(180deg, #1A1033 0%, #2D1B69 60%, #1E3A5F 100%);
 }
