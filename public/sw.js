@@ -1,5 +1,5 @@
 // AbsensiKu Progressive Web App Service Worker
-const CACHE_NAME = 'absensiku-pwa-v4';
+const CACHE_NAME = 'absensiku-pwa-v5';
 
 // Essential static assets to pre-cache
 const PRECACHE_ASSETS = [
@@ -8,6 +8,7 @@ const PRECACHE_ASSETS = [
     '/favicon.ico',
     '/manifest.json',
     '/icons/icon-192x192.png',
+    '/icons/icon-maskable-192x192.png',
     '/icons/icon-512x512.png',
     '/icons/icon-maskable-512x512.png',
 ];
@@ -54,10 +55,18 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // Always fetch latest manifest without stale cache
-    if (url.pathname === '/manifest.json') {
+    // Always fetch latest manifest and PWA icons without stale cache (Network-First)
+    if (url.pathname === '/manifest.json' || url.pathname.startsWith('/icons/')) {
         event.respondWith(
-            fetch(request).catch(() => caches.match(request))
+            fetch(request).then((networkResponse) => {
+                if (networkResponse && networkResponse.status === 200) {
+                    const responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(request, responseToCache);
+                    });
+                }
+                return networkResponse;
+            }).catch(() => caches.match(request))
         );
         return;
     }

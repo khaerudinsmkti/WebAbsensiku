@@ -1,8 +1,8 @@
 {
     "id": "/?source=pwa",
-    "name": "SDN Rambatan Kulon 2",
-    "short_name": "SDN Rambatan Kulon 2",
-    "description": "Portal dan Aplikasi Presensi Siswa Resmi - SDN Rambatan Kulon 2",
+    "name": "SDN Indramayu 2",
+    "short_name": "SDN Indramayu 2",
+    "description": "Portal dan Aplikasi Presensi Siswa Resmi - SDN Indramayu 2",
     "start_url": "/?source=pwa",
     "scope": "/",
     "display": "standalone",
@@ -16,26 +16,32 @@
     ],
     "icons": [
         {
-            "src": "/icons/icon-192x192.png?v=1794006468",
+            "src": "/icons/icon-192x192.png?v=1794055946",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "/icons/icon-512x512.png?v=1794006468",
+            "src": "/icons/icon-maskable-192x192.png?v=1794055946",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/icons/icon-512x512.png?v=1794055946",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any"
         },
         {
-            "src": "/icons/icon-maskable-512x512.png?v=1794006468",
+            "src": "/icons/icon-maskable-512x512.png?v=1794055946",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
         },
         {
-            "src": "/storage/school/BPHos9pbv6sOfyp0v9QWhCTxfCKJHho74pd79rzX.png?v=1794006468",
-            "sizes": "420x476",
+            "src": "/storage/school/kSQxzcgZPawyXrEPNJP4QkEJGJ37iAXCHWEHDFwx.png?v=1794055946",
+            "sizes": "500x500",
             "type": "image/png",
             "purpose": "any"
         }

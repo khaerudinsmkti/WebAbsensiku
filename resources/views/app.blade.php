@@ -47,11 +47,11 @@
         @if($schoolLogoUrl)
             <link rel="icon" href="{{ $schoolLogoUrl }}?v={{ $pwaVersion }}">
             <link rel="shortcut icon" href="{{ $schoolLogoUrl }}?v={{ $pwaVersion }}">
-            <link rel="apple-touch-icon" href="{{ $schoolLogoUrl }}?v={{ $pwaVersion }}">
+            <link rel="apple-touch-icon" href="/icons/icon-maskable-192x192.png?v={{ $pwaVersion }}">
         @else
             <link rel="icon" href="/icons/icon-192x192.png?v={{ $pwaVersion }}" type="image/png">
             <link rel="shortcut icon" href="/icons/icon-192x192.png?v={{ $pwaVersion }}">
-            <link rel="apple-touch-icon" href="/icons/icon-192x192.png?v={{ $pwaVersion }}">
+            <link rel="apple-touch-icon" href="/icons/icon-maskable-192x192.png?v={{ $pwaVersion }}">
         @endif
 
         {{-- PWA Manifest & Meta Tags (Judul Aplikasi & Logo Dinamis dari Pengaturan Sekolah) --}}

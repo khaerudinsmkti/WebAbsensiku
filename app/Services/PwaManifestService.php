@@ -17,33 +17,34 @@ class PwaManifestService
 
         $version = $school->updated_at ? $school->updated_at->timestamp : (file_exists(public_path('manifest.json')) ? filemtime(public_path('manifest.json')) : time());
 
-        $icons = [];
-
-        // 1. Standard 192x192 PNG Icon (Wajib untuk Home Screen & Chrome Android WebAPK)
-        $icons[] = [
-            'src' => '/icons/icon-192x192.png?v=' . $version,
-            'sizes' => '192x192',
-            'type' => 'image/png',
-            'purpose' => 'any',
+        $icons = [
+            [
+                'src' => '/icons/icon-192x192.png?v=' . $version,
+                'sizes' => '192x192',
+                'type' => 'image/png',
+                'purpose' => 'any',
+            ],
+            [
+                'src' => '/icons/icon-maskable-192x192.png?v=' . $version,
+                'sizes' => '192x192',
+                'type' => 'image/png',
+                'purpose' => 'maskable',
+            ],
+            [
+                'src' => '/icons/icon-512x512.png?v=' . $version,
+                'sizes' => '512x512',
+                'type' => 'image/png',
+                'purpose' => 'any',
+            ],
+            [
+                'src' => '/icons/icon-maskable-512x512.png?v=' . $version,
+                'sizes' => '512x512',
+                'type' => 'image/png',
+                'purpose' => 'maskable',
+            ],
         ];
 
-        // 2. Standard 512x512 PNG Icon (Wajib untuk Splash Screen & Chrome Android)
-        $icons[] = [
-            'src' => '/icons/icon-512x512.png?v=' . $version,
-            'sizes' => '512x512',
-            'type' => 'image/png',
-            'purpose' => 'any',
-        ];
-
-        // 3. Standard 512x512 Maskable PNG Icon (Adaptive Icon dengan safe zone padding untuk Android)
-        $icons[] = [
-            'src' => '/icons/icon-maskable-512x512.png?v=' . $version,
-            'sizes' => '512x512',
-            'type' => 'image/png',
-            'purpose' => 'maskable',
-        ];
-
-        // 4. Jika logo sekolah ada, sertakan file logo sekolah asli dengan resolusinya
+        // Sertakan file logo sekolah asli dengan dimensi alaminya jika tersedia
         if ($school->logo_path && file_exists(storage_path('app/public/' . $school->logo_path))) {
             $logoFullPath = storage_path('app/public/' . $school->logo_path);
             $imgInfo = @getimagesize($logoFullPath);
@@ -108,6 +109,7 @@ class PwaManifestService
         // Generate icons if GD is available
         if (extension_loaded('gd')) {
             static::generateIcon($iconsDir . '/icon-192x192.png', 192, $sourceLogoPath, false);
+            static::generateIcon($iconsDir . '/icon-maskable-192x192.png', 192, $sourceLogoPath, true);
             static::generateIcon($iconsDir . '/icon-512x512.png', 512, $sourceLogoPath, false);
             static::generateIcon($iconsDir . '/icon-maskable-512x512.png', 512, $sourceLogoPath, true);
         }
