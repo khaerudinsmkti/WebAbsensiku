@@ -35,8 +35,8 @@ class ExtracurricularReport extends Model
     protected static function booted(): void
     {
         static::creating(function (ExtracurricularReport $report) {
-            if (empty($report->verification_token)) {
-                $report->verification_token = Str::random(32);
+            if (empty($report->attributes['verification_token'])) {
+                $report->attributes['verification_token'] = Str::random(32);
             }
         });
     }
@@ -46,7 +46,9 @@ class ExtracurricularReport extends Model
         if (empty($value)) {
             $value = Str::random(32);
             $this->attributes['verification_token'] = $value;
-            $this->saveQuietly();
+            if ($this->exists) {
+                $this->saveQuietly();
+            }
         }
 
         return $value;
