@@ -33,11 +33,7 @@ Route::get('/verify/extracurricular/{identifier}/pdf', [\App\Http\Controllers\Ex
 Route::get('/extracurricular/reports/{identifier}/verify', [\App\Http\Controllers\ExtracurricularController::class, 'verify']);
 
 Route::redirect('/register', '/login');
-
-Route::middleware(['guest:' . config('fortify.guard', 'web')])->group(function () {
-    Route::get('/registeruser', [\Laravel\Fortify\Http\Controllers\RegisteredUserController::class, 'create'])->name('register');
-    Route::post('/registeruser', [\Laravel\Fortify\Http\Controllers\RegisteredUserController::class, 'store'])->name('register.store');
-});
+Route::redirect('/registeruser', '/login');
 
 Route::get('/manifest.json', function () {
     $manifestData = \App\Services\PwaManifestService::getManifestData();
@@ -170,13 +166,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/admin/holidays/{holiday}', [HolidayController::class, 'update'])->name('holidays.update');
         Route::delete('/admin/holidays/{holiday}', [HolidayController::class, 'destroy'])->name('holidays.destroy');
         Route::post('/admin/holidays/seed', [HolidayController::class, 'seed'])->name('holidays.seed');
+    });
 
-        // Matriks Pengaturan Hak Akses (Khusus Administrator)
-        Route::middleware('role:admin')->group(function () {
-            Route::get('/admin/permissions', [\App\Http\Controllers\PermissionMatrixController::class, 'index'])->name('permissions.index');
-            Route::post('/admin/permissions', [\App\Http\Controllers\PermissionMatrixController::class, 'update'])->name('permissions.update');
-            Route::post('/admin/permissions/reset', [\App\Http\Controllers\PermissionMatrixController::class, 'reset'])->name('permissions.reset');
-        });
+    // Matriks Pengaturan Hak Akses (Khusus Administrator)
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/admin/permissions', [\App\Http\Controllers\PermissionMatrixController::class, 'index'])->name('permissions.index');
+        Route::post('/admin/permissions', [\App\Http\Controllers\PermissionMatrixController::class, 'update'])->name('permissions.update');
+        Route::post('/admin/permissions/reset', [\App\Http\Controllers\PermissionMatrixController::class, 'reset'])->name('permissions.reset');
     });
 
     // 7. Modul Kegiatan Ekstrakurikuler (Lapor Ekskul, Roster Anggota, Persetujuan & Cetak)

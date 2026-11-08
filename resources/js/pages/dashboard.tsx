@@ -332,6 +332,20 @@ export default function Dashboard({
                                     </span>
                                 </div>
                             </div>
+
+                            {/* Tombol Cepat Matriks Hak Akses Khusus Administrator */}
+                            {user?.role === 'admin' && (
+                                <Button
+                                    asChild
+                                    variant="outline"
+                                    className="h-10 px-3.5 rounded-xl bg-white/20 hover:bg-white/30 text-white border-white/25 backdrop-blur-md text-xs font-bold shadow-xs transition-all"
+                                >
+                                    <Link href="/admin/permissions">
+                                        <ShieldCheck className="size-4 mr-1.5 text-[#FFE66D]" />
+                                        Matriks Hak Akses
+                                    </Link>
+                                </Button>
+                            )}
                         </div>
                     }
                 />

@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import {
     AlertCircle,
     ArrowRightLeft,
+    Award,
     BookOpenCheck,
     Building2,
     Calendar,
@@ -148,13 +149,19 @@ const getRoleBadgeVariant = (roleKey: string) => {
 };
 
 export default function PermissionMatrixPage({
-    roles,
-    modules,
-    categories,
-    matrix: initialMatrix,
-    defaults,
+    roles = {},
+    modules = {},
+    categories = {},
+    matrix: initialMatrix = {},
+    defaults = {},
 }: Props) {
-    const [matrix, setMatrix] = useState<MatrixState>(() => JSON.parse(JSON.stringify(initialMatrix)));
+    const [matrix, setMatrix] = useState<MatrixState>(() => {
+        try {
+            return JSON.parse(JSON.stringify(initialMatrix || {}));
+        } catch {
+            return {};
+        }
+    });
     const [isSaving, setIsSaving] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
@@ -162,9 +169,9 @@ export default function PermissionMatrixPage({
     const [searchQuery, setSearchQuery] = useState('');
     const [collapsedModules, setCollapsedModules] = useState<Record<string, boolean>>({});
 
-    const roleKeys = useMemo(() => Object.keys(roles), [roles]);
-    const moduleList = useMemo(() => Object.values(modules), [modules]);
-    const categoryList = useMemo(() => Object.values(categories), [categories]);
+    const roleKeys = useMemo(() => Object.keys(roles || {}), [roles]);
+    const moduleList = useMemo(() => Object.values(modules || {}), [modules]);
+    const categoryList = useMemo(() => Object.values(categories || {}), [categories]);
 
     // Track dirty state (changes count)
     const dirtyCount = useMemo(() => {

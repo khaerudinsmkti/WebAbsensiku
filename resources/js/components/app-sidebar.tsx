@@ -352,7 +352,7 @@ export function AppSidebar() {
                             title: 'Pengaturan Sistem',
                             href: '/admin/school-settings',
                             icon: Settings,
-                            defaultOpen: false,
+                            defaultOpen: url.startsWith('/admin/'),
                             items: [
                                 {
                                     title: 'Pengaturan Sekolah',
