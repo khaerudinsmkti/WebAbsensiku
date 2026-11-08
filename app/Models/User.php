@@ -78,6 +78,15 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return $this->role === 'publisher';
     }
 
+    public function hasPermission(string $module, string $action = 'view'): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return \App\Services\PermissionService::hasPermission($this->role, $module, $action);
+    }
+
     public function canManageNews(): bool
     {
         return $this->role === 'admin' || $this->role === 'publisher';

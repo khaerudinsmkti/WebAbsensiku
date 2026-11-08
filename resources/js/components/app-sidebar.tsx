@@ -19,6 +19,7 @@ import {
     School,
     Settings,
     Shield,
+    ShieldCheck,
     TrendingUp,
     UserCheck,
     Users,
@@ -327,6 +328,16 @@ export function AppSidebar() {
                                     icon: CalendarDays,
                                     isActive: url.startsWith('/admin/holidays'),
                                 },
+                                ...(isAdmin
+                                    ? [
+                                          {
+                                              title: 'Matriks Hak Akses',
+                                              href: '/admin/permissions',
+                                              icon: ShieldCheck,
+                                              isActive: url.startsWith('/admin/permissions'),
+                                          },
+                                      ]
+                                    : []),
                             ],
                         },
                     ]
