@@ -21,6 +21,10 @@ class DashboardController extends Controller
             return redirect()->route('news.index');
         }
 
+        if ($user && $user->isCoach()) {
+            return redirect()->route('extracurricular.index');
+        }
+
         $today = Carbon::today()->toDateString();
         $date = $request->input('date', $today);
 

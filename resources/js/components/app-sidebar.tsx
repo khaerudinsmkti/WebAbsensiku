@@ -76,6 +76,7 @@ export function AppSidebar() {
     const { url, props } = usePage();
     const user = props.auth?.user as { role?: string } | undefined;
     const isPublisher = user?.role === 'publisher';
+    const isCoach = user?.role === 'coach';
     const isAdmin = user?.role === 'admin';
     const isPrincipal = user?.role === 'principal';
     const canManageSchool = isAdmin || isPrincipal;
@@ -154,6 +155,37 @@ export function AppSidebar() {
                   ],
               },
           ]
+        : isCoach
+        ? [
+              {
+                  title: 'Ekstrakurikuler',
+                  href: '/extracurricular/reports',
+                  icon: Award,
+                  defaultOpen: true,
+                  items: [
+                      {
+                          title: 'Buat Laporan Ekskul',
+                          href: '/extracurricular/reports/create',
+                          icon: Award,
+                          isActive: url === '/extracurricular/reports/create',
+                      },
+                      {
+                          title: 'Riwayat Laporan',
+                          href: '/extracurricular/reports',
+                          icon: FileSpreadsheet,
+                          isActive:
+                              url.startsWith('/extracurricular/reports') &&
+                              url !== '/extracurricular/reports/create',
+                      },
+                      {
+                          title: 'Daftar Anggota Siswa',
+                          href: '/extracurricular/roster',
+                          icon: Users,
+                          isActive: url.startsWith('/extracurricular/roster'),
+                      },
+                  ],
+              },
+          ]
         : [
               {
                   title: 'Dashboard',
@@ -203,6 +235,12 @@ export function AppSidebar() {
                           href: '/reports',
                           icon: FileSpreadsheet,
                           isActive: url.startsWith('/reports'),
+                      },
+                      {
+                          title: 'Laporan Ekskul',
+                          href: '/extracurricular/reports',
+                          icon: Award,
+                          isActive: url.startsWith('/extracurricular'),
                       },
                   ],
               },
@@ -350,7 +388,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild className="hover:bg-white/10 active:bg-white/15">
-                            <Link href={isPublisher ? '/news-management' : '/dashboard'} prefetch>
+                            <Link href={isPublisher ? '/news-management' : isCoach ? '/extracurricular/reports' : '/dashboard'} prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>

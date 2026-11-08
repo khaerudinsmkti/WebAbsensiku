@@ -85,7 +85,7 @@ class MasterDataController extends Controller
             'with_next_school' => Student::where(fn ($q) => $q->where('is_alumni', true)->orWhere('is_active', false))->whereNotNull('next_school')->where('next_school', '!=', '')->count(),
         ];
 
-        $teacherRoles = $request->user()->isPrincipal() ? ['teacher', 'principal', 'publisher'] : ['teacher', 'admin', 'principal', 'publisher'];
+        $teacherRoles = $request->user()->isPrincipal() ? ['teacher', 'principal', 'publisher', 'coach'] : ['teacher', 'admin', 'principal', 'publisher', 'coach'];
 
         $teachers = User::whereIn('role', $teacherRoles)
             ->with(['homeroomClassrooms', 'dutySchedules'])
@@ -370,7 +370,7 @@ class MasterDataController extends Controller
             'nip' => 'nullable|string|max:50|unique:users,nip',
             'username' => 'required|string|max:50|unique:users,username',
             'email' => 'required|email|max:150|unique:users,email',
-            'role' => 'required|in:teacher,admin,principal,publisher',
+            'role' => 'required|in:teacher,admin,principal,publisher,coach',
             'password' => 'required|string|min:6',
         ]);
 
@@ -409,7 +409,7 @@ class MasterDataController extends Controller
             'nip' => 'nullable|string|max:50|unique:users,nip,' . $user->id,
             'username' => 'required|string|max:50|unique:users,username,' . $user->id,
             'email' => 'required|email|max:150|unique:users,email,' . $user->id,
-            'role' => 'required|in:teacher,admin,principal,publisher',
+            'role' => 'required|in:teacher,admin,principal,publisher,coach',
             'password' => 'nullable|string|min:6',
         ]);
 
@@ -508,6 +508,7 @@ class MasterDataController extends Controller
                     'admin', 'administrator' => 'admin',
                     'principal', 'kepala sekolah', 'kepsek' => 'principal',
                     'publisher', 'redaksi', 'humas', 'publisher berita' => 'publisher',
+                    'coach', 'pelatih', 'pelatih ekskul', 'ekskul' => 'coach',
                     default => 'teacher',
                 };
 

@@ -100,6 +100,7 @@ interface Props {
 
 // Icon dictionary lookup helper
 const ICON_MAP: Record<string, React.ElementType> = {
+    Award,
     UserCheck,
     Clock,
     CalendarDays,
@@ -137,6 +138,8 @@ const getRoleBadgeVariant = (roleKey: string) => {
             return 'bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-900/50 dark:bg-emerald-500/20 dark:text-emerald-400';
         case 'publisher':
             return 'bg-amber-500/10 text-amber-600 border-amber-200 dark:border-amber-900/50 dark:bg-amber-500/20 dark:text-amber-400';
+        case 'coach':
+            return 'bg-purple-500/10 text-purple-600 border-purple-200 dark:border-purple-900/50 dark:bg-purple-500/20 dark:text-purple-400';
         case 'student':
             return 'bg-slate-500/10 text-slate-600 border-slate-200 dark:border-slate-800 dark:bg-slate-500/20 dark:text-slate-400';
         default:
@@ -553,6 +556,8 @@ export default function PermissionMatrixPage({
                                                     ? 'bg-emerald-500'
                                                     : rKey === 'publisher'
                                                     ? 'bg-amber-500'
+                                                    : rKey === 'coach'
+                                                    ? 'bg-purple-500'
                                                     : 'bg-slate-500'
                                             }`}
                                             style={{ width: `${percent}%` }}

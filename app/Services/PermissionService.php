@@ -55,6 +55,14 @@ class PermissionService
                 'color' => 'slate',
                 'is_locked' => false,
             ],
+            'coach' => [
+                'key' => 'coach',
+                'name' => 'Pelatih Ekskul',
+                'badge' => 'Pelatih',
+                'description' => 'Pengelolaan laporan kegiatan ekskul, presensi murid ekskul, dan dokumentasi latihan.',
+                'color' => 'purple',
+                'is_locked' => false,
+            ],
         ];
     }
 
@@ -155,6 +163,22 @@ class PermissionService
                 'permissions' => [
                     'view' => ['label' => 'Lihat Statistik', 'description' => 'Membuka dasbor rekapitulasi dan grafik persentase.'],
                     'export' => ['label' => 'Ekspor Laporan (Excel/PDF)', 'description' => 'Mengunduh rekap presensi dalam format spreadsheet atau dokumen cetak.'],
+                ],
+            ],
+            'extracurricular' => [
+                'key' => 'extracurricular',
+                'name' => 'Laporan Ekstrakurikuler',
+                'category' => 'presensi',
+                'description' => 'Laporan sesi kegiatan ekstrakurikuler, presensi siswa, evaluasi perkembangan murid, dan persetujuan kepala sekolah.',
+                'icon' => 'Award',
+                'permissions' => [
+                    'view' => ['label' => 'Lihat Laporan Ekskul', 'description' => 'Melihat daftar laporan kegiatan dan kehadiran murid ekskul.'],
+                    'create' => ['label' => 'Buat Laporan Baru', 'description' => 'Menginput laporan sesi latihan dan checklist kehadiran murid.'],
+                    'edit' => ['label' => 'Sunting Laporan', 'description' => 'Mengubah data laporan kegiatan yang belum disetujui.'],
+                    'delete' => ['label' => 'Hapus Laporan', 'description' => 'Menghapus arsip laporan kegiatan ekskul.'],
+                    'roster' => ['label' => 'Atur Anggota Siswa', 'description' => 'Mengatur daftar murid ekskul default sebagai anggota tetap.'],
+                    'approve' => ['label' => 'Persetujuan Kepala Sekolah', 'description' => 'Menyetujui atau meminta revisi laporan ekskul.'],
+                    'print' => ['label' => 'Cetak Lembar Laporan', 'description' => 'Mencetak dokumen resmi laporan ekskul yang disetujui.'],
                 ],
             ],
 
@@ -331,9 +355,18 @@ class PermissionService
                             $isGranted = in_array($permKey, ['view', 'create']);
                         } elseif ($modKey === 'reports') {
                             $isGranted = true;
+                        } elseif ($modKey === 'extracurricular') {
+                            $isGranted = ($permKey === 'view');
                         } elseif (in_array($modKey, ['master_students', 'master_teachers', 'master_classes'])) {
                             $isGranted = ($permKey === 'view');
                         } elseif (in_array($modKey, ['news', 'galleries', 'school_profile', 'principal_greeting', 'school_settings', 'holidays'])) {
+                            $isGranted = ($permKey === 'view');
+                        }
+                    } elseif ($role === 'coach') {
+                        // Pelatih Ekskul
+                        if ($modKey === 'extracurricular') {
+                            $isGranted = in_array($permKey, ['view', 'create', 'edit', 'delete', 'roster', 'print']);
+                        } elseif (in_array($modKey, ['master_students', 'school_settings', 'holidays'])) {
                             $isGranted = ($permKey === 'view');
                         }
                     } elseif ($role === 'publisher') {

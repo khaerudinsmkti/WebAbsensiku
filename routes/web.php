@@ -172,6 +172,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/admin/permissions/reset', [\App\Http\Controllers\PermissionMatrixController::class, 'reset'])->name('permissions.reset');
         });
     });
+
+    // 7. Modul Kegiatan Ekstrakurikuler (Lapor Ekskul, Roster Anggota, Persetujuan & Cetak)
+    Route::middleware('role:admin,principal,coach,teacher')->group(function () {
+        Route::get('/extracurricular/reports', [\App\Http\Controllers\ExtracurricularController::class, 'index'])->name('extracurricular.index');
+        Route::get('/extracurricular/reports/create', [\App\Http\Controllers\ExtracurricularController::class, 'create'])->name('extracurricular.create');
+        Route::post('/extracurricular/reports', [\App\Http\Controllers\ExtracurricularController::class, 'store'])->name('extracurricular.store');
+        Route::get('/extracurricular/reports/{report}', [\App\Http\Controllers\ExtracurricularController::class, 'show'])->name('extracurricular.show');
+        Route::get('/extracurricular/reports/{report}/edit', [\App\Http\Controllers\ExtracurricularController::class, 'edit'])->name('extracurricular.edit');
+        Route::match(['put', 'post'], '/extracurricular/reports/{report}', [\App\Http\Controllers\ExtracurricularController::class, 'update'])->name('extracurricular.update');
+        Route::delete('/extracurricular/reports/{report}', [\App\Http\Controllers\ExtracurricularController::class, 'destroy'])->name('extracurricular.destroy');
+        Route::post('/extracurricular/reports/{report}/approve', [\App\Http\Controllers\ExtracurricularController::class, 'approve'])->name('extracurricular.approve');
+        Route::get('/extracurricular/reports/{report}/print', [\App\Http\Controllers\ExtracurricularController::class, 'print'])->name('extracurricular.print');
+        Route::get('/extracurricular/reports/{report}/pdf', [\App\Http\Controllers\ExtracurricularController::class, 'exportPdf'])->name('extracurricular.pdf');
+        Route::get('/extracurricular/roster', [\App\Http\Controllers\ExtracurricularController::class, 'roster'])->name('extracurricular.roster');
+        Route::post('/extracurricular/roster', [\App\Http\Controllers\ExtracurricularController::class, 'saveRoster'])->name('extracurricular.roster.save');
+    });
 });
 
 require __DIR__.'/settings.php';

@@ -78,6 +78,21 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return $this->role === 'publisher';
     }
 
+    public function isCoach(): bool
+    {
+        return $this->role === 'coach';
+    }
+
+    public function extracurricularReports(): HasMany
+    {
+        return $this->hasMany(ExtracurricularReport::class, 'coach_id');
+    }
+
+    public function extracurricularMembers(): HasMany
+    {
+        return $this->hasMany(ExtracurricularMember::class, 'coach_id');
+    }
+
     public function hasPermission(string $module, string $action = 'view'): bool
     {
         if ($this->isAdmin()) {
