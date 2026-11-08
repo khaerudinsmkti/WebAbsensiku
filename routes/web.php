@@ -26,6 +26,12 @@ Route::get('/galeri', [WelcomeController::class, 'gallery'])->name('public.galle
 Route::get('/kalender', [WelcomeController::class, 'calendar'])->name('public.calendar');
 Route::get('/kontak', [WelcomeController::class, 'contact'])->name('public.contact');
 Route::post('/kontak/kirim', [ContactController::class, 'publicStore'])->name('contact.public.store');
+
+// Verifikasi Publik Keabsahan Dokumen Laporan Ekskul (Scan Barcode / QR Code Terenkripsi)
+Route::get('/verify/extracurricular/{identifier}', [\App\Http\Controllers\ExtracurricularController::class, 'verify'])->name('extracurricular.verify');
+Route::get('/verify/extracurricular/{identifier}/pdf', [\App\Http\Controllers\ExtracurricularController::class, 'exportPdf'])->name('extracurricular.public.pdf');
+Route::get('/extracurricular/reports/{identifier}/verify', [\App\Http\Controllers\ExtracurricularController::class, 'verify']);
+
 Route::redirect('/register', '/login');
 
 Route::middleware(['guest:' . config('fortify.guard', 'web')])->group(function () {

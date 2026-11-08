@@ -8,6 +8,12 @@ use App\Models\ExtracurricularReport;
 use App\Models\ExtracurricularReportAttendee;
 use App\Models\SchoolSetting;
 use App\Models\Student;
+use BaconQrCode\Renderer\Color\Rgb;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\Fill;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -520,17 +526,32 @@ class ExtracurricularController extends Controller
 
         $setting = SchoolSetting::getSetting();
 
+        // Use encrypted/random verification_token in public scan URL
+        $verifyUrl = route('extracurricular.verify', $report->verification_token);
+        $qrCodeSvg = $report->status === 'approved' ? $this->generateQrCodeSvg($verifyUrl, 110) : null;
+        $qrCodeBase64 = $qrCodeSvg ? 'data:image/svg+xml;base64,' . base64_encode($qrCodeSvg) : null;
+
         return Inertia::render('extracurricular/print', [
             'report' => $report,
             'school' => $setting,
+            'verifyUrl' => $verifyUrl,
+            'qrCodeSvg' => $qrCodeSvg,
+            'qrCodeBase64' => $qrCodeBase64,
         ]);
     }
 
     /**
      * Download official PDF report formatted identical to Principal Journal PDF.
      */
-    public function exportPdf(ExtracurricularReport $report): HttpResponse
+    public function exportPdf(string|ExtracurricularReport $identifier): HttpResponse
     {
+        $report = $identifier instanceof ExtracurricularReport
+            ? $identifier
+            : ExtracurricularReport::query()
+                ->where('verification_token', $identifier)
+                ->orWhere('id', is_numeric($identifier) ? (int) $identifier : 0)
+                ->firstOrFail();
+
         $report->load([
             'coach',
             'approvedBy',
@@ -571,6 +592,14 @@ class ExtracurricularController extends Controller
 
         $formattedDate = Carbon::parse($report->date)->locale('id')->isoFormat('dddd, D MMMM Y');
         $printedAt = Carbon::today()->locale('id')->isoFormat('D MMMM Y');
+        $approvedAtFormatted = $report->approved_at
+            ? Carbon::parse($report->approved_at)->locale('id')->isoFormat('D MMMM Y, HH:mm [WIB]')
+            : Carbon::parse($report->updated_at)->locale('id')->isoFormat('D MMMM Y, HH:mm [WIB]');
+
+        // Use encrypted/random verification_token in QR code barcode
+        $verifyUrl = route('extracurricular.verify', $report->verification_token);
+        $qrCodeSvg = $report->status === 'approved' ? $this->generateQrCodeSvg($verifyUrl, 110) : null;
+        $qrCodeBase64 = $qrCodeSvg ? 'data:image/svg+xml;base64,' . base64_encode($qrCodeSvg) : null;
 
         $safeEkskul = Str::slug($report->extracurricular_name);
         $safeDate = Carbon::parse($report->date)->format('Y-m-d');
@@ -590,12 +619,56 @@ class ExtracurricularController extends Controller
             'attendancePercent' => $attendancePercent,
             'formattedDate' => $formattedDate,
             'printedAt' => $printedAt,
+            'approvedAtFormatted' => $approvedAtFormatted,
+            'verifyUrl' => $verifyUrl,
+            'qrCodeBase64' => $qrCodeBase64,
             'title' => "Laporan Kegiatan {$report->extracurricular_name} - {$formattedDate}",
         ]);
 
         $pdf->setPaper('a4', 'portrait');
 
         return $pdf->download($fileName);
+    }
+
+    /**
+     * Public verification page for scanned report QR code / barcode.
+     */
+    public function verify(string|ExtracurricularReport $identifier): Response
+    {
+        $report = $identifier instanceof ExtracurricularReport
+            ? $identifier
+            : ExtracurricularReport::query()
+                ->where('verification_token', $identifier)
+                ->orWhere('id', is_numeric($identifier) ? (int) $identifier : 0)
+                ->firstOrFail();
+
+        $report->load([
+            'coach',
+            'approvedBy',
+            'attendees.student.classroom',
+        ]);
+
+        $setting = SchoolSetting::getSetting();
+
+        return Inertia::render('extracurricular/verify', [
+            'report' => $report,
+            'school' => $setting,
+        ]);
+    }
+
+    /**
+     * Generate clean SVG QR Code string using BaconQrCode.
+     */
+    protected function generateQrCodeSvg(string $url, int $size = 110): string
+    {
+        $renderer = new ImageRenderer(
+            new RendererStyle($size, 1, null, null, Fill::uniformColor(new Rgb(255, 255, 255), new Rgb(15, 23, 42))),
+            new SvgImageBackEnd()
+        );
+        $writer = new Writer($renderer);
+        $svg = $writer->writeString($url);
+
+        return trim(substr($svg, strpos($svg, "\n") + 1));
     }
 
     /**

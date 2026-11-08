@@ -36,6 +36,7 @@ interface ReportDetail {
     photos?: string[];
     status: string;
     status_label: string;
+    verification_token?: string;
     approved_at?: string;
     approval_notes?: string;
     coach?: {
@@ -64,9 +65,11 @@ interface SchoolSettingData {
 interface Props {
     report: ReportDetail;
     school: SchoolSettingData;
+    verifyUrl?: string;
+    qrCodeBase64?: string;
 }
 
-export default function ExtracurricularPrint({ report, school }: Props) {
+export default function ExtracurricularPrint({ report, school, verifyUrl, qrCodeBase64 }: Props) {
     const presentAttendees = report.attendees.filter((a) => a.is_present);
     const presentCount = presentAttendees.length;
     const totalCount = report.attendees.length;
@@ -365,7 +368,23 @@ export default function ExtracurricularPrint({ report, school }: Props) {
                                 <td className="w-1/2 text-center align-top">
                                     <p>Mengetahui,</p>
                                     <p className="font-bold mt-0.5">Kepala Sekolah {school.name || ''}</p>
-                                    <div className="h-16" />
+                                    {qrCodeBase64 ? (
+                                        <div className="my-1.5 flex flex-col items-center justify-center">
+                                            <img
+                                                src={qrCodeBase64}
+                                                alt="Barcode Validasi Dokumen"
+                                                className="size-18 border border-gray-200 p-0.5 bg-white rounded shadow-2xs"
+                                            />
+                                            <span className="text-[7.5px] font-bold text-emerald-700 mt-0.5">
+                                                ✓ TTE Terverifikasi Digital
+                                            </span>
+                                            <span className="text-[7px] text-gray-400">
+                                                Scan barcode untuk validasi
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className="h-16" />
+                                    )}
                                     <p className="font-bold underline text-[10px]">{principalName}</p>
                                     <p className="text-[9px] text-gray-700 mt-0.5">NIP. {principalNip}</p>
                                 </td>
@@ -382,6 +401,17 @@ export default function ExtracurricularPrint({ report, school }: Props) {
                             </tr>
                         </tbody>
                     </table>
+
+                    {/* Catatan Validasi Dokumen (Scan Barcode) */}
+                    {qrCodeBase64 && (
+                        <div className="mt-4 border border-dashed border-emerald-500 bg-emerald-50/70 p-2.5 rounded-lg text-[8px] text-emerald-950 flex items-center gap-2.5 break-inside-avoid">
+                            <span className="text-base select-none shrink-0">🛡️</span>
+                            <div className="leading-tight">
+                                <strong className="text-emerald-800">Verifikasi Dokumen Resmi:</strong> Dokumen laporan kegiatan ekstrakurikuler ini telah disahkan secara digital oleh Kepala Sekolah.
+                                Pindai (scan) barcode QR-Code pada tanda tangan Kepala Sekolah menggunakan kamera smartphone untuk membuktikan keaslian dan melihat detail lengkap laporan ini pada portal resmi sekolah.
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </>

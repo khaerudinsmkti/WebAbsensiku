@@ -353,7 +353,19 @@
             <td style="width: 50%;">
                 Mengetahui,<br>
                 <strong>Kepala Sekolah {{ $school->name ?? '' }}</strong>
-                <br><br><br><br><br>
+                @if(!empty($qrCodeBase64))
+                    <div style="margin: 4px auto 2px auto; text-align: center;">
+                        <img src="{{ $qrCodeBase64 }}" style="width: 65px; height: 65px; display: inline-block;" alt="Barcode Validasi Dokumen">
+                        <div style="font-size: 7px; color: #047857; font-weight: bold; margin-top: 1px;">
+                            ✓ TTE Terverifikasi Digital
+                        </div>
+                        <div style="font-size: 6.5px; color: #64748b;">
+                            Scan barcode untuk validasi
+                        </div>
+                    </div>
+                @else
+                    <br><br><br><br><br>
+                @endif
                 <strong style="text-decoration: underline;">{{ $principalName }}</strong><br>
                 NIP. {{ $principalNip ?: '-' }}
             </td>
@@ -368,5 +380,20 @@
             </td>
         </tr>
     </table>
+
+    {{-- Catatan Keabsahan Barcode Verifikasi --}}
+    @if(!empty($qrCodeBase64))
+        <table style="width: 100%; border: 1px dashed #059669; background-color: #f0fdf4; margin-top: 8px; border-radius: 4px; padding: 4px 6px; font-size: 7.5px; color: #065f46; page-break-inside: avoid;">
+            <tr>
+                <td style="width: 20px; vertical-align: middle; text-align: center; font-size: 13px;">
+                    🛡️
+                </td>
+                <td style="vertical-align: middle; line-height: 1.35;">
+                    <strong>Verifikasi Keaslian Dokumen:</strong> Dokumen laporan kegiatan ekstrakurikuler ini telah disetujui secara sah oleh Kepala Sekolah pada <strong>{{ $approvedAtFormatted }}</strong>.
+                    Pindai (scan) barcode QR-Code pada tanda tangan Kepala Sekolah menggunakan kamera smartphone untuk memverifikasi keabsahan data laporan ini secara online.
+                </td>
+            </tr>
+        </table>
+    @endif
 </body>
 </html>

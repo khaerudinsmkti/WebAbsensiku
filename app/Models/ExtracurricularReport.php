@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class ExtracurricularReport extends Model
 {
@@ -25,10 +26,31 @@ class ExtracurricularReport extends Model
         'photo_path',
         'photos',
         'status',
+        'verification_token',
         'approved_by',
         'approved_at',
         'approval_notes',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (ExtracurricularReport $report) {
+            if (empty($report->verification_token)) {
+                $report->verification_token = Str::random(32);
+            }
+        });
+    }
+
+    public function getVerificationTokenAttribute(?string $value): string
+    {
+        if (empty($value)) {
+            $value = Str::random(32);
+            $this->attributes['verification_token'] = $value;
+            $this->saveQuietly();
+        }
+
+        return $value;
+    }
 
     protected $casts = [
         'date' => 'date:Y-m-d',
