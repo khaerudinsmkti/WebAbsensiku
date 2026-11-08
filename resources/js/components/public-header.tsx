@@ -2,16 +2,20 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
+    BarChart3,
     Building2,
     CalendarDays,
     ChevronDown,
     GraduationCap,
     Home,
     Images,
+    LogIn,
+    Menu,
     Newspaper,
     PhoneCall,
     Plus,
     Users,
+    X,
 } from 'lucide-react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { Button } from '@/components/ui/button';
@@ -50,7 +54,7 @@ export function PublicHeader({ onOpenCreateNews }: PublicHeaderProps) {
     const isPublisherOrAdmin = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin';
 
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-    const [openMobileSubmenu, setOpenMobileSubmenu] = useState<string | null>(null);
+    const [isOtherDrawerOpen, setIsOtherDrawerOpen] = useState<boolean>(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -141,7 +145,7 @@ export function PublicHeader({ onOpenCreateNews }: PublicHeaderProps) {
                                 </div>
                             )}
                             <div className="min-w-0">
-                                <span className="text-base sm:text-lg lg:text-xl font-black tracking-tight text-[var(--brand-primary,#FF6B35)] leading-tight group-hover:text-[var(--brand-primary-dark,#FF8C5A)] transition-colors line-clamp-1">
+                                <span className="text-base sm:text-lg lg:text-xl font-black tracking-tight text-gray-900 dark:text-white leading-tight group-hover:text-[var(--brand-primary,#FF6B35)] transition-colors line-clamp-1">
                                     {schoolName}
                                 </span>
                             </div>
@@ -273,108 +277,303 @@ export function PublicHeader({ onOpenCreateNews }: PublicHeaderProps) {
                 </div>
             </header>
 
-            {/* Mobile Submenu Popup for Profil */}
-            {openMobileSubmenu && (
+            {/* Slide-Up Bottom Sheet Drawer for "Lainnya" */}
+            {isOtherDrawerOpen && (
                 <div className="fixed inset-0 z-50 md:hidden">
+                    {/* Backdrop */}
                     <div
-                        className="fixed inset-0 bg-black/40 backdrop-blur-xs"
-                        onClick={() => setOpenMobileSubmenu(null)}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+                        onClick={() => setIsOtherDrawerOpen(false)}
                     />
-                    <div className="fixed bottom-20 inset-x-4 z-50 rounded-2xl border border-gray-200 bg-white p-3 shadow-2xl dark:border-gray-800 dark:bg-[#18122B] animate-in slide-in-from-bottom-2 duration-150">
-                        <div className="mb-2 px-2 text-[11px] font-black uppercase tracking-wider text-gray-400">
-                            Pilih Sub Menu {openMobileSubmenu}
-                        </div>
-                        <div className="grid grid-cols-1 gap-2">
-                            {navLinks
-                                .find((n) => n.title === openMobileSubmenu)
-                                ?.children?.map((sub) => (
-                                    <Link
-                                        key={sub.href}
-                                        href={sub.href}
-                                        onClick={() => setOpenMobileSubmenu(null)}
-                                        className={`flex items-center gap-3 rounded-xl p-3 border transition-all ${
-                                            sub.isActive
-                                                ? 'border-[var(--brand-primary,#FF6B35)]/40 bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] dark:border-[var(--brand-primary,#FF6B35)]/40 dark:bg-[var(--brand-primary,#FF6B35)]/20 dark:text-white'
-                                                : 'border-gray-100 hover:bg-gray-50 text-gray-700 dark:border-gray-800 dark:text-gray-200'
-                                        }`}
-                                    >
-                                        <div
-                                            className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
-                                                sub.isActive
-                                                    ? 'bg-[var(--brand-primary,#FF6B35)] text-white'
-                                                    : 'bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] dark:bg-gray-800 dark:text-white'
-                                            }`}
-                                        >
-                                            <sub.icon className="size-4.5" />
+
+                    {/* Bottom Drawer Content */}
+                    <div className="fixed bottom-0 inset-x-0 z-50 max-h-[85vh] rounded-t-[28px] border-t border-gray-200 bg-white p-5 shadow-2xl dark:border-gray-800 dark:bg-[#18122B] overflow-y-auto animate-in slide-in-from-bottom duration-200">
+                        {/* Drag Indicator & Header */}
+                        <div className="flex flex-col items-center mb-4">
+                            <div className="w-12 h-1.5 rounded-full bg-gray-300 dark:bg-gray-700 mb-3" />
+                            <div className="flex items-center justify-between w-full">
+                                <div className="flex items-center gap-3">
+                                    {logoUrl ? (
+                                        <img
+                                            src={logoUrl}
+                                            alt={schoolName}
+                                            className="size-9 rounded-xl object-contain border border-gray-200 bg-white p-0.5 shadow-xs dark:border-gray-700"
+                                        />
+                                    ) : (
+                                        <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand">
+                                            <AppLogoIcon className="size-5 text-white" />
                                         </div>
-                                        <div>
-                                            <div className="text-xs font-extrabold">{sub.title}</div>
-                                            <div className="text-[10px] text-gray-500 dark:text-gray-400">
-                                                {sub.description}
+                                    )}
+                                    <div className="leading-tight">
+                                        <h4 className="text-sm font-extrabold text-gray-900 dark:text-white line-clamp-1">
+                                            {schoolName}
+                                        </h4>
+                                        <p className="text-[11px] text-gray-500 font-medium">
+                                            Menu Layanan & Informasi Lainnya
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsOtherDrawerOpen(false)}
+                                    className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 cursor-pointer"
+                                >
+                                    <X className="size-5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* List of remaining menus */}
+                        <div className="space-y-2 mt-4">
+                            {/* Kalender */}
+                            <Link
+                                href="/kalender"
+                                onClick={() => setIsOtherDrawerOpen(false)}
+                                className={`flex items-center gap-3.5 rounded-2xl p-3.5 border transition-all ${
+                                    url.startsWith('/kalender')
+                                        ? 'border-[var(--brand-primary,#FF6B35)]/40 bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] shadow-xs dark:bg-[var(--brand-primary,#FF6B35)]/20 dark:border-[var(--brand-primary,#FF6B35)]/40 dark:text-white'
+                                        : 'border-gray-100 bg-gray-50/70 hover:bg-gray-100 text-gray-800 dark:border-gray-800 dark:bg-gray-800/40 dark:text-gray-200'
+                                }`}
+                            >
+                                <div
+                                    className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
+                                        url.startsWith('/kalender')
+                                            ? 'bg-[var(--brand-primary,#FF6B35)] text-white shadow-xs'
+                                            : 'bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] dark:bg-gray-800 dark:text-white'
+                                    }`}
+                                >
+                                    <CalendarDays className="size-5" />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="text-xs font-black">Kalender Akademik</div>
+                                    <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                                        Jadwal KBM, Agenda Kegiatan & Libur Sekolah
+                                    </div>
+                                </div>
+                                <ArrowRight className="size-4 text-gray-400" />
+                            </Link>
+
+                            {/* Kontak */}
+                            <Link
+                                href="/kontak"
+                                onClick={() => setIsOtherDrawerOpen(false)}
+                                className={`flex items-center gap-3.5 rounded-2xl p-3.5 border transition-all ${
+                                    url.startsWith('/kontak')
+                                        ? 'border-[var(--brand-primary,#FF6B35)]/40 bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] shadow-xs dark:bg-[var(--brand-primary,#FF6B35)]/20 dark:border-[var(--brand-primary,#FF6B35)]/40 dark:text-white'
+                                        : 'border-gray-100 bg-gray-50/70 hover:bg-gray-100 text-gray-800 dark:border-gray-800 dark:bg-gray-800/40 dark:text-gray-200'
+                                }`}
+                            >
+                                <div
+                                    className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
+                                        url.startsWith('/kontak')
+                                            ? 'bg-[var(--brand-primary,#FF6B35)] text-white shadow-xs'
+                                            : 'bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] dark:bg-gray-800 dark:text-white'
+                                    }`}
+                                >
+                                    <PhoneCall className="size-5" />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="text-xs font-black">Kontak & Aspirasi</div>
+                                    <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                                        Informasi Kontak, Lokasi & Form Pengaduan
+                                    </div>
+                                </div>
+                                <ArrowRight className="size-4 text-gray-400" />
+                            </Link>
+
+                            {/* Profil Guru */}
+                            <Link
+                                href="/profil/guru"
+                                onClick={() => setIsOtherDrawerOpen(false)}
+                                className={`flex items-center gap-3.5 rounded-2xl p-3.5 border transition-all ${
+                                    url.startsWith('/profil/guru')
+                                        ? 'border-[var(--brand-primary,#FF6B35)]/40 bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] shadow-xs dark:bg-[var(--brand-primary,#FF6B35)]/20 dark:border-[var(--brand-primary,#FF6B35)]/40 dark:text-white'
+                                        : 'border-gray-100 bg-gray-50/70 hover:bg-gray-100 text-gray-800 dark:border-gray-800 dark:bg-gray-800/40 dark:text-gray-200'
+                                }`}
+                            >
+                                <div
+                                    className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
+                                        url.startsWith('/profil/guru')
+                                            ? 'bg-[var(--brand-primary,#FF6B35)] text-white shadow-xs'
+                                            : 'bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] dark:bg-gray-800 dark:text-white'
+                                    }`}
+                                >
+                                    <GraduationCap className="size-5" />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="text-xs font-black">Profil Guru & Staf</div>
+                                    <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                                        Biodata Tenaga Pendidik & Wali Kelas
+                                    </div>
+                                </div>
+                                <ArrowRight className="size-4 text-gray-400" />
+                            </Link>
+
+                            {/* Portal Guru / Dashboard */}
+                            <div className="pt-2">
+                                {auth?.user ? (
+                                    <Link
+                                        href={auth.user?.role === 'publisher' ? '/news-management' : dashboard()}
+                                        onClick={() => setIsOtherDrawerOpen(false)}
+                                        className="flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] p-4 font-black text-white shadow-brand"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <BarChart3 className="size-5" />
+                                            <div className="text-left leading-tight">
+                                                <div className="text-xs">
+                                                    {auth.user?.role === 'publisher' ? 'Panel Kelola Berita' : 'Buka Dashboard Sistem'}
+                                                </div>
+                                                <div className="text-[10px] text-white/80 font-normal">
+                                                    Masuk sebagai {auth.user?.name}
+                                                </div>
                                             </div>
                                         </div>
+                                        <ArrowRight className="size-4" />
                                     </Link>
-                                ))}
+                                ) : (
+                                    <Link
+                                        href={login()}
+                                        onClick={() => setIsOtherDrawerOpen(false)}
+                                        className="flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-[#20B2AA] to-[#4ECDC4] p-4 font-black text-white shadow-md shadow-teal-500/20"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <LogIn className="size-5" />
+                                            <div className="text-left leading-tight">
+                                                <div className="text-xs">Masuk Portal Guru & Staf</div>
+                                                <div className="text-[10px] text-white/80 font-normal">
+                                                    Akses Presensi & Administrasi
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <ArrowRight className="size-4" />
+                                    </Link>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Mobile Bottom Navigation Bar */}
-            <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-around border-t border-gray-200/90 bg-white/95 px-1.5 pb-safe backdrop-blur-lg md:hidden dark:border-gray-800/90 dark:bg-[#18122B]/95 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
-                {navLinks.map((item) =>
-                    item.children ? (
-                        <button
-                            key={item.href}
-                            type="button"
-                            onClick={() =>
-                                setOpenMobileSubmenu((prev) => (prev === item.title ? null : item.title))
-                            }
-                            className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-1 transition-all ${
-                                item.isActive || openMobileSubmenu === item.title
-                                    ? 'font-black text-[#FF6B35] dark:text-[#FFA07A]'
-                                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                            }`}
-                        >
-                            <div
-                                className={`flex size-8 items-center justify-center rounded-xl transition-all ${
-                                    item.isActive || openMobileSubmenu === item.title
-                                        ? 'bg-orange-100 text-[#FF6B35] dark:bg-orange-950/70 dark:text-[#FFA07A] scale-105 shadow-2xs'
-                                        : 'text-gray-500 dark:text-gray-400'
-                                }`}
-                            >
-                                <item.icon className="size-4.5" />
-                            </div>
-                            <span className="inline-flex items-center gap-0.5 text-[10px] tracking-tight font-bold">
-                                {item.title}
-                                <ChevronDown className="size-2.5" />
-                            </span>
-                        </button>
-                    ) : (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-1 transition-all ${
-                                item.isActive
-                                    ? 'font-black text-[#FF6B35] dark:text-[#FFA07A]'
-                                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                            }`}
-                        >
-                            <div
-                                className={`flex size-8 items-center justify-center rounded-xl transition-all ${
-                                    item.isActive
-                                        ? 'bg-orange-100 text-[#FF6B35] dark:bg-orange-950/70 dark:text-[#FFA07A] scale-105 shadow-2xs'
-                                        : 'text-gray-500 dark:text-gray-400'
-                                }`}
-                            >
-                                <item.icon className="size-4.5" />
-                            </div>
-                            <span className="text-[10px] tracking-tight font-bold">
-                                {item.title}
-                            </span>
-                        </Link>
-                    ),
-                )}
+            {/* Mobile Bottom Navigation Bar (5 Menu: Beranda, Profil, Berita, Galeri, Lainnya) */}
+            <nav className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-gray-200/90 bg-white/95 px-1.5 pb-safe backdrop-blur-lg md:hidden dark:border-gray-800/90 dark:bg-[#18122B]/95 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+                {/* 1. Beranda */}
+                <Link
+                    href="/"
+                    className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-1 transition-all active:scale-95 ${
+                        url === '/'
+                            ? 'font-black text-[var(--brand-primary,#FF6B35)]'
+                            : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                    }`}
+                >
+                    <div
+                        className={`flex size-8.5 items-center justify-center rounded-xl transition-all ${
+                            url === '/'
+                                ? 'bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] border border-[var(--brand-primary,#FF6B35)]/35 dark:bg-[var(--brand-primary,#FF6B35)]/20 dark:border-[var(--brand-primary,#FF6B35)]/40 dark:text-white scale-105 shadow-2xs'
+                                : 'text-gray-500 dark:text-gray-400'
+                        }`}
+                    >
+                        <Home className="size-4.5" />
+                    </div>
+                    <span className={`text-[10px] tracking-tight ${url === '/' ? 'text-[var(--brand-primary,#FF6B35)] font-black' : 'font-bold'}`}>
+                        Beranda
+                    </span>
+                </Link>
+
+                {/* 2. Profil */}
+                <Link
+                    href="/profil"
+                    className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-1 transition-all active:scale-95 ${
+                        url.startsWith('/profil')
+                            ? 'font-black text-[var(--brand-primary,#FF6B35)]'
+                            : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                    }`}
+                >
+                    <div
+                        className={`flex size-8.5 items-center justify-center rounded-xl transition-all ${
+                            url.startsWith('/profil')
+                                ? 'bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] border border-[var(--brand-primary,#FF6B35)]/35 dark:bg-[var(--brand-primary,#FF6B35)]/20 dark:border-[var(--brand-primary,#FF6B35)]/40 dark:text-white scale-105 shadow-2xs'
+                                : 'text-gray-500 dark:text-gray-400'
+                        }`}
+                    >
+                        <Building2 className="size-4.5" />
+                    </div>
+                    <span className={`text-[10px] tracking-tight ${url.startsWith('/profil') ? 'text-[var(--brand-primary,#FF6B35)] font-black' : 'font-bold'}`}>
+                        Profil
+                    </span>
+                </Link>
+
+                {/* 3. Berita */}
+                <Link
+                    href="/berita"
+                    className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-1 transition-all active:scale-95 ${
+                        url.startsWith('/berita')
+                            ? 'font-black text-[var(--brand-primary,#FF6B35)]'
+                            : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                    }`}
+                >
+                    <div
+                        className={`flex size-8.5 items-center justify-center rounded-xl transition-all ${
+                            url.startsWith('/berita')
+                                ? 'bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] border border-[var(--brand-primary,#FF6B35)]/35 dark:bg-[var(--brand-primary,#FF6B35)]/20 dark:border-[var(--brand-primary,#FF6B35)]/40 dark:text-white scale-105 shadow-2xs'
+                                : 'text-gray-500 dark:text-gray-400'
+                        }`}
+                    >
+                        <Newspaper className="size-4.5" />
+                    </div>
+                    <span className={`text-[10px] tracking-tight ${url.startsWith('/berita') ? 'text-[var(--brand-primary,#FF6B35)] font-black' : 'font-bold'}`}>
+                        Berita
+                    </span>
+                </Link>
+
+                {/* 4. Galeri */}
+                <Link
+                    href="/galeri"
+                    className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-1 transition-all active:scale-95 ${
+                        url.startsWith('/galeri')
+                            ? 'font-black text-[var(--brand-primary,#FF6B35)]'
+                            : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                    }`}
+                >
+                    <div
+                        className={`flex size-8.5 items-center justify-center rounded-xl transition-all ${
+                            url.startsWith('/galeri')
+                                ? 'bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] border border-[var(--brand-primary,#FF6B35)]/35 dark:bg-[var(--brand-primary,#FF6B35)]/20 dark:border-[var(--brand-primary,#FF6B35)]/40 dark:text-white scale-105 shadow-2xs'
+                                : 'text-gray-500 dark:text-gray-400'
+                        }`}
+                    >
+                        <Images className="size-4.5" />
+                    </div>
+                    <span className={`text-[10px] tracking-tight ${url.startsWith('/galeri') ? 'text-[var(--brand-primary,#FF6B35)] font-black' : 'font-bold'}`}>
+                        Galeri
+                    </span>
+                </Link>
+
+                {/* 5. Lainnya (Icon Garis Tiga / Menu) */}
+                <button
+                    type="button"
+                    onClick={() => setIsOtherDrawerOpen(true)}
+                    className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-1 transition-all active:scale-95 cursor-pointer relative ${
+                        url.startsWith('/kalender') || url.startsWith('/kontak') || isOtherDrawerOpen
+                            ? 'font-black text-[var(--brand-primary,#FF6B35)]'
+                            : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                    }`}
+                >
+                    <div
+                        className={`flex size-8.5 items-center justify-center rounded-xl transition-all relative ${
+                            url.startsWith('/kalender') || url.startsWith('/kontak') || isOtherDrawerOpen
+                                ? 'bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] border border-[var(--brand-primary,#FF6B35)]/35 dark:bg-[var(--brand-primary,#FF6B35)]/20 dark:border-[var(--brand-primary,#FF6B35)]/40 dark:text-white scale-105 shadow-2xs'
+                                : 'text-gray-500 dark:text-gray-400'
+                        }`}
+                    >
+                        <Menu className="size-4.5" />
+                        {(url.startsWith('/kalender') || url.startsWith('/kontak')) && (
+                            <span className="absolute top-1 right-1 size-2 rounded-full bg-[var(--brand-primary,#FF6B35)] ring-2 ring-white dark:ring-[#18122B]" />
+                        )}
+                    </div>
+                    <span className={`text-[10px] tracking-tight ${url.startsWith('/kalender') || url.startsWith('/kontak') || isOtherDrawerOpen ? 'text-[var(--brand-primary,#FF6B35)] font-black' : 'font-bold'}`}>
+                        Lainnya
+                    </span>
+                </button>
             </nav>
         </>
     );

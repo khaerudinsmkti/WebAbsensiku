@@ -142,15 +142,15 @@ export default function PublicProfileIndex({ profile }: PublicProfileProps) {
                         </div>
 
                         {/* Section 1: Hero Header Profil */}
-                        <div className="relative overflow-hidden rounded-3xl border border-orange-100 bg-gradient-to-br from-white via-orange-50/40 to-amber-50/30 p-6 sm:p-10 shadow-sm dark:border-gray-800 dark:from-[#18122B]/90 dark:via-[#1e1738]/80 dark:to-[#18122B]/90">
+                        <div className="relative overflow-hidden rounded-3xl border border-[var(--brand-primary,#FF6B35)]/20 bg-gradient-to-br from-white/95 via-[var(--brand-primary-light,#FFF0EB)]/30 to-white/90 p-6 sm:p-10 shadow-sm dark:border-gray-800 dark:from-[#18122B]/90 dark:via-[#1e1738]/80 dark:to-[#18122B]/90">
                             {/* Decorative background blurs */}
-                            <div className="pointer-events-none absolute -right-16 -top-16 size-72 rounded-full bg-gradient-to-br from-orange-400/10 to-amber-400/20 blur-3xl" />
-                            <div className="pointer-events-none absolute -bottom-16 -left-16 size-72 rounded-full bg-gradient-to-tr from-amber-400/10 to-orange-400/20 blur-3xl" />
+                            <div className="pointer-events-none absolute -right-16 -top-16 size-72 rounded-full bg-[var(--brand-primary,#FF6B35)]/10 blur-3xl" />
+                            <div className="pointer-events-none absolute -bottom-16 -left-16 size-72 rounded-full bg-[var(--brand-primary-dark,#FF8C5A)]/10 blur-3xl" />
 
                             <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                                 <div className="space-y-4 max-w-3xl">
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3.5 py-1 text-xs font-bold text-[#FF6B35] dark:border-orange-900/60 dark:bg-orange-950/60 dark:text-[#FFA07A]">
+                                        <div className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-primary,#FF6B35)]/30 bg-[var(--brand-primary-light,#FFF0EB)] px-3.5 py-1 text-xs font-bold text-[var(--brand-primary,#FF6B35)] dark:border-[var(--brand-primary,#FF6B35)]/40 dark:bg-[var(--brand-primary,#FF6B35)]/20 dark:text-white">
                                             <Building2 className="size-3.5" />
                                             Profil Institusi Pendidikan
                                         </div>
@@ -167,7 +167,7 @@ export default function PublicProfileIndex({ profile }: PublicProfileProps) {
                                     </h1>
 
                                     {profile.school_motto && (
-                                        <p className="text-base sm:text-lg font-semibold text-[#FF6B35] dark:text-[#FFA07A] italic">
+                                        <p className="text-base sm:text-lg font-semibold text-[var(--brand-primary,#FF6B35)] italic">
                                             "{profile.school_motto}"
                                         </p>
                                     )}
@@ -189,7 +189,7 @@ export default function PublicProfileIndex({ profile }: PublicProfileProps) {
                                             asChild
                                             variant="outline"
                                             size="sm"
-                                            className="rounded-xl border-dashed border-[#FF6B35]/50 bg-white/80 text-xs font-bold text-[#FF6B35] hover:bg-orange-50 hover:border-[#FF6B35] dark:bg-gray-800/80 shadow-xs"
+                                            className="rounded-xl border-dashed border-[var(--brand-primary,#FF6B35)]/50 bg-white/80 text-xs font-bold text-[var(--brand-primary,#FF6B35)] hover:bg-[var(--brand-primary-light,#FFF0EB)] hover:border-[var(--brand-primary,#FF6B35)] dark:bg-gray-800/80 shadow-xs"
                                         >
                                             <Link href="/manage/school-profile">
                                                 <Building2 className="mr-1.5 size-3.5" />
@@ -202,7 +202,7 @@ export default function PublicProfileIndex({ profile }: PublicProfileProps) {
 
                             {/* Optional Featured Image */}
                             {profile.profile_image_url && (
-                                <div className="mt-8 overflow-hidden rounded-2xl border border-orange-100 shadow-md dark:border-gray-800">
+                                <div className="mt-8 overflow-hidden rounded-2xl border border-[var(--brand-primary,#FF6B35)]/20 shadow-md dark:border-gray-800">
                                     <img
                                         src={profile.profile_image_url}
                                         alt={schoolName}
@@ -215,7 +215,7 @@ export default function PublicProfileIndex({ profile }: PublicProfileProps) {
                         {/* Section 2: Profil Singkat Sekolah */}
                         <div className="rounded-3xl border border-gray-200 bg-white p-6 sm:p-10 shadow-sm dark:border-gray-800 dark:bg-[#18122B]">
                             <div className="flex items-center gap-3 pb-5 border-b border-gray-100 dark:border-gray-800">
-                                <div className="flex size-11 items-center justify-center rounded-2xl bg-orange-100 text-[#FF6B35] shadow-xs dark:bg-orange-950 dark:text-[#FFA07A]">
+                                <div className="flex size-11 items-center justify-center rounded-2xl bg-[var(--brand-primary-light,#FFF0EB)] text-[var(--brand-primary,#FF6B35)] shadow-xs dark:bg-gray-800 dark:text-white">
                                     <BookOpen className="size-5.5" />
                                 </div>
                                 <div>
@@ -245,14 +245,14 @@ export default function PublicProfileIndex({ profile }: PublicProfileProps) {
                         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
                             {/* Card Visi (40% width on desktop) */}
                             <div className="lg:col-span-5 flex flex-col">
-                                <div className="flex-1 rounded-3xl border-2 border-orange-200 bg-gradient-to-br from-orange-50 via-amber-50/60 to-white p-6 sm:p-8 shadow-sm dark:border-orange-900/60 dark:from-[#2A1810] dark:via-[#1E1738] dark:to-[#18122B] flex flex-col justify-between">
+                                <div className="flex-1 rounded-3xl border-2 border-[var(--brand-primary,#FF6B35)]/20 bg-gradient-to-br from-[var(--brand-primary-light,#FFF0EB)]/40 via-white to-white p-6 sm:p-8 shadow-sm dark:border-gray-800 dark:from-[#2A1810] dark:via-[#1E1738] dark:to-[#18122B] flex flex-col justify-between">
                                     <div>
                                         <div className="flex items-center gap-3 mb-6">
-                                            <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#FF6B35] to-[#FFA07A] text-white shadow-md shadow-orange-500/25">
+                                            <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-md shadow-[var(--brand-primary,#FF6B35)]/25">
                                                 <Target className="size-6" />
                                             </div>
                                             <div>
-                                                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#FF6B35] dark:text-[#FFA07A]">
+                                                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[var(--brand-primary,#FF6B35)]">
                                                     Arah Strategis
                                                 </span>
                                                 <h3 className="text-xl font-black text-gray-900 dark:text-white">
@@ -261,16 +261,16 @@ export default function PublicProfileIndex({ profile }: PublicProfileProps) {
                                             </div>
                                         </div>
 
-                                        <div className="relative rounded-2xl bg-white/90 p-6 shadow-2xs dark:bg-gray-900/80 border border-orange-100 dark:border-gray-800">
-                                            <Quote className="size-8 text-orange-300/60 dark:text-orange-900/60 absolute -top-3 -left-2" />
+                                        <div className="relative rounded-2xl bg-white/90 p-6 shadow-2xs dark:bg-gray-900/80 border border-[var(--brand-primary,#FF6B35)]/20 dark:border-gray-800">
+                                            <Quote className="size-8 text-[var(--brand-primary,#FF6B35)]/20 absolute -top-3 -left-2" />
                                             <p className="relative z-10 text-sm sm:text-base font-bold italic text-gray-800 dark:text-gray-100 leading-relaxed text-center py-2">
                                                 "{profile.vision || 'Terwujudnya peserta didik yang beriman, bertakwa, berakhlak mulia, cerdas, terampil, dan berwawasan global dalam era digital.'}"
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="mt-6 pt-5 border-t border-orange-200/60 dark:border-gray-800 flex items-center justify-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
-                                        <Sparkles className="size-4 text-[#FF6B35]" />
+                                    <div className="mt-6 pt-5 border-t border-[var(--brand-primary,#FF6B35)]/20 dark:border-gray-800 flex items-center justify-center gap-2 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                        <Sparkles className="size-4 text-[var(--brand-primary,#FF6B35)]" />
                                         <span>Menyongsong Generasi Emas Indonesia</span>
                                     </div>
                                 </div>
@@ -298,9 +298,9 @@ export default function PublicProfileIndex({ profile }: PublicProfileProps) {
                                             missionList.map((item, index) => (
                                                 <div
                                                     key={index}
-                                                    className="group flex items-start gap-3.5 rounded-2xl border border-gray-100 bg-gray-50/70 p-3.5 sm:p-4 hover:border-orange-200 hover:bg-orange-50/30 transition-all dark:border-gray-800/80 dark:bg-gray-800/40 dark:hover:border-orange-900/50"
+                                                    className="group flex items-start gap-3.5 rounded-2xl border border-gray-100 bg-gray-50/70 p-3.5 sm:p-4 hover:border-[var(--brand-primary,#FF6B35)]/30 hover:bg-[var(--brand-primary-light,#FFF0EB)]/30 transition-all dark:border-gray-800/80 dark:bg-gray-800/40 dark:hover:border-[var(--brand-primary,#FF6B35)]/30"
                                                 >
-                                                    <span className="flex size-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#FF6B35] to-[#FFA07A] text-xs font-black text-white shadow-xs">
+                                                    <span className="flex size-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-xs font-black text-white shadow-xs">
                                                         {index + 1}
                                                     </span>
                                                     <span className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 leading-relaxed pt-0.5">

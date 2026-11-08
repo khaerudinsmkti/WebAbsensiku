@@ -463,17 +463,6 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                         <div>
                             &copy; {new Date().getFullYear()} {schoolName}. All rights reserved.
                         </div>
-                        <div className="flex items-center gap-4">
-                            <Link href="/" className="hover:text-[#FF6B35]">
-                                Beranda
-                            </Link>
-                            <Link href="/berita" className="hover:text-[#FF6B35]">
-                                Berita
-                            </Link>
-                            <Link href="/#kalender" className="hover:text-[#FF6B35]">
-                                Kalender Pendidikan
-                            </Link>
-                        </div>
                     </div>
                 </footer>
 
