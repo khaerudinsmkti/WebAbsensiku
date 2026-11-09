@@ -36,15 +36,8 @@
         .school-title {
             text-align: center;
         }
-        .school-name {
-            font-size: 14px;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin: 0;
-            color: #111;
-        }
         .school-subtitle {
-            font-size: 11px;
+            font-size: 13px;
             font-weight: bold;
             text-transform: uppercase;
             margin: 0;
@@ -52,33 +45,57 @@
             letter-spacing: 0.5px;
         }
         .school-name {
-            font-size: 14px;
+            font-size: 18px;
             font-weight: bold;
             text-transform: uppercase;
-            margin: 2px 0;
+            margin: 3px 0 2px 0;
             color: #111;
+            letter-spacing: 0.5px;
+        }
+        .school-address {
+            font-size: 9.5px;
+            color: #333;
+            margin: 2px 0 3px 0;
+            line-height: 1.3;
         }
         .school-academic-year {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
             text-transform: uppercase;
-            color: #333;
-            margin: 0;
+            color: #222;
+            margin: 2px 0 0 0;
         }
         .divider-double {
             border-top: 2px solid #111;
             border-bottom: 1px solid #111;
             height: 2px;
-            margin: 4px 0 8px 0;
+            margin: 5px 0 9px 0;
         }
         .report-meta {
             width: 100%;
             margin-bottom: 8px;
             border-collapse: collapse;
-            font-size: 9px;
+            font-size: 9.5px;
         }
         .report-meta td {
             padding: 2px 4px;
+            vertical-align: middle;
+        }
+        .report-title {
+            font-size: 10.5px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #111;
+            margin-bottom: 2px;
+        }
+        .report-subtitle-meta {
+            font-size: 10px;
+            color: #333;
+        }
+        .meta-info {
+            font-size: 10px;
+            color: #333;
+            line-height: 1.4;
         }
         .matrix-table {
             width: 100%;
@@ -170,6 +187,25 @@
             <td class="school-title">
                 <div class="school-subtitle">DAFTAR HADIR SISWA</div>
                 <div class="school-name">{{ $school->name ?? 'SD DIGITAL INDONESIA' }}</div>
+                @php
+                    $addressParts = array_filter([
+                        $school->address ?? null,
+                        $school->city ?? null,
+                        !empty($school->postal_code) ? 'Kode Pos ' . $school->postal_code : null,
+                    ]);
+                    $schoolAddressString = implode(', ', $addressParts);
+
+                    $schoolContactParts = array_filter([
+                        !empty($school->phone) ? 'Telp: ' . $school->phone : null,
+                        !empty($school->email) ? 'Email: ' . $school->email : null,
+                    ]);
+                    $schoolContactString = implode(' | ', $schoolContactParts);
+                @endphp
+                @if(!empty($schoolAddressString))
+                    <div class="school-address">
+                        {{ $schoolAddressString }}{{ !empty($schoolContactString) ? ' | ' . $schoolContactString : '' }}
+                    </div>
+                @endif
                 <div class="school-academic-year">
                     TAHUN PELAJARAN {{ strtoupper($classroom->academic_year ?? (date('m') >= 7 ? date('Y') . '/' . (date('Y') + 1) : (date('Y') - 1) . '/' . date('Y'))) }}
                 </div>
@@ -183,12 +219,12 @@
     <table class="report-meta">
         <tr>
             <td style="width: 60%;">
-                <strong>LAPORAN PRESENSI SISWA {{ strtoupper($periodLabel) }}</strong><br>
-                <span>Tahun Ajaran: {{ $classroom->academic_year ?? '-' }}</span>
+                <div class="report-title">REKAPITULASI KEHADIRAN SISWA {{ strtoupper($periodLabel) }}</div>
+                <div class="report-subtitle-meta">Tahun Ajaran: <strong>{{ $classroom->academic_year ?? '-' }}</strong></div>
             </td>
             <td style="width: 40%; text-align: right;">
-                <span>Kelas: <strong>{{ $classroom->name ?? 'Semua Kelas' }}</strong></span><br>
-                <span>Wali Kelas: <strong>{{ $classroom->homeroomTeacher->name ?? '-' }}</strong></span>
+                <div class="meta-info">Kelas: <strong>{{ $classroom->name ?? 'Semua Kelas' }}</strong></div>
+                <div class="meta-info">Wali Kelas: <strong>{{ $classroom->homeroomTeacher->name ?? '-' }}</strong></div>
             </td>
         </tr>
     </table>
