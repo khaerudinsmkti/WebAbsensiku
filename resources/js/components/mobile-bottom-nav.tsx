@@ -27,6 +27,7 @@ import {
     User,
     UserCheck,
     Users,
+    Video,
     X,
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -141,6 +142,7 @@ export function MobileBottomNav() {
     const isPrincipal = user?.role === 'principal';
     const isPublisher = user?.role === 'publisher';
     const isCoach = user?.role === 'coach';
+    const isTeacher = user?.role === 'teacher';
     const canManageSchool = isAdmin || isPrincipal;
     const activeMasterTab = getActiveMasterTab(url);
 
@@ -223,6 +225,7 @@ export function MobileBottomNav() {
     const isMasterActive = url.startsWith('/master');
     const isPublishActive = url.startsWith('/manage') || url.startsWith('/publisher') || url.startsWith('/news-management');
     const isAdminSettingsActive = url.startsWith('/admin/');
+    const isTutorialsActive = url.startsWith('/tutorials') || url.startsWith('/admin/tutorials');
     const isOtherActive =
         (isPrincipal && isAdjustmentsActive) ||
         isReportsActive ||
@@ -230,6 +233,7 @@ export function MobileBottomNav() {
         isMasterActive ||
         isPublishActive ||
         isAdminSettingsActive ||
+        isTutorialsActive ||
         url.startsWith('/settings');
 
     const handleLogout = () => {
@@ -577,7 +581,7 @@ export function MobileBottomNav() {
                                             isActive={isReportsActive}
                                             onClick={closeDrawer}
                                         />
-                                        {can('extracurricular', 'view') && (
+                                        {can('extracurricular', 'view') && !isTeacher && (
                                             <div className="col-span-2">
                                                 <NavCard
                                                     href="/extracurricular/reports"
@@ -590,6 +594,17 @@ export function MobileBottomNav() {
                                                 />
                                             </div>
                                         )}
+                                        <div className="col-span-2">
+                                            <NavCard
+                                                href="/tutorials"
+                                                title="Video Tutorial"
+                                                subtitle="Panduan Praktis Penggunaan Aplikasi"
+                                                icon={Video}
+                                                color="orange"
+                                                isActive={isTutorialsActive}
+                                                onClick={closeDrawer}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -788,6 +803,19 @@ export function MobileBottomNav() {
                                                 onClick={closeDrawer}
                                             />
                                         )}
+                                        {isAdmin && (
+                                            <div className="col-span-2">
+                                                <NavCard
+                                                    href="/admin/tutorials"
+                                                    title="Kelola Video Tutorial"
+                                                    subtitle="Atur Video Panduan YouTube"
+                                                    icon={Video}
+                                                    color="rose"
+                                                    isActive={url.startsWith('/admin/tutorials')}
+                                                    onClick={closeDrawer}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -854,6 +882,17 @@ export function MobileBottomNav() {
                                             isActive={url.startsWith('/manage/contact')}
                                             onClick={closeDrawer}
                                         />
+                                        <div className="col-span-2">
+                                            <NavCard
+                                                href="/tutorials"
+                                                title="Video Tutorial"
+                                                subtitle="Panduan Publikasi & Humas"
+                                                icon={Video}
+                                                color="rose"
+                                                isActive={isTutorialsActive}
+                                                onClick={closeDrawer}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -884,17 +923,24 @@ export function MobileBottomNav() {
                                             isActive={url.startsWith('/extracurricular/reports') && url !== '/extracurricular/reports/create'}
                                             onClick={closeDrawer}
                                         />
-                                        <div className="col-span-2">
-                                            <NavCard
-                                                href="/extracurricular/roster"
-                                                title="Daftar Anggota Siswa"
-                                                subtitle="Atur Murid Peserta Ekskul"
-                                                icon={Users}
-                                                color="emerald"
-                                                isActive={url.startsWith('/extracurricular/roster')}
-                                                onClick={closeDrawer}
-                                            />
-                                        </div>
+                                        <NavCard
+                                            href="/extracurricular/roster"
+                                            title="Daftar Anggota Siswa"
+                                            subtitle="Atur Murid Peserta Ekskul"
+                                            icon={Users}
+                                            color="emerald"
+                                            isActive={url.startsWith('/extracurricular/roster')}
+                                            onClick={closeDrawer}
+                                        />
+                                        <NavCard
+                                            href="/tutorials"
+                                            title="Video Tutorial"
+                                            subtitle="Panduan Pelatih Ekskul"
+                                            icon={Video}
+                                            color="rose"
+                                            isActive={isTutorialsActive}
+                                            onClick={closeDrawer}
+                                        />
                                     </div>
                                 </div>
                             )}
