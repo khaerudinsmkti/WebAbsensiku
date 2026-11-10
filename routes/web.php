@@ -183,6 +183,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/admin/permissions', [\App\Http\Controllers\PermissionMatrixController::class, 'index'])->name('permissions.index');
         Route::post('/admin/permissions', [\App\Http\Controllers\PermissionMatrixController::class, 'update'])->name('permissions.update');
         Route::post('/admin/permissions/reset', [\App\Http\Controllers\PermissionMatrixController::class, 'reset'])->name('permissions.reset');
+
+        // Manajemen Video Tutorial (Khusus Administrator)
+        Route::get('/admin/tutorials', [\App\Http\Controllers\TutorialController::class, 'adminIndex'])->name('admin.tutorials.index');
+        Route::post('/admin/tutorials', [\App\Http\Controllers\TutorialController::class, 'store'])->name('admin.tutorials.store');
+        Route::put('/admin/tutorials/{tutorial}', [\App\Http\Controllers\TutorialController::class, 'update'])->name('admin.tutorials.update');
+        Route::delete('/admin/tutorials/{tutorial}', [\App\Http\Controllers\TutorialController::class, 'destroy'])->name('admin.tutorials.destroy');
+        Route::patch('/admin/tutorials/{tutorial}/toggle', [\App\Http\Controllers\TutorialController::class, 'toggleActive'])->name('admin.tutorials.toggle');
     });
 
     // 7. Modul Kegiatan Ekstrakurikuler (Lapor Ekskul, Roster Anggota, Persetujuan & Cetak)
@@ -200,6 +207,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/extracurricular/roster', [\App\Http\Controllers\ExtracurricularController::class, 'roster'])->name('extracurricular.roster');
         Route::post('/extracurricular/roster', [\App\Http\Controllers\ExtracurricularController::class, 'saveRoster'])->name('extracurricular.roster.save');
     });
+
+    // 8. Portal Video Tutorial & Panduan Pengguna (Semua Peran Terdaftar)
+    Route::get('/tutorials', [\App\Http\Controllers\TutorialController::class, 'index'])->name('tutorials.index');
 });
 
 require __DIR__.'/settings.php';

@@ -24,6 +24,7 @@ import {
     TrendingUp,
     UserCheck,
     Users,
+    Video,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
@@ -162,6 +163,12 @@ export function AppSidebar() {
                       },
                   ],
               },
+              {
+                  title: 'Video Tutorial',
+                  href: '/tutorials',
+                  icon: Video,
+                  isActive: url.startsWith('/tutorials'),
+              },
           ]
         : isCoach
         ? [
@@ -192,6 +199,12 @@ export function AppSidebar() {
                           isActive: url.startsWith('/extracurricular/roster'),
                       },
                   ],
+              },
+              {
+                  title: 'Video Tutorial',
+                  href: '/tutorials',
+                  icon: Video,
+                  isActive: url.startsWith('/tutorials'),
               },
           ]
         : [
@@ -387,6 +400,12 @@ export function AppSidebar() {
                                 ...(isAdmin
                                     ? [
                                           {
+                                              title: 'Kelola Tutorial',
+                                              href: '/admin/tutorials',
+                                              icon: Video,
+                                              isActive: url.startsWith('/admin/tutorials'),
+                                          },
+                                          {
                                               title: 'Matriks Hak Akses',
                                               href: '/admin/permissions',
                                               icon: ShieldCheck,
@@ -398,6 +417,12 @@ export function AppSidebar() {
                         },
                     ]
                   : []),
+              {
+                  title: 'Video Tutorial',
+                  href: '/tutorials',
+                  icon: Video,
+                  isActive: url === '/tutorials',
+              },
           ];
 
     return (
