@@ -12,8 +12,27 @@ export type User = {
     [key: string]: unknown;
 };
 
+export type PendingClassroom = {
+    id: number;
+    name: string;
+    academic_year?: string;
+    students_count: number;
+    recorded_count: number;
+    is_homeroom?: boolean;
+};
+
+export type PendingAttendanceStatus = {
+    needs_attendance: boolean;
+    is_holiday: boolean;
+    holiday_name?: string | null;
+    pending_classes: PendingClassroom[];
+    date: string;
+    formatted_date: string;
+};
+
 export type Auth = {
     user: User;
+    pending_attendance?: PendingAttendanceStatus | null;
 };
 
 export type Passkey = {

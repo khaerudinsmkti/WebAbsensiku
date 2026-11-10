@@ -50,6 +50,14 @@ class SchoolSetting extends Model
         'school_days_per_week',
         'logo_path',
         'theme_color',
+        'pwa_reminder_enabled',
+        'pwa_reminder_interval_minutes',
+        'pwa_reminder_start_time',
+        'pwa_reminder_end_time',
+        'pwa_reminder_title',
+        'pwa_reminder_message',
+        'pwa_notify_news',
+        'pwa_sound_enabled',
     ];
 
     protected $casts = [
@@ -58,6 +66,10 @@ class SchoolSetting extends Model
         'contact_active' => 'boolean',
         'hero_pillars' => 'array',
         'core_values' => 'array',
+        'pwa_reminder_enabled' => 'boolean',
+        'pwa_reminder_interval_minutes' => 'integer',
+        'pwa_notify_news' => 'boolean',
+        'pwa_sound_enabled' => 'boolean',
     ];
 
     protected $appends = [
@@ -108,6 +120,16 @@ class SchoolSetting extends Model
         }
 
         return '/storage/' . ltrim($this->hero_image_path, '/');
+    }
+
+    public function getPwaReminderTitleAttribute($value): string
+    {
+        return $value ?: 'Pengingat Presensi Siswa ⏰';
+    }
+
+    public function getPwaReminderMessageAttribute($value): string
+    {
+        return $value ?: 'Presensi kelas hari ini belum selesai diinput. Mohon segera mengisi absensi siswa.';
     }
 
     public static function defaultHeroPillars(): array

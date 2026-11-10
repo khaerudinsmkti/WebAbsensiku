@@ -2,6 +2,7 @@ import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
+import { AttendanceReminder } from '@/components/attendance-reminder';
 import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
 import type { AppLayoutProps } from '@/types';
@@ -19,6 +20,7 @@ export default function AppSidebarLayout({
             </AppContent>
             <MobileBottomNav />
             <PwaInstallPrompt />
+            <AttendanceReminder />
         </AppShell>
     );
 }

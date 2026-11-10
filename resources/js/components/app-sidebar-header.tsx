@@ -1,7 +1,8 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
-import { usePage } from '@inertiajs/react';
+import type { Auth, BreadcrumbItem as BreadcrumbItemType } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
+import { BellRing } from 'lucide-react';
 
 export function AppSidebarHeader({
     breadcrumbs = [],
@@ -9,10 +10,12 @@ export function AppSidebarHeader({
     breadcrumbs?: BreadcrumbItemType[];
 }) {
     const { auth, school } = usePage<{
-        auth: { user: { role?: string; is_duty_teacher_today?: boolean } };
+        auth: Auth;
         school?: { name?: string; logo_url?: string };
     }>().props;
     const isTeacherDuty = auth?.user?.role === 'teacher' && auth?.user?.is_duty_teacher_today;
+    const pendingAttendance = auth?.pending_attendance;
+    const hasPendingAttendance = auth?.user?.role === 'teacher' && pendingAttendance?.needs_attendance && (pendingAttendance?.pending_classes?.length ?? 0) > 0;
 
     return (
         <header className="sticky top-0 z-20 flex h-16 md:h-[68px] shrink-0 items-center justify-between border-b border-[#E8E8E8] bg-white/85 px-4 md:px-6 backdrop-blur-md transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-16 dark:border-[#2D234A] dark:bg-[#18122B]/85">
@@ -41,6 +44,16 @@ export function AppSidebarHeader({
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
+                {hasPendingAttendance && (
+                    <Link
+                        href="/attendances"
+                        className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 border border-rose-200 px-3 py-1 text-xs font-bold text-rose-600 shadow-xs hover:bg-rose-100 transition-all dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300 animate-pulse"
+                        title="Klik untuk segera mengisi presensi kelas hari ini"
+                    >
+                        <BellRing className="size-3.5" />
+                        <span>Belum Absen Hari Ini ({pendingAttendance.pending_classes.length} Kelas)</span>
+                    </Link>
+                )}
                 {isTeacherDuty && (
                     <div className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-200 px-3 py-1 text-xs font-bold text-[#FF6B35] shadow-xs dark:bg-orange-950/40 dark:border-orange-800 dark:text-orange-300">
                         <span className="size-2 rounded-full bg-[#FF6B35] animate-pulse" />

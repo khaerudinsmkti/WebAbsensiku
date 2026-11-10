@@ -168,8 +168,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/admin/holidays/seed', [HolidayController::class, 'seed'])->name('holidays.seed');
     });
 
-    // Matriks Pengaturan Hak Akses (Khusus Administrator)
+    // Matriks Pengaturan Hak Akses & Notifikasi PWA (Khusus Administrator)
     Route::middleware('role:admin')->group(function () {
+        Route::get('/admin/pwa-notifications', [\App\Http\Controllers\PwaNotificationSettingController::class, 'edit'])->name('admin.pwa-notifications.edit');
+        Route::post('/admin/pwa-notifications', [\App\Http\Controllers\PwaNotificationSettingController::class, 'update'])->name('admin.pwa-notifications.update');
+
         Route::get('/admin/permissions', [\App\Http\Controllers\PermissionMatrixController::class, 'index'])->name('permissions.index');
         Route::post('/admin/permissions', [\App\Http\Controllers\PermissionMatrixController::class, 'update'])->name('permissions.update');
         Route::post('/admin/permissions/reset', [\App\Http\Controllers\PermissionMatrixController::class, 'reset'])->name('permissions.reset');

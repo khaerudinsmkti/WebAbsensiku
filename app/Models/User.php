@@ -156,4 +156,109 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             ->where('is_active', true)
             ->exists();
     }
+
+    /**
+     * Get pending attendance status for today.
+     * Evaluates whether this teacher has classes that haven't been marked today.
+     */
+    public function getPendingAttendanceStatus(): ?array
+    {
+        // Pengingat khusus untuk peran guru (teacher)
+        if ($this->role !== 'teacher') {
+            return null;
+        }
+
+        $today = Carbon::today()->toDateString();
+
+        // 1. Cek apakah hari ini adalah hari libur sekolah / akhir pekan libur
+        $offDay = AcademicHoliday::getOffDay($today);
+        if ($offDay) {
+            return [
+                'needs_attendance' => false,
+                'is_holiday' => true,
+                'holiday_name' => $offDay->name,
+                'pending_classes' => [],
+                'date' => $today,
+                'formatted_date' => now()->translatedFormat('l, d F Y'),
+            ];
+        }
+
+        // 2. Ambil kelas yang menjadi tanggung jawab guru ini
+        $pendingClasses = [];
+
+        // Kelas wali (homeroom)
+        $homeroomClasses = $this->homeroomClassrooms()
+            ->withCount(['students' => fn ($q) => $q->where('is_active', true)])
+            ->get();
+
+        foreach ($homeroomClasses as $classroom) {
+            if ($classroom->students_count === 0) {
+                continue;
+            }
+
+            // Hitung siswa yang sudah memiliki data absensi hari ini
+            $recordedCount = Attendance::where('date', $today)
+                ->whereIn('student_id', function ($query) use ($classroom) {
+                    $query->select('id')
+                        ->from('students')
+                        ->where('classroom_id', $classroom->id)
+                        ->where('is_active', true);
+                })
+                ->count();
+
+            // Jika jumlah absensi tercatat kurang dari total siswa aktif, berarti belum selesai/belum diabsen
+            if ($recordedCount < $classroom->students_count) {
+                $pendingClasses[] = [
+                    'id' => $classroom->id,
+                    'name' => $classroom->name,
+                    'academic_year' => $classroom->academic_year,
+                    'students_count' => $classroom->students_count,
+                    'recorded_count' => $recordedCount,
+                    'is_homeroom' => true,
+                ];
+            }
+        }
+
+        // Jika guru ini piket hari ini dan tidak punya kelas wali, cek kelas di sekolah yang belum diabsen
+        if (empty($pendingClasses) && $this->isDutyTeacherToday($today) && $homeroomClasses->isEmpty()) {
+            $allClasses = Classroom::withCount(['students' => fn ($q) => $q->where('is_active', true)])
+                ->orderBy('name')
+                ->get();
+
+            foreach ($allClasses as $classroom) {
+                if ($classroom->students_count === 0) {
+                    continue;
+                }
+
+                $recordedCount = Attendance::where('date', $today)
+                    ->whereIn('student_id', function ($query) use ($classroom) {
+                        $query->select('id')
+                            ->from('students')
+                            ->where('classroom_id', $classroom->id)
+                            ->where('is_active', true);
+                    })
+                    ->count();
+
+                if ($recordedCount < $classroom->students_count) {
+                    $pendingClasses[] = [
+                        'id' => $classroom->id,
+                        'name' => $classroom->name,
+                        'academic_year' => $classroom->academic_year,
+                        'students_count' => $classroom->students_count,
+                        'recorded_count' => $recordedCount,
+                        'is_homeroom' => false,
+                    ];
+                }
+            }
+        }
+
+        return [
+            'needs_attendance' => !empty($pendingClasses),
+            'is_holiday' => false,
+            'holiday_name' => null,
+            'pending_classes' => $pendingClasses,
+            'date' => $today,
+            'formatted_date' => now()->translatedFormat('l, d F Y'),
+        ];
+    }
 }

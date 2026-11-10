@@ -47,6 +47,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user ? array_merge($user->toArray(), [
                     'is_duty_teacher_today' => $isDutyToday,
                 ]) : null,
+                'pending_attendance' => $user ? $user->getPendingAttendanceStatus() : null,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

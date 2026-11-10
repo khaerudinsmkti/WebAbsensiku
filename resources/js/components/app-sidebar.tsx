@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     Award,
+    BellRing,
     BookOpenCheck,
     Building2,
     CalendarCheck,
@@ -368,6 +369,12 @@ export function AppSidebar() {
                                 },
                                 ...(isAdmin
                                     ? [
+                                          {
+                                              title: 'Notifikasi PWA',
+                                              href: '/admin/pwa-notifications',
+                                              icon: BellRing,
+                                              isActive: url.startsWith('/admin/pwa-notifications'),
+                                          },
                                           {
                                               title: 'Matriks Hak Akses',
                                               href: '/admin/permissions',
