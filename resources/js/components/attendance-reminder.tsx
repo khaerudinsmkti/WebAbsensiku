@@ -24,6 +24,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import type { Auth } from '@/types';
+import { subscribeToPushNotifications } from '@/lib/webpush';
 
 // Helper function to check if current time is within operational hours
 function isWithinActiveHours(startTime?: string, endTime?: string): boolean {
@@ -148,9 +149,14 @@ export function AttendanceReminder() {
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
-        // Cek status izin notifikasi browser
+        // Cek status izin notifikasi browser & sinkronisasi VAPID push subscription jika sudah granted
         if ('Notification' in window) {
-            setBrowserNotificationAllowed(Notification.permission === 'granted');
+            const isGranted = Notification.permission === 'granted';
+            setBrowserNotificationAllowed(isGranted);
+            if (isGranted && isTeacher) {
+                // Daftarkan token push perangkat ke database secara otomatis di latar belakang
+                subscribeToPushNotifications().catch(() => {});
+            }
         }
 
         if (!needsAttendance || !storageKey) {
@@ -194,14 +200,16 @@ export function AttendanceReminder() {
     const requestNotificationPermission = async () => {
         if (typeof window === 'undefined' || !('Notification' in window)) return;
         try {
-            const permission = await Notification.requestPermission();
-            setBrowserNotificationAllowed(permission === 'granted');
-            if (permission === 'granted') {
+            const res = await subscribeToPushNotifications();
+            const isGranted = Notification.permission === 'granted';
+            setBrowserNotificationAllowed(isGranted);
+
+            if (isGranted) {
                 if (isSoundEnabled) {
                     playNotificationChime();
                 }
                 new Notification('Notifikasi Diaktifkan! 🔔', {
-                    body: `Pengingat presensi akan otomatis muncul berkala jika belum melakukan absensi.`,
+                    body: `Pengingat presensi otomatis VAPID kini aktif di ponsel Anda bahkan saat aplikasi ditutup.`,
                     icon: school?.logo_url || '/icons/icon-192x192.png',
                 });
             }

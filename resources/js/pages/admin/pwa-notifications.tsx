@@ -24,6 +24,7 @@ import {
 import React, { useState } from 'react';
 import { PageBanner } from '@/components/page-banner';
 import { Button } from '@/components/ui/button';
+import { subscribeToPushNotifications, sendTestPushNotification } from '@/lib/webpush';
 
 interface PwaNotificationConfig {
     pwa_reminder_enabled: boolean;
@@ -96,21 +97,7 @@ export default function PwaNotificationSettingsPage({ config }: PageProps) {
         setTestStatus(null);
 
         if (typeof window === 'undefined' || !('Notification' in window)) {
-            setTestStatus('Peramban web ini tidak mendukung fitur HTML5 Web Notification.');
-            return;
-        }
-
-        let permission = Notification.permission;
-        if (permission === 'default') {
-            try {
-                permission = await Notification.requestPermission();
-            } catch {
-                permission = 'denied';
-            }
-        }
-
-        if (permission !== 'granted') {
-            setTestStatus('Izin notifikasi belum diberikan pada peramban. Silakan izinkan notifikasi pada ikon gembok di bilah alamat browser.');
+            setTestStatus('Peramban web ini tidak mendukung fitur Web Notification.');
             return;
         }
 
@@ -119,22 +106,32 @@ export default function PwaNotificationSettingsPage({ config }: PageProps) {
         }
 
         try {
-            const notif = new Notification(data.pwa_reminder_title, {
-                body: data.pwa_reminder_message || `Halo Bapak/Ibu Guru, jangan lupa mengisi presensi siswa hari ini.`,
-                icon: config.logo_url || '/icons/icon-192x192.png',
-                badge: '/icons/icon-192x192.png',
-                tag: 'pwa-test-notification',
-            });
+            // 1. Daftarkan / perbarui subscription VAPID perangkat ke server
+            const subResult = await subscribeToPushNotifications();
 
-            notif.onclick = () => {
-                window.focus();
-                notif.close();
-            };
+            // 2. Minta server mengirimkan uji coba WebPush langsung dari backend
+            const testResult = await sendTestPushNotification();
 
-            setTestStatus('sukses');
-            setTimeout(() => setTestStatus(null), 6000);
+            if (testResult.success) {
+                setTestStatus('sukses_server');
+                setTimeout(() => setTestStatus(null), 8000);
+            } else {
+                // Fallback: tampilkan notifikasi lokal browser
+                const notif = new Notification(data.pwa_reminder_title, {
+                    body: data.pwa_reminder_message || `Halo Bapak/Ibu Guru, jangan lupa mengisi presensi siswa hari ini.`,
+                    icon: config.logo_url || '/icons/icon-192x192.png',
+                    badge: '/icons/icon-192x192.png',
+                    tag: 'pwa-test-notification',
+                });
+                notif.onclick = () => {
+                    window.focus();
+                    notif.close();
+                };
+                setTestStatus('sukses_lokal');
+                setTimeout(() => setTestStatus(null), 6000);
+            }
         } catch {
-            setTestStatus('Gagal mengirimkan notifikasi. Pastikan perizinan browser Anda aktif.');
+            setTestStatus('Gagal mengirimkan notifikasi. Pastikan perizinan browser Anda aktif dan terhubung ke jaringan.');
         }
     };
 
@@ -491,14 +488,21 @@ export default function PwaNotificationSettingsPage({ config }: PageProps) {
                                     Uji Coba Notifikasi di Perangkat Ini
                                 </Button>
 
-                                {testStatus === 'sukses' && (
+                                {testStatus === 'sukses_server' && (
                                     <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-2.5 text-xs text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300">
                                         <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-                                        <span>Notifikasi uji coba berhasil dikirim ke layar Anda!</span>
+                                        <span>✓ Notifikasi VAPID Web Push berhasil dikirim langsung dari server ke ponsel/perangkat Anda!</span>
                                     </div>
                                 )}
 
-                                {testStatus && testStatus !== 'sukses' && (
+                                {testStatus === 'sukses_lokal' && (
+                                    <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-2.5 text-xs text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300">
+                                        <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                                        <span>Notifikasi uji coba lokal berhasil ditampilkan di layar Anda!</span>
+                                    </div>
+                                )}
+
+                                {testStatus && testStatus !== 'sukses_server' && testStatus !== 'sukses_lokal' && (
                                     <div className="flex items-start gap-2 rounded-xl bg-amber-50 p-2.5 text-xs text-amber-800 border border-amber-200 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300">
                                         <AlertCircle className="size-4 shrink-0 text-amber-600 mt-0.5" />
                                         <span>{testStatus}</span>

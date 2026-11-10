@@ -1,5 +1,5 @@
 // AbsensiKu Progressive Web App Service Worker
-const CACHE_NAME = 'absensiku-pwa-v5';
+const CACHE_NAME = 'absensiku-pwa-v6';
 
 // Essential static assets to pre-cache
 const PRECACHE_ASSETS = [
@@ -121,4 +121,72 @@ self.addEventListener('fetch', (event) => {
             })
     );
 });
+
+// =========================================================================
+// 3. VAPID Web Push Notifications (Background & Standalone Delivery)
+// =========================================================================
+
+self.addEventListener('push', (event) => {
+    let data = {
+        title: 'Pengingat Presensi Siswa ⏰',
+        body: 'Presensi harian siswa belum diisi. Harap segera melakukan absensi.',
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-192x192.png',
+        url: '/attendances',
+        tag: 'attendance-reminder',
+    };
+
+    if (event.data) {
+        try {
+            const parsed = event.data.json();
+            data = { ...data, ...parsed };
+        } catch {
+            data.body = event.data.text();
+        }
+    }
+
+    const options = {
+        body: data.body,
+        icon: data.icon || '/icons/icon-192x192.png',
+        badge: data.badge || '/icons/icon-192x192.png',
+        tag: data.tag || 'attendance-reminder',
+        data: {
+            url: data.url || '/attendances',
+        },
+        vibrate: [200, 100, 200, 100, 200],
+        renotify: true,
+        requireInteraction: true,
+        actions: [
+            {
+                action: 'open_attendance',
+                title: 'Buka Absensi',
+            },
+        ],
+    };
+
+    event.waitUntil(self.registration.showNotification(data.title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+
+    const targetUrl = event.notification.data?.url || '/attendances';
+
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+            // Jika ada tab/jendela yang sudah terbuka, fokuskan dan navigasikan
+            for (const client of clientList) {
+                if (client.url && 'focus' in client) {
+                    client.navigate(targetUrl);
+                    return client.focus();
+                }
+            }
+            // Jika tidak ada yang terbuka, buka jendela/PWA baru
+            if (clients.openWindow) {
+                return clients.openWindow(targetUrl);
+            }
+        })
+    );
+});
+
 

@@ -50,6 +50,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // 1. Dashboard Eksekutif & Ringkasan Realtime
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Web Push Notifications (VAPID)
+    Route::get('/webpush/key', [\App\Http\Controllers\WebPushSubscriptionController::class, 'key'])->name('webpush.key');
+    Route::post('/webpush/subscribe', [\App\Http\Controllers\WebPushSubscriptionController::class, 'subscribe'])->name('webpush.subscribe');
+    Route::post('/webpush/unsubscribe', [\App\Http\Controllers\WebPushSubscriptionController::class, 'unsubscribe'])->name('webpush.unsubscribe');
+    Route::post('/webpush/test', [\App\Http\Controllers\WebPushSubscriptionController::class, 'testNotification'])->name('webpush.test');
+
     // Jurnal Kepala Sekolah (Hanya untuk Role Kepala Sekolah)
     Route::middleware('role:principal')->group(function () {
         Route::get('/principal/journals', [PrincipalJournalController::class, 'index'])->name('principal.journals.index');
