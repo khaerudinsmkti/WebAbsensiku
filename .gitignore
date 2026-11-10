@@ -43,3 +43,5 @@ yarn-error.log
 /boost.json
 /opencode.json
 /opencode.jsonc
+public/icons/icon-maskable-192x192.png
+public/icons/icon-maskable-512x512.png
