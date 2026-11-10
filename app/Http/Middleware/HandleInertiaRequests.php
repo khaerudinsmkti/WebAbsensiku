@@ -48,6 +48,7 @@ class HandleInertiaRequests extends Middleware
                     'is_duty_teacher_today' => $isDutyToday,
                 ]) : null,
                 'pending_attendance' => $user ? $user->getPendingAttendanceStatus() : null,
+                'permissions' => $user ? ($user->isAdmin() ? '*' : (\App\Services\PermissionService::getMatrix()[$user->role] ?? [])) : [],
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

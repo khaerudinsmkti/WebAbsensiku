@@ -144,6 +144,13 @@ export function MobileBottomNav() {
     const canManageSchool = isAdmin || isPrincipal;
     const activeMasterTab = getActiveMasterTab(url);
 
+    const permissions = (props.auth as any)?.permissions;
+    const can = (module: string, action: string = 'view'): boolean => {
+        if (isAdmin || permissions === '*') return true;
+        if (!permissions || typeof permissions !== 'object') return false;
+        return Boolean(permissions[module]?.[action]);
+    };
+
     const [imgFailed, setImgFailed] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -570,17 +577,19 @@ export function MobileBottomNav() {
                                             isActive={isReportsActive}
                                             onClick={closeDrawer}
                                         />
-                                        <div className="col-span-2">
-                                            <NavCard
-                                                href="/extracurricular/reports"
-                                                title="Laporan Ekstrakurikuler"
-                                                subtitle="Presensi & Perkembangan Murid Ekskul"
-                                                icon={Award}
-                                                color="purple"
-                                                isActive={isExtracurricularActive}
-                                                onClick={closeDrawer}
-                                            />
-                                        </div>
+                                        {can('extracurricular', 'view') && (
+                                            <div className="col-span-2">
+                                                <NavCard
+                                                    href="/extracurricular/reports"
+                                                    title="Laporan Ekstrakurikuler"
+                                                    subtitle="Presensi & Perkembangan Murid Ekskul"
+                                                    icon={Award}
+                                                    color="purple"
+                                                    isActive={isExtracurricularActive}
+                                                    onClick={closeDrawer}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}

@@ -33,6 +33,11 @@ class ExtracurricularController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
+
+        if (! $user->hasPermission('extracurricular', 'view')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk melihat modul Ekstrakurikuler.');
+        }
+
         $isCoach = $user->isCoach();
         $isPrincipal = $user->isPrincipal();
         $isAdmin = $user->isAdmin();
@@ -113,6 +118,10 @@ class ExtracurricularController extends Controller
     {
         $user = $request->user();
 
+        if (! $user->hasPermission('extracurricular', 'create')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk membuat laporan kegiatan ekstrakurikuler.');
+        }
+
         // Fetch coach's default roster
         $defaultRoster = ExtracurricularMember::where('coach_id', $user->id)
             ->with(['student.classroom'])
@@ -160,6 +169,12 @@ class ExtracurricularController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
+        if (! $user->hasPermission('extracurricular', 'create')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk membuat laporan kegiatan ekstrakurikuler.');
+        }
+
         if ($request->has('attendees') && is_string($request->input('attendees'))) {
             $decoded = json_decode($request->input('attendees'), true);
             if (is_array($decoded)) {
@@ -256,6 +271,11 @@ class ExtracurricularController extends Controller
      */
     public function show(ExtracurricularReport $report): Response
     {
+        $user = request()->user();
+        if ($user && ! $user->hasPermission('extracurricular', 'view')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk melihat rincian laporan ekstrakurikuler.');
+        }
+
         $report->load([
             'coach',
             'approvedBy',
@@ -273,6 +293,10 @@ class ExtracurricularController extends Controller
     public function edit(Request $request, ExtracurricularReport $report): Response
     {
         $user = $request->user();
+
+        if (! $user->hasPermission('extracurricular', 'edit')) {
+            abort(403, 'Anda tidak berwenang mengedit laporan ini.');
+        }
 
         // Authorization check: only owner coach or admin can edit
         if (! $user->isAdmin() && $report->coach_id !== $user->id) {
@@ -324,6 +348,10 @@ class ExtracurricularController extends Controller
     public function update(Request $request, ExtracurricularReport $report): RedirectResponse
     {
         $user = $request->user();
+
+        if (! $user->hasPermission('extracurricular', 'edit')) {
+            abort(403, 'Anda tidak berwenang mengupdate laporan ini.');
+        }
 
         if (! $user->isAdmin() && $report->coach_id !== $user->id) {
             abort(403, 'Anda tidak berwenang mengupdate laporan ini.');
@@ -458,6 +486,10 @@ class ExtracurricularController extends Controller
     {
         $user = $request->user();
 
+        if (! $user->hasPermission('extracurricular', 'delete')) {
+            abort(403, 'Anda tidak berwenang menghapus laporan ini.');
+        }
+
         if (! $user->isAdmin() && $report->coach_id !== $user->id) {
             abort(403, 'Anda tidak berwenang menghapus laporan ini.');
         }
@@ -483,6 +515,10 @@ class ExtracurricularController extends Controller
     public function approve(Request $request, ExtracurricularReport $report): RedirectResponse
     {
         $user = $request->user();
+
+        if (! $user->hasPermission('extracurricular', 'approve')) {
+            abort(403, 'Hanya pengguna dengan hak persetujuan yang berwenang memberikan validasi laporan.');
+        }
 
         if (! $user->isAdmin() && ! $user->isPrincipal()) {
             abort(403, 'Hanya Kepala Sekolah atau Administrator yang berwenang memberikan persetujuan.');
@@ -518,6 +554,11 @@ class ExtracurricularController extends Controller
      */
     public function print(ExtracurricularReport $report): Response
     {
+        $user = request()->user();
+        if ($user && ! $user->hasPermission('extracurricular', 'print') && ! $user->hasPermission('extracurricular', 'view')) {
+            abort(403, 'Anda tidak memiliki izin mencetak laporan ekstrakurikuler.');
+        }
+
         $report->load([
             'coach',
             'approvedBy',
@@ -545,6 +586,11 @@ class ExtracurricularController extends Controller
      */
     public function exportPdf(string|ExtracurricularReport $identifier): HttpResponse
     {
+        $user = auth()->user();
+        if ($user && ! $user->hasPermission('extracurricular', 'print') && ! $user->hasPermission('extracurricular', 'view')) {
+            abort(403, 'Anda tidak memiliki izin mengunduh PDF laporan ekstrakurikuler.');
+        }
+
         $report = $identifier instanceof ExtracurricularReport
             ? $identifier
             : ExtracurricularReport::query()
@@ -678,6 +724,10 @@ class ExtracurricularController extends Controller
     {
         $user = $request->user();
 
+        if (! $user->hasPermission('extracurricular', 'roster')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengelola data anggota ekstrakurikuler.');
+        }
+
         $members = ExtracurricularMember::where('coach_id', $user->id)
             ->with(['student.classroom'])
             ->get()
@@ -716,6 +766,12 @@ class ExtracurricularController extends Controller
      */
     public function saveRoster(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
+        if (! $user->hasPermission('extracurricular', 'roster')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengelola data anggota ekstrakurikuler.');
+        }
+
         $validated = $request->validate([
             'student_ids' => 'present|array',
             'student_ids.*' => 'exists:students,id',

@@ -33,6 +33,7 @@ export type PendingAttendanceStatus = {
 export type Auth = {
     user: User;
     pending_attendance?: PendingAttendanceStatus | null;
+    permissions?: Record<string, Record<string, boolean>> | string;
 };
 
 export type Passkey = {

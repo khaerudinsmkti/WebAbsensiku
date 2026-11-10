@@ -83,6 +83,13 @@ export function AppSidebar() {
     const canManageSchool = isAdmin || isPrincipal;
     const activeMasterTab = getActiveMasterTab(url);
 
+    const permissions = (props.auth as any)?.permissions;
+    const can = (module: string, action: string = 'view'): boolean => {
+        if (isAdmin || permissions === '*') return true;
+        if (!permissions || typeof permissions !== 'object') return false;
+        return Boolean(permissions[module]?.[action]);
+    };
+
     const mainNavItems: NavItem[] = isPublisher
         ? [
               {
@@ -237,12 +244,16 @@ export function AppSidebar() {
                           icon: FileSpreadsheet,
                           isActive: url.startsWith('/reports'),
                       },
-                      {
-                          title: 'Laporan Ekskul',
-                          href: '/extracurricular/reports',
-                          icon: Award,
-                          isActive: url.startsWith('/extracurricular'),
-                      },
+                      ...(can('extracurricular', 'view')
+                          ? [
+                                {
+                                    title: 'Laporan Ekskul',
+                                    href: '/extracurricular/reports',
+                                    icon: Award,
+                                    isActive: url.startsWith('/extracurricular'),
+                                },
+                            ]
+                          : []),
                   ],
               },
               ...(canManageSchool
