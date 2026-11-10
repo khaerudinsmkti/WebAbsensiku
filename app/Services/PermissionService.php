@@ -304,6 +304,17 @@ class PermissionService
                     'manage' => ['label' => 'Kelola Hari Libur', 'description' => 'Menambah hari libur baru, sinkronisasi kalender, atau ganti sistem hari sekolah.'],
                 ],
             ],
+            'pwa_notifications' => [
+                'key' => 'pwa_notifications',
+                'name' => 'Pengaturan Notifikasi PWA',
+                'category' => 'sistem',
+                'description' => 'Konfigurasi interval pengingat presensi otomatis guru, jam aktif operasional, dan notifikasi PWA.',
+                'icon' => 'BellRing',
+                'permissions' => [
+                    'view' => ['label' => 'Lihat Pengaturan', 'description' => 'Melihat konfigurasi notifikasi PWA dan jadwal pengingat.'],
+                    'manage' => ['label' => 'Kelola Notifikasi PWA', 'description' => 'Menyimpan interval, jam operasional, template pesan, dan preferensi notifikasi.'],
+                ],
+            ],
             'permissions' => [
                 'key' => 'permissions',
                 'name' => 'Matriks Hak Akses Pengguna',

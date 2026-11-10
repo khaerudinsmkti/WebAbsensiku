@@ -367,14 +367,14 @@ export function AppSidebar() {
                                     icon: CalendarDays,
                                     isActive: url.startsWith('/admin/holidays'),
                                 },
+                                {
+                                    title: 'Notifikasi PWA',
+                                    href: '/admin/pwa-notifications',
+                                    icon: BellRing,
+                                    isActive: url.startsWith('/admin/pwa-notifications'),
+                                },
                                 ...(isAdmin
                                     ? [
-                                          {
-                                              title: 'Notifikasi PWA',
-                                              href: '/admin/pwa-notifications',
-                                              icon: BellRing,
-                                              isActive: url.startsWith('/admin/pwa-notifications'),
-                                          },
                                           {
                                               title: 'Matriks Hak Akses',
                                               href: '/admin/permissions',
