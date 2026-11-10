@@ -48,6 +48,7 @@ function NavCollapsibleItem({ item }: { item: NavItem }) {
                 <CollapsibleTrigger asChild>
                     <SidebarMenuButton
                         tooltip={{ children: item.title }}
+                        title={item.title}
                         isActive={hasActiveChild && !isOpen}
                         onClick={() => {
                             if (state === 'collapsed') {
@@ -55,19 +56,19 @@ function NavCollapsibleItem({ item }: { item: NavItem }) {
                                 setIsOpen(true);
                             }
                         }}
-                        className={`rounded-xl h-10 px-3 transition-all ${
+                        className={`rounded-xl h-10 px-3 transition-all duration-200 ${
                             hasActiveChild
-                                ? 'bg-white/10 text-white font-bold hover:bg-white/15 hover:text-white'
-                                : 'text-white/80 hover:text-white hover:bg-white/10 active:bg-white/15'
+                                ? 'bg-white/[0.08] text-white font-bold hover:bg-white/[0.12] hover:text-white border border-white/[0.06]'
+                                : 'text-white/75 hover:text-white hover:bg-white/[0.06] active:bg-white/[0.1]'
                         } data-[active=true]:bg-gradient-to-r data-[active=true]:from-[var(--brand-primary,#FF6B35)] data-[active=true]:to-[var(--brand-primary-dark,#FF8C5A)] data-[active=true]:text-white data-[active=true]:font-bold data-[active=true]:shadow-brand`}
                     >
-                        {item.icon && <item.icon className="size-5" />}
-                        <span>{item.title}</span>
-                        <ChevronRight className="ml-auto size-4 text-white/60 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                        {item.icon && <item.icon className="size-5 shrink-0" />}
+                        <span className="truncate">{item.title}</span>
+                        <ChevronRight className="ml-auto size-4 shrink-0 text-white/60 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </SidebarMenuButton>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                    <SidebarMenuSub className="border-white/15 ml-4 pl-2.5 mt-1 gap-1 py-1">
+                    <SidebarMenuSub className="border-white/[0.12] ml-4 pl-2.5 mt-1 gap-1 py-1">
                         {item.items?.map((subItem) => {
                             const subActive =
                                 subItem.isActive ?? isCurrentUrl(subItem.href);
@@ -77,13 +78,14 @@ function NavCollapsibleItem({ item }: { item: NavItem }) {
                                     <SidebarMenuSubButton
                                         asChild
                                         isActive={subActive}
-                                        className="text-white/75 hover:text-white hover:bg-white/10 active:bg-white/15 data-[active=true]:bg-gradient-to-r data-[active=true]:from-[var(--brand-primary,#FF6B35)] data-[active=true]:to-[var(--brand-primary-dark,#FF8C5A)] data-[active=true]:text-white data-[active=true]:font-bold data-[active=true]:shadow-brand rounded-lg h-9 px-2.5 transition-all [&>svg]:text-current"
+                                        tooltip={{ children: subItem.title }}
+                                        className="text-white/70 hover:text-white hover:bg-white/[0.06] active:bg-white/[0.1] data-[active=true]:bg-gradient-to-r data-[active=true]:from-[var(--brand-primary,#FF6B35)] data-[active=true]:to-[var(--brand-primary-dark,#FF8C5A)] data-[active=true]:text-white data-[active=true]:font-bold data-[active=true]:shadow-brand rounded-lg h-9 px-2.5 transition-all duration-200 [&>svg]:text-current"
                                     >
-                                        <Link href={subItem.href} prefetch>
+                                        <Link href={subItem.href} prefetch title={subItem.title}>
                                             {subItem.icon && (
                                                 <subItem.icon className="size-4 shrink-0" />
                                             )}
-                                            <span>{subItem.title}</span>
+                                            <span className="truncate">{subItem.title}</span>
                                         </Link>
                                     </SidebarMenuSubButton>
                                 </SidebarMenuSubItem>
@@ -101,7 +103,8 @@ export function NavMain({ items }: { items: NavItem[] }) {
 
     return (
         <SidebarGroup className="px-2 py-0">
-            <SidebarGroupLabel className="text-white/50 text-[11px] font-bold tracking-wider uppercase">
+            <SidebarGroupLabel className="text-white/45 text-[10px] font-black tracking-widest uppercase flex items-center gap-1.5 px-3 py-2">
+                <span className="size-1.5 rounded-full bg-[var(--brand-primary,#FF6B35)] shadow-xs shadow-[var(--brand-primary,#FF6B35)]/60 shrink-0"></span>
                 Menu Utama
             </SidebarGroupLabel>
             <SidebarMenu className="gap-1.5 mt-1">
@@ -118,11 +121,11 @@ export function NavMain({ items }: { items: NavItem[] }) {
                                 asChild
                                 isActive={active}
                                 tooltip={{ children: item.title }}
-                                className="text-white/80 hover:text-white hover:bg-white/10 active:bg-white/15 data-[active=true]:bg-gradient-to-r data-[active=true]:from-[var(--brand-primary,#FF6B35)] data-[active=true]:to-[var(--brand-primary-dark,#FF8C5A)] data-[active=true]:text-white data-[active=true]:font-bold data-[active=true]:shadow-brand rounded-xl h-10 px-3 transition-all"
+                                className="text-white/75 hover:text-white hover:bg-white/[0.06] active:bg-white/[0.1] data-[active=true]:bg-gradient-to-r data-[active=true]:from-[var(--brand-primary,#FF6B35)] data-[active=true]:to-[var(--brand-primary-dark,#FF8C5A)] data-[active=true]:text-white data-[active=true]:font-bold data-[active=true]:shadow-brand rounded-xl h-10 px-3 transition-all duration-200"
                             >
-                                <Link href={item.href} prefetch>
-                                    {item.icon && <item.icon className="size-5" />}
-                                    <span>{item.title}</span>
+                                <Link href={item.href} prefetch title={item.title}>
+                                    {item.icon && <item.icon className="size-5 shrink-0" />}
+                                    <span className="truncate">{item.title}</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

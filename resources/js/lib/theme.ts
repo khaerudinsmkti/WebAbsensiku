@@ -173,6 +173,19 @@ export function applyTheme(theme: ThemeConfig | null | undefined): void {
             background: radial-gradient(120% 65% at 50% 0%, color-mix(in srgb, var(--brand-primary, #FF6B35) 16%, transparent) 0%, rgba(24, 18, 43, 0.4) 60%, transparent 100%) !important;
         }
 
+        /* Modern Dynamic Theme-infused Sidebar Gradient */
+        .bg-sidebar-gradient {
+            background:
+                radial-gradient(110% 55% at 50% -10%, color-mix(in srgb, var(--brand-primary) 28%, transparent) 0%, transparent 80%),
+                radial-gradient(90% 45% at 0% 100%, color-mix(in srgb, var(--brand-primary-dark) 18%, transparent) 0%, transparent 80%),
+                linear-gradient(
+                    180deg,
+                    color-mix(in srgb, var(--brand-primary) 12%, #12131C) 0%,
+                    #101118 40%,
+                    color-mix(in srgb, var(--brand-primary-dark) 10%, #0A0B10) 100%
+                ) !important;
+        }
+
         /* Card & Element Hover Border Overrides */
         .hover\\:border-\\[\\#FF6B35\\]:hover,
         .hover\\:border-\\[\\#FF6B35\\]\\/40:hover,

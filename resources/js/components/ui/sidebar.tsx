@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
-const SIDEBAR_WIDTH = "16rem"
+const SIDEBAR_WIDTH = "17.5rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
@@ -187,7 +187,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+          className="bg-sidebar-gradient border-r border-white/10 text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden shadow-2xl overflow-hidden"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -237,7 +237,7 @@ function Sidebar({
       >
         <div
           data-sidebar="sidebar"
-          className="bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm"
+          className="bg-sidebar-gradient border border-white/10 shadow-2xl flex h-full w-full flex-col group-data-[variant=inset]:rounded-2xl group-data-[variant=floating]:rounded-2xl overflow-hidden backdrop-blur-md"
         >
           {children}
         </div>
@@ -531,7 +531,8 @@ function SidebarMenuButton({
       <TooltipContent
         side="right"
         align="center"
-        hidden={state !== "collapsed" || isMobile}
+        sideOffset={10}
+        hidden={isMobile}
         {...tooltip}
       />
     </Tooltip>
@@ -663,16 +664,19 @@ function SidebarMenuSubButton({
   asChild = false,
   size = "md",
   isActive = false,
+  tooltip,
   className,
   ...props
 }: React.ComponentProps<"a"> & {
   asChild?: boolean
   size?: "sm" | "md"
   isActive?: boolean
+  tooltip?: string | React.ComponentProps<typeof TooltipContent>
 }) {
   const Comp = asChild ? Slot : "a"
+  const { isMobile } = useSidebar()
 
-  return (
+  const button = (
     <Comp
       data-slot="sidebar-menu-sub-button"
       data-sidebar="menu-sub-button"
@@ -688,6 +692,29 @@ function SidebarMenuSubButton({
       )}
       {...props}
     />
+  )
+
+  if (!tooltip) {
+    return button
+  }
+
+  if (typeof tooltip === "string") {
+    tooltip = {
+      children: tooltip,
+    }
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipContent
+        side="right"
+        align="center"
+        sideOffset={10}
+        hidden={isMobile}
+        {...tooltip}
+      />
+    </Tooltip>
   )
 }
 

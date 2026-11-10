@@ -390,11 +390,13 @@ export function AppSidebar() {
           ];
 
     return (
-        <Sidebar collapsible="icon" variant="inset" className="bg-sidebar-gradient border-r-0">
-            <SidebarHeader className="p-4 border-b border-white/10">
+        <Sidebar collapsible="icon" variant="inset" className="border-r-0">
+            <SidebarHeader className="relative p-4 border-b border-white/[0.08] bg-white/[0.02] backdrop-blur-xs overflow-hidden">
+                {/* Luminous Top Flare in Theme Color */}
+                <div className="pointer-events-none absolute -top-12 left-1/2 -translate-x-1/2 size-48 rounded-full bg-[var(--brand-primary,#FF6B35)]/20 blur-2xl" />
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild className="hover:bg-white/10 active:bg-white/15">
+                        <SidebarMenuButton size="lg" asChild className="relative z-10 hover:bg-white/[0.07] active:bg-white/[0.1] rounded-2xl transition-all">
                             <Link href={isPublisher ? '/news-management' : isCoach ? '/extracurricular/reports' : '/dashboard'} prefetch>
                                 <AppLogo />
                             </Link>
@@ -403,11 +405,11 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent className="px-2 py-4">
+            <SidebarContent className="px-2.5 py-4">
                 <NavMain items={mainNavItems} />
             </SidebarContent>
 
-            <SidebarFooter className="border-t border-white/10 p-3">
+            <SidebarFooter className="border-t border-white/[0.08] bg-white/[0.02] p-3 backdrop-blur-xs">
                 <NavUser />
             </SidebarFooter>
         </Sidebar>
