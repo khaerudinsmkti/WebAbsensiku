@@ -81,6 +81,7 @@ export function AppSidebar() {
     const isCoach = user?.role === 'coach';
     const isAdmin = user?.role === 'admin';
     const isPrincipal = user?.role === 'principal';
+    const isTeacher = user?.role === 'teacher';
     const canManageSchool = isAdmin || isPrincipal;
     const activeMasterTab = getActiveMasterTab(url);
 
@@ -257,7 +258,7 @@ export function AppSidebar() {
                           icon: FileSpreadsheet,
                           isActive: url.startsWith('/reports'),
                       },
-                      ...(can('extracurricular', 'view')
+                      ...(can('extracurricular', 'view') && !isTeacher
                           ? [
                                 {
                                     title: 'Laporan Ekskul',
