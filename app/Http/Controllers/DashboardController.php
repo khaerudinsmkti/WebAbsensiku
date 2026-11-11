@@ -357,47 +357,66 @@ class DashboardController extends Controller
         $isFutureDate = $date > $today;
         $holiday = AcademicHoliday::getOffDay($date);
 
-        // Reuse $isOverallAuthorized & $classrooms already loaded above for Unmarked Classrooms
-        $canViewUnmarkedClasses = $isOverallAuthorized;
+        // Unmarked Classrooms across the school
+        // Ditampilkan untuk seluruh guru, kepala sekolah, dan admin agar saling mengingatkan
+        $allSchoolClassrooms = $isOverallAuthorized
+            ? $classrooms
+            : Classroom::with('homeroomTeacher:id,name,nip')
+                ->withCount(['students' => function ($q) {
+                    $q->where('is_active', true)->where('is_alumni', false);
+                }])
+                ->orderBy('name')
+                ->get();
+
+        $totalClassroomsCount = $allSchoolClassrooms->where('students_count', '>', 0)->count();
+
+        $attendanceCounts = DB::table('attendances')
+            ->join('students', 'attendances.student_id', '=', 'students.id')
+            ->where('attendances.date', $date)
+            ->where('students.is_active', true)
+            ->where('students.is_alumni', false)
+            ->selectRaw('students.classroom_id, COUNT(attendances.student_id) as attended_count')
+            ->groupBy('students.classroom_id')
+            ->pluck('attended_count', 'classroom_id');
+
         $unmarkedClassrooms = [];
-        $totalClassroomsCount = 0;
+        foreach ($allSchoolClassrooms as $cls) {
+            $totalActive = (int) $cls->students_count;
+            if ($totalActive === 0) {
+                continue;
+            }
+            $attended = (int) ($attendanceCounts[$cls->id] ?? 0);
 
-        if ($canViewUnmarkedClasses) {
-            $totalClassroomsCount = $classrooms->where('students_count', '>', 0)->count();
-
-            $attendanceCounts = DB::table('attendances')
-                ->join('students', 'attendances.student_id', '=', 'students.id')
-                ->where('attendances.date', $date)
-                ->where('students.is_active', true)
-                ->where('students.is_alumni', false)
-                ->selectRaw('students.classroom_id, COUNT(attendances.student_id) as attended_count')
-                ->groupBy('students.classroom_id')
-                ->pluck('attended_count', 'classroom_id');
-
-            foreach ($classrooms as $cls) {
-                $totalActive = (int) $cls->students_count;
-                if ($totalActive === 0) {
-                    continue;
-                }
-                $attended = (int) ($attendanceCounts[$cls->id] ?? 0);
-
-                if ($attended < $totalActive) {
-                    $unmarkedClassrooms[] = [
-                        'id' => $cls->id,
-                        'name' => $cls->name,
-                        'academic_year' => $cls->academic_year,
-                        'homeroom_teacher' => $cls->homeroomTeacher ? [
-                            'id' => $cls->homeroomTeacher->id,
-                            'name' => $cls->homeroomTeacher->name,
-                            'nip' => $cls->homeroomTeacher->nip,
-                        ] : null,
-                        'total_students' => $totalActive,
-                        'attended_students' => $attended,
-                        'status' => $attended === 0 ? 'unmarked' : 'partial',
-                    ];
-                }
+            if ($attended < $totalActive) {
+                $unmarkedClassrooms[] = [
+                    'id' => $cls->id,
+                    'name' => $cls->name,
+                    'academic_year' => $cls->academic_year,
+                    'homeroom_teacher' => $cls->homeroomTeacher ? [
+                        'id' => $cls->homeroomTeacher->id,
+                        'name' => $cls->homeroomTeacher->name,
+                        'nip' => $cls->homeroomTeacher->nip,
+                    ] : null,
+                    'total_students' => $totalActive,
+                    'attended_students' => $attended,
+                    'status' => $attended === 0 ? 'unmarked' : 'partial',
+                    'is_own_class' => $user ? $cls->homeroom_teacher_id === $user->id : false,
+                ];
             }
         }
+
+        // Urutkan kelas milik guru login di paling depan jika belum diabsen
+        usort($unmarkedClassrooms, function ($a, $b) {
+            if ($a['is_own_class'] && ! $b['is_own_class']) {
+                return -1;
+            }
+            if (! $a['is_own_class'] && $b['is_own_class']) {
+                return 1;
+            }
+            return strcmp($a['name'], $b['name']);
+        });
+
+        $canViewUnmarkedClasses = true;
 
         return Inertia::render('dashboard', [
             'userRoleLabel' => $userRoleLabel,

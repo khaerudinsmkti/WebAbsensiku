@@ -6,15 +6,19 @@ import {
     AlertTriangle,
     ArrowRight,
     Award,
+    BellRing,
     Calendar,
     CalendarRange,
     CheckCircle2,
+    ChevronDown,
     ChevronLeft,
     ChevronRight,
+    ChevronUp,
     Clock,
     FileText,
     School,
     ShieldCheck,
+    Users,
     UserX,
 } from 'lucide-react';
 import { PageBanner } from '@/components/page-banner';
@@ -59,6 +63,7 @@ export interface UnmarkedClassroomItem {
     total_students: number;
     attended_students: number;
     status: 'unmarked' | 'partial';
+    is_own_class?: boolean;
 }
 
 interface DashboardProps {
@@ -127,6 +132,31 @@ export default function Dashboard({
     const todayStr = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
     const isFuture = isFutureDate || selectedDate > todayStr;
 
+    const formattedDate = useMemo(() => {
+        if (!selectedDate) return '';
+        try {
+            const [year, month, day] = selectedDate.split('-').map(Number);
+            if (!year || !month || !day) return selectedDate;
+            const MONTHS = [
+                'Januari',
+                'Februari',
+                'Maret',
+                'April',
+                'Mei',
+                'Juni',
+                'Juli',
+                'Agustus',
+                'September',
+                'Oktober',
+                'November',
+                'Desember',
+            ];
+            return `${day} ${MONTHS[month - 1]} ${year}`;
+        } catch {
+            return selectedDate;
+        }
+    }, [selectedDate]);
+
     // Live Clock Widget (Jam, Menit, Detik - 24 Jam)
     const [currentTime, setCurrentTime] = useState<string>(() => {
         const d = new Date();
@@ -146,36 +176,14 @@ export default function Dashboard({
 
     const [topPeriod, setTopPeriod] = useState<'yearly' | 'monthly'>('yearly');
 
-    // Auto-slider state for Unmarked Classrooms (3 columns x 2 rows = 6 cards per slide)
-    const ITEMS_PER_SLIDE = 6;
-    const unmarkedSlides = useMemo(() => {
-        const chunks: UnmarkedClassroomItem[][] = [];
-        for (let i = 0; i < unmarkedClassrooms.length; i += ITEMS_PER_SLIDE) {
-            chunks.push(unmarkedClassrooms.slice(i, i + ITEMS_PER_SLIDE));
+    // State untuk expand/collapse daftar kelas belum absensi jika lebih dari 8 rombel
+    const [isUnmarkedExpanded, setIsUnmarkedExpanded] = useState(false);
+    const visibleUnmarkedClassrooms = useMemo(() => {
+        if (!unmarkedClassrooms || unmarkedClassrooms.length <= 8 || isUnmarkedExpanded) {
+            return unmarkedClassrooms || [];
         }
-        return chunks;
-    }, [unmarkedClassrooms]);
-
-    const totalUnmarkedSlides = unmarkedSlides.length;
-    const [currentUnmarkedSlide, setCurrentUnmarkedSlide] = useState(0);
-    const [isSliderPaused, setIsSliderPaused] = useState(false);
-
-    useEffect(() => {
-        if (currentUnmarkedSlide >= totalUnmarkedSlides && totalUnmarkedSlides > 0) {
-            setCurrentUnmarkedSlide(0);
-        }
-    }, [totalUnmarkedSlides, currentUnmarkedSlide]);
-
-    useEffect(() => {
-        if (totalUnmarkedSlides <= 1 || isSliderPaused) {
-            return;
-        }
-        const slideTimer = setInterval(() => {
-            setCurrentUnmarkedSlide((prev) => (prev + 1) % totalUnmarkedSlides);
-        }, 4000);
-
-        return () => clearInterval(slideTimer);
-    }, [totalUnmarkedSlides, isSliderPaused]);
+        return unmarkedClassrooms.slice(0, 8);
+    }, [unmarkedClassrooms, isUnmarkedExpanded]);
 
     const currentTopData = useMemo(() => {
         if (!top_students) {
@@ -300,7 +308,7 @@ export default function Dashboard({
             <div className="flex flex-1 flex-col gap-6 p-6 sm:p-8 bg-page-gradient min-h-screen">
                 {/* 1. Page Banner */}
                 <PageBanner
-                    badgeText={`Hari Ini • ${selectedDate}`}
+                    badgeText={formattedDate}
                     title={greetingTitle}
                     description="Sistem presensi siswa terpadu dengan pencatatan kehadiran realtime, keterlambatan otomatis, dan verifikasi izin pulang awal."
                     action={
@@ -472,175 +480,134 @@ export default function Dashboard({
                     </div>
                 )}
 
-                {/* Unmarked Classrooms Alert/List (For Admin, Kepsek, & Guru Piket) */}
+                {/* Pantauan Presensi Kelas & Rekan Guru (Minimalis & Ringkas) */}
                 {canViewUnmarkedClasses && (
                     <div className="flex flex-col gap-3">
                         {unmarkedClassrooms && unmarkedClassrooms.length > 0 ? (
-                            <div
-                                className="rounded-2xl border-2 border-rose-300/80 bg-rose-50/50 p-5 shadow-sm dark:border-rose-900/50 dark:bg-rose-950/20"
-                                onMouseEnter={() => setIsSliderPaused(true)}
-                                onMouseLeave={() => setIsSliderPaused(false)}
-                            >
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-rose-200/80 pb-3.5 mb-4 dark:border-rose-900/40">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-200">
-                                            <AlertCircle className="size-5" />
+                            <div className="rounded-2xl border border-rose-200/90 bg-rose-50/50 p-4 shadow-xs dark:border-rose-900/40 dark:bg-rose-950/25 transition-all">
+                                {/* Header Ringkas */}
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 border-b border-rose-200/70 dark:border-rose-900/40">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-200">
+                                            <BellRing className="size-4 animate-pulse" />
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
+                                                <h3 className="text-sm font-extrabold text-gray-900 dark:text-white">
                                                     Kelas Belum Presensi Hari Ini
                                                 </h3>
-                                                <span className="rounded-full bg-rose-600 px-2.5 py-0.5 text-xs font-black text-white shadow-xs">
-                                                    {unmarkedClassrooms.length} Kelas
+                                                <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-black text-white">
+                                                    {unmarkedClassrooms.length} Rombel
                                                 </span>
                                             </div>
-                                            <p className="text-xs text-rose-800/90 dark:text-rose-300/90 mt-0.5">
-                                                Daftar kelas yang belum menyelesaikan input absensi siswa untuk hari ini ({selectedDate}).
+                                            <p className="text-[11px] text-rose-800/80 dark:text-rose-300/80">
+                                                Daftar rekan guru yang belum menyelesaikan absensi (untuk saling mengingatkan).
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3 self-start sm:self-auto">
-                                        <div className="text-xs font-bold text-gray-500 dark:text-gray-400">
-                                            Status: <span className="text-rose-600 font-black">{unmarkedClassrooms.length}</span> dari {totalClassroomsCount} Kelas Belum Lengkap
-                                        </div>
-
-                                        {totalUnmarkedSlides > 1 && (
-                                            <div className="flex items-center gap-1.5 border-l border-rose-200/80 pl-3 dark:border-rose-900/40">
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setCurrentUnmarkedSlide(
-                                                            (prev) => (prev - 1 + totalUnmarkedSlides) % totalUnmarkedSlides,
-                                                        )
-                                                    }
-                                                    className="flex size-7 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-700 transition-all hover:bg-rose-100 active:scale-95 dark:border-rose-800 dark:bg-[#18122B] dark:text-rose-300 dark:hover:bg-rose-900/40"
-                                                    aria-label="Slide sebelumnya"
-                                                >
-                                                    <ChevronLeft className="size-4" />
-                                                </button>
-                                                <span className="text-[11px] font-extrabold text-rose-700 dark:text-rose-300 min-w-[36px] text-center">
-                                                    {currentUnmarkedSlide + 1} / {totalUnmarkedSlides}
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        setCurrentUnmarkedSlide(
-                                                            (prev) => (prev + 1) % totalUnmarkedSlides,
-                                                        )
-                                                    }
-                                                    className="flex size-7 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-700 transition-all hover:bg-rose-100 active:scale-95 dark:border-rose-800 dark:bg-[#18122B] dark:text-rose-300 dark:hover:bg-rose-900/40"
-                                                    aria-label="Slide berikutnya"
-                                                >
-                                                    <ChevronRight className="size-4" />
-                                                </button>
-                                            </div>
+                                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                                        <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                                            <span className="text-rose-600 font-black">{unmarkedClassrooms.length}</span> dari {totalClassroomsCount} Kelas
+                                        </span>
+                                        {unmarkedClassrooms.length > 8 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsUnmarkedExpanded(!isUnmarkedExpanded)}
+                                                className="inline-flex items-center gap-1 rounded-lg border border-rose-300/80 bg-white px-2 py-1 text-[11px] font-bold text-rose-700 hover:bg-rose-50 active:scale-95 transition-all dark:border-rose-800 dark:bg-[#18122B] dark:text-rose-300"
+                                            >
+                                                {isUnmarkedExpanded ? (
+                                                    <>
+                                                        Ringkas <ChevronUp className="size-3" />
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Semua ({unmarkedClassrooms.length}) <ChevronDown className="size-3" />
+                                                    </>
+                                                )}
+                                            </button>
                                         )}
                                     </div>
                                 </div>
 
-                                {/* Slider Viewport (3 Columns x 2 Rows per Slide) */}
-                                <div className="overflow-hidden">
-                                    <div
-                                        className="flex transition-transform duration-500 ease-in-out"
-                                        style={{
-                                            transform: `translateX(-${currentUnmarkedSlide * 100}%)`,
-                                        }}
-                                    >
-                                        {unmarkedSlides.map((slideItems, slideIdx) => (
-                                            <div
-                                                key={slideIdx}
-                                                className="w-full shrink-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:grid-rows-2 gap-3"
-                                            >
-                                                {slideItems.map((cls) => (
-                                                    <div
-                                                        key={cls.id}
-                                                        className="flex flex-col justify-between rounded-xl border border-rose-200/90 bg-white p-3.5 shadow-xs transition-all hover:shadow-md dark:border-rose-900/40 dark:bg-[#18122B]"
-                                                    >
-                                                        <div className="flex items-start justify-between gap-2">
-                                                            <div className="min-w-0 flex-1">
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-sm font-black text-gray-900 dark:text-white">
-                                                                        {cls.name}
-                                                                    </span>
-                                                                    <span
-                                                                        className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
-                                                                            cls.status === 'partial'
-                                                                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                                                                                : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                                                                        }`}
-                                                                    >
-                                                                        {cls.status === 'partial' ? 'Belum Lengkap' : 'Belum Absen'}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                                                                    <span className="font-semibold text-gray-700 dark:text-gray-300">Wali Kelas:</span>{' '}
-                                                                    {cls.homeroom_teacher?.name || 'Belum Ditentukan'}
-                                                                </div>
-                                                                <div className="text-[11px] text-gray-400 mt-0.5 font-medium">
-                                                                    Tercatat: {cls.attended_students} / {cls.total_students} Siswa
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-800/80 flex items-center justify-end">
-                                                            <Button
-                                                                asChild
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className="h-8 px-3 text-xs font-bold text-[var(--brand-primary,#FF6B35)] bg-[var(--brand-primary-light,#FFF0EB)] hover:bg-[var(--brand-primary-light,#FFF0EB)]/80 border border-[var(--brand-primary,#FF6B35)]/30 dark:bg-[var(--brand-primary)]/10 dark:border-[var(--brand-primary)]/30 dark:text-white"
-                                                            >
-                                                                <Link href={`/attendances?classroom_id=${cls.id}&date=${selectedDate}`}>
-                                                                    Input Presensi
-                                                                    <ArrowRight className="size-3.5 ml-1" />
-                                                                </Link>
-                                                            </Button>
-                                                        </div>
+                                {/* Minimalist Micro-Cards Grid */}
+                                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
+                                    {visibleUnmarkedClassrooms.map((cls) => (
+                                        <div
+                                            key={cls.id}
+                                            className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl border transition-all text-xs ${
+                                                cls.is_own_class
+                                                    ? 'bg-rose-100/90 border-rose-400/80 shadow-xs ring-1 ring-rose-400/50 dark:bg-rose-950/70 dark:border-rose-700'
+                                                    : 'bg-white/90 border-rose-200/70 hover:border-rose-300 hover:bg-white dark:bg-[#1c1630] dark:border-rose-900/40 dark:hover:border-rose-800'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <span
+                                                    className={`size-2 shrink-0 rounded-full ${
+                                                        cls.status === 'partial'
+                                                            ? 'bg-amber-500'
+                                                            : 'bg-rose-500 animate-pulse'
+                                                    }`}
+                                                />
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-1.5 leading-tight">
+                                                        <span className="font-extrabold text-xs text-gray-900 dark:text-white truncate">
+                                                            {cls.name}
+                                                        </span>
+                                                        {cls.is_own_class && (
+                                                            <span className="shrink-0 rounded bg-rose-600 px-1 py-0.2 text-[9px] font-black uppercase text-white">
+                                                                Kelas Anda
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                ))}
+                                                    <p
+                                                        className="text-[11px] text-gray-600 dark:text-gray-300 truncate mt-0.5"
+                                                        title={cls.homeroom_teacher?.name || 'Belum ada wali kelas'}
+                                                    >
+                                                        {cls.homeroom_teacher?.name || 'Belum ada wali'}
+                                                    </p>
+                                                </div>
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
 
-                                {/* Slide Indicators (Dots) */}
-                                {totalUnmarkedSlides > 1 && (
-                                    <div className="mt-4 flex items-center justify-center gap-1.5">
-                                        {unmarkedSlides.map((_, idx) => (
-                                            <button
-                                                key={idx}
-                                                type="button"
-                                                onClick={() => setCurrentUnmarkedSlide(idx)}
-                                                aria-label={`Ke slide ${idx + 1}`}
-                                                className={`h-2 rounded-full transition-all duration-300 ${
-                                                    currentUnmarkedSlide === idx
-                                                        ? 'w-6 bg-rose-600 dark:bg-rose-500'
-                                                        : 'w-2 bg-rose-300/70 hover:bg-rose-400 dark:bg-rose-800/60 dark:hover:bg-rose-700'
-                                                }`}
-                                            />
-                                        ))}
-                                    </div>
-                                )}
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                {cls.is_own_class ? (
+                                                    <Link
+                                                        href={`/attendances?classroom_id=${cls.id}&date=${selectedDate}`}
+                                                        className="rounded-lg bg-[#FF6B35] px-2 py-1 text-[10px] font-extrabold text-white hover:bg-[#E85D26] active:scale-95 transition-all shadow-xs shrink-0"
+                                                    >
+                                                        Absen
+                                                    </Link>
+                                                ) : (
+                                                    <span
+                                                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                                            cls.status === 'partial'
+                                                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
+                                                                : 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300'
+                                                        }`}
+                                                    >
+                                                        {cls.status === 'partial'
+                                                            ? `${cls.attended_students}/${cls.total_students}`
+                                                            : 'Belum'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         ) : !holiday && totalClassroomsCount && totalClassroomsCount > 0 ? (
-                            <div className="flex items-center gap-3.5 rounded-2xl border-2 border-emerald-300/80 bg-emerald-50/60 p-4 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/30">
-                                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300">
-                                    <CheckCircle2 className="size-5" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                        <h4 className="text-sm font-extrabold text-emerald-950 dark:text-emerald-100">
-                                            Seluruh Kelas Sudah Melakukan Presensi! 🎉
-                                        </h4>
-                                        <span className="rounded-full bg-emerald-600 px-2.5 py-0.5 text-[11px] font-black text-white">
-                                            100% Selesai
-                                        </span>
+                            <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-50/50 px-4 py-2.5 shadow-xs dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="flex size-6 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300">
+                                        <CheckCircle2 className="size-3.5" />
                                     </div>
-                                    <p className="mt-0.5 text-xs text-emerald-800/90 dark:text-emerald-300/90">
-                                        Seluruh {totalClassroomsCount} rombongan belajar telah lengkap menginput data kehadiran siswa untuk hari ini ({selectedDate}).
+                                    <p className="text-xs font-semibold text-emerald-900 dark:text-emerald-200 truncate">
+                                        <span className="font-extrabold">Semua Kelas Lengkap!</span> Seluruh {totalClassroomsCount} rombel telah selesai diabsen hari ini ({formattedDate}).
                                     </p>
                                 </div>
+                                <span className="shrink-0 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-black text-white">
+                                    100% Lengkap 🎉
+                                </span>
                             </div>
                         ) : null}
                     </div>
