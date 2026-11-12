@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
@@ -24,6 +24,7 @@ import { PublicHeader } from '@/components/public-header';
 import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
 import { dashboard, login } from '@/routes';
 import type { NewsCategory, NewsItem } from '@/types/news';
+import { WhatsAppShareButton } from '@/components/whatsapp-share-button';
 
 interface SchoolProp {
     name?: string;
@@ -122,6 +123,19 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                 // Ignore network error, optimistic count remains
             });
     };
+
+    // Auto-open news if query parameter ?read=ID is provided (e.g. from WhatsApp share link)
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        const readId = params.get('read');
+        if (readId && news?.data) {
+            const found = news.data.find((item) => item.id.toString() === readId);
+            if (found) {
+                handleOpenNews(found);
+            }
+        }
+    }, [news?.data]);
 
     const handleApplyFilters = (newCategory?: string) => {
         const cat = newCategory !== undefined ? newCategory : selectedCategory;
@@ -389,12 +403,15 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                                                     <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
                                                 </button>
 
-                                                {item.attachment_url && (
-                                                    <span className="text-[11px] font-bold text-red-600 flex items-center gap-1">
-                                                        <FileText className="size-3" />
-                                                        PDF
-                                                    </span>
-                                                )}
+                                                <div className="flex items-center gap-1.5">
+                                                    <WhatsAppShareButton type="news" item={item} variant="icon" size="xs" />
+                                                    {item.attachment_url && (
+                                                        <span className="text-[11px] font-bold text-red-600 flex items-center gap-1">
+                                                            <FileText className="size-3" />
+                                                            PDF
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -504,16 +521,19 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                                             <span>{getNewsViews(readingNews)} kali dilihat</span>
                                         </span>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setReadingNews(null);
-                                            setReadingActiveImageIdx(0);
-                                        }}
-                                        className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800"
-                                    >
-                                        <X className="size-5" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <WhatsAppShareButton type="news" item={readingNews} variant="button" size="xs" />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setReadingNews(null);
+                                                setReadingActiveImageIdx(0);
+                                            }}
+                                            className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800"
+                                        >
+                                            <X className="size-5" />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-6">
@@ -684,7 +704,8 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                                     )}
                                 </div>
 
-                                <div className="flex items-center justify-end border-t border-gray-100 p-4 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50">
+                                <div className="flex items-center justify-between border-t border-gray-100 p-4 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50">
+                                    <WhatsAppShareButton type="news" item={readingNews} variant="button" size="sm" />
                                     <Button
                                         type="button"
                                         variant="secondary"

@@ -31,6 +31,7 @@ import {
 import { Button } from '@/components/ui/button';
 import type { BreadcrumbItem } from '@/types';
 import type { NewsAttachment, NewsCategory, NewsItem } from '@/types/news';
+import { WhatsAppShareButton } from '@/components/whatsapp-share-button';
 
 interface PaginationMeta {
     current_page: number;
@@ -918,6 +919,7 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                                 </td>
                                                 <td className="px-4 py-3.5 text-right">
                                                     <div className="flex items-center justify-end gap-1.5">
+                                                        <WhatsAppShareButton type="news" item={item} variant="icon" size="xs" />
                                                         <button
                                                             type="button"
                                                             onClick={() => setPreviewNews(item)}
@@ -1576,13 +1578,16 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                 <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
                                     Pratinjau Tampilan Berita
                                 </span>
-                                <button
-                                    type="button"
-                                    onClick={() => setPreviewNews(null)}
-                                    className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                >
-                                    <X className="size-5" />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <WhatsAppShareButton type="news" item={previewNews} variant="button" size="xs" />
+                                    <button
+                                        type="button"
+                                        onClick={() => setPreviewNews(null)}
+                                        className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    >
+                                        <X className="size-5" />
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-6 space-y-5">
@@ -1761,6 +1766,19 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                         </div>
                                     </div>
                                 )}
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="flex items-center justify-between border-t border-gray-100 p-4 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50">
+                                <WhatsAppShareButton type="news" item={previewNews} variant="button" size="sm" />
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => setPreviewNews(null)}
+                                    className="rounded-xl text-xs font-bold"
+                                >
+                                    Tutup Pratinjau
+                                </Button>
                             </div>
                         </div>
                     </div>

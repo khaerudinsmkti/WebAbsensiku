@@ -53,6 +53,7 @@ import { PublicHeader } from '@/components/public-header';
 import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
 import { dashboard, login } from '@/routes';
 import type { NewsAttachment, NewsCategory, NewsItem } from '@/types/news';
+import { WhatsAppShareButton } from '@/components/whatsapp-share-button';
 
 interface SchoolProp {
     name?: string;
@@ -367,6 +368,27 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                 // Ignore network error, optimistic count remains
             });
     };
+
+    // Auto-open news or gallery if query parameter is provided (e.g. from WhatsApp share link)
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        const readId = params.get('read') || params.get('read_news');
+        if (readId && news && news.length > 0) {
+            const found = news.find((item) => item.id.toString() === readId);
+            if (found) {
+                handleOpenNews(found);
+            }
+        }
+        const viewId = params.get('view') || params.get('view_gallery');
+        if (viewId && galleries && galleries.length > 0) {
+            const found = galleries.find((item) => item.id.toString() === viewId);
+            if (found) {
+                setActiveGalleryPhotoIdx(0);
+                setActiveGallery(found);
+            }
+        }
+    }, [news, galleries]);
 
     // Quick Add News Modal (Available for Publisher & Admin)
     const [isCreateNewsModalOpen, setIsCreateNewsModalOpen] = useState<boolean>(false);
@@ -1177,18 +1199,21 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                                         <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
                                                     </button>
 
-                                                    {item.attachment_url && (
-                                                        <a
-                                                            href={item.attachment_url}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            download
-                                                            className="flex size-7 items-center justify-center rounded-lg border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400"
-                                                            title={`Unduh ${item.attachment_name || 'Lampiran.pdf'}`}
-                                                        >
-                                                            <Download className="size-3.5" />
-                                                        </a>
-                                                    )}
+                                                    <div className="flex items-center gap-1.5">
+                                                        <WhatsAppShareButton type="news" item={item} variant="icon" size="xs" />
+                                                        {item.attachment_url && (
+                                                            <a
+                                                                href={item.attachment_url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                download
+                                                                className="flex size-7 items-center justify-center rounded-lg border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400"
+                                                                title={`Unduh ${item.attachment_name || 'Lampiran.pdf'}`}
+                                                            >
+                                                                <Download className="size-3.5" />
+                                                            </a>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1379,14 +1404,15 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
 
                                                     <div className="flex flex-1 flex-col p-4">
                                                         <span className="text-[11px] text-gray-400">{gItem.formatted_date}</span>
-                                                        <h3 className="mt-1 line-clamp-1 text-sm font-extrabold text-gray-900 group-hover:text-[var(--brand-primary,#FF6B35)] transition-colors dark:text-white">
+                                                        <h3 className="mt-1 line-clamp-2 text-sm font-extrabold text-gray-900 group-hover:text-[var(--brand-primary,#FF6B35)] transition-colors dark:text-white">
                                                             {gItem.title}
                                                         </h3>
-                                                        {gItem.description && (
-                                                            <p className="mt-1 line-clamp-2 text-xs text-gray-500 dark:text-gray-400">
-                                                                {gItem.description}
-                                                            </p>
-                                                        )}
+                                                        <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-2.5 dark:border-gray-800">
+                                                            <span className="text-xs font-bold text-[#FF6B35] group-hover:underline">
+                                                                Lihat Album
+                                                            </span>
+                                                            <WhatsAppShareButton type="gallery" item={gItem} variant="icon" size="xs" />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             );
@@ -1556,16 +1582,19 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                         </span>
                                         <span className="text-xs text-gray-400">{activeGallery.formatted_date}</span>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setActiveGallery(null);
-                                            setActiveGalleryPhotoIdx(0);
-                                        }}
-                                        className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                    >
-                                        <X className="size-5" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <WhatsAppShareButton type="gallery" item={activeGallery} variant="button" size="xs" />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setActiveGallery(null);
+                                                setActiveGalleryPhotoIdx(0);
+                                            }}
+                                            className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                        >
+                                            <X className="size-5" />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto p-6 space-y-5">
@@ -1627,13 +1656,13 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                         </div>
                                     )}
 
-                                    <div>
-                                        <h2 className="text-xl font-black text-gray-900 dark:text-white">{activeGallery.title}</h2>
-                                        {activeGallery.description && (
-                                            <p className="mt-1.5 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-                                                {activeGallery.description}
-                                            </p>
-                                        )}
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+                                        <div className="flex-1">
+                                            <h2 className="text-xl font-black text-gray-900 dark:text-white">{activeGallery.title}</h2>
+                                        </div>
+                                        <div className="shrink-0">
+                                            <WhatsAppShareButton type="gallery" item={activeGallery} variant="button" size="sm" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1678,16 +1707,19 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                             <span>{getNewsViews(readingNews)} kali dilihat</span>
                                         </span>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setReadingNews(null);
-                                            setReadingActiveImageIdx(0);
-                                        }}
-                                        className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800"
-                                    >
-                                        <X className="size-5" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <WhatsAppShareButton type="news" item={readingNews} variant="button" size="xs" />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setReadingNews(null);
+                                                setReadingActiveImageIdx(0);
+                                            }}
+                                            className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800"
+                                        >
+                                            <X className="size-5" />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Modal Body */}
@@ -1864,7 +1896,8 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                 </div>
 
                                 {/* Modal Footer */}
-                                <div className="flex items-center justify-end border-t border-gray-100 p-4 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50">
+                                <div className="flex items-center justify-between border-t border-gray-100 p-4 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50">
+                                    <WhatsAppShareButton type="news" item={readingNews} variant="button" size="sm" />
                                     <Button
                                         type="button"
                                         variant="secondary"

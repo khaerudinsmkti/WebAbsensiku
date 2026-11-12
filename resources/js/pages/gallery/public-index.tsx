@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     Calendar,
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { PublicHeader } from '@/components/public-header';
 import { PwaInstallPrompt } from '@/components/pwa-install-prompt';
 import type { GalleryItem } from './index';
+import { WhatsAppShareButton } from '@/components/whatsapp-share-button';
 
 interface SchoolProp {
     name?: string;
@@ -58,6 +59,20 @@ export default function PublicGalleryIndex({ galleries, categories = [], filters
     const [selectedCategory, setSelectedCategory] = useState(filters.category || 'all');
     const [activeGallery, setActiveGallery] = useState<GalleryItem | null>(null);
     const [activePhotoIdx, setActivePhotoIdx] = useState<number>(0);
+
+    // Auto-open gallery if query parameter ?view=ID is provided (e.g. from WhatsApp share link)
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        const viewId = params.get('view');
+        if (viewId && galleries?.data) {
+            const found = galleries.data.find((item) => item.id.toString() === viewId);
+            if (found) {
+                setActivePhotoIdx(0);
+                setActiveGallery(found);
+            }
+        }
+    }, [galleries?.data]);
 
     const handleCategoryClick = (cat: string) => {
         setSelectedCategory(cat);
@@ -269,11 +284,12 @@ export default function PublicGalleryIndex({ galleries, categories = [], filters
                                                     {item.title}
                                                 </h3>
 
-                                                {item.description && (
-                                                    <p className="mt-1.5 line-clamp-2 flex-1 text-xs leading-relaxed text-[#6B7280] dark:text-[#9CA3AF]">
-                                                        {item.description}
-                                                    </p>
-                                                )}
+                                                <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 dark:border-gray-800">
+                                                    <span className="text-xs font-bold text-[#FF6B35] group-hover:underline">
+                                                        Buka Galeri
+                                                    </span>
+                                                    <WhatsAppShareButton type="gallery" item={item} variant="icon" size="xs" />
+                                                </div>
                                             </div>
                                         </div>
                                     );
@@ -344,16 +360,19 @@ export default function PublicGalleryIndex({ galleries, categories = [], filters
                                             {activeGallery.formatted_date}
                                         </span>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setActiveGallery(null);
-                                            setActivePhotoIdx(0);
-                                        }}
-                                        className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800"
-                                    >
-                                        <X className="size-5" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <WhatsAppShareButton type="gallery" item={activeGallery} variant="button" size="xs" />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setActiveGallery(null);
+                                                setActivePhotoIdx(0);
+                                            }}
+                                            className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800"
+                                        >
+                                            <X className="size-5" />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto p-6 space-y-5">
@@ -411,15 +430,15 @@ export default function PublicGalleryIndex({ galleries, categories = [], filters
                                         </div>
                                     )}
 
-                                    <div>
-                                        <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">
-                                            {activeGallery.title}
-                                        </h2>
-                                        {activeGallery.description && (
-                                            <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-                                                {activeGallery.description}
-                                            </p>
-                                        )}
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+                                        <div className="flex-1">
+                                            <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">
+                                                {activeGallery.title}
+                                            </h2>
+                                        </div>
+                                        <div className="shrink-0">
+                                            <WhatsAppShareButton type="gallery" item={activeGallery} variant="button" size="sm" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>

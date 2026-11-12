@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { BreadcrumbItem } from '@/types';
+import { WhatsAppShareButton } from '@/components/whatsapp-share-button';
 
 export interface GalleryItem {
     id: number;
@@ -597,6 +598,7 @@ export default function GalleryManagement({ galleries, categories, stats, filter
                                             </button>
 
                                             <div className="flex items-center gap-1.5">
+                                                <WhatsAppShareButton type="gallery" item={item} variant="icon" size="xs" />
                                                 <button
                                                     type="button"
                                                     onClick={() => openEditModal(item)}
@@ -896,13 +898,16 @@ export default function GalleryManagement({ galleries, categories, stats, filter
                                         Total ukuran: {previewGallery.formatted_size}
                                     </span>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setPreviewGallery(null)}
-                                    className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                                >
-                                    <X className="size-5" />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <WhatsAppShareButton type="gallery" item={previewGallery} variant="button" size="xs" />
+                                    <button
+                                        type="button"
+                                        onClick={() => setPreviewGallery(null)}
+                                        className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    >
+                                        <X className="size-5" />
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-5 space-y-4">
@@ -960,13 +965,18 @@ export default function GalleryManagement({ galleries, categories, stats, filter
                                     </div>
                                 )}
 
-                                <div>
-                                    <h2 className="text-lg font-black text-gray-900 dark:text-white">{previewGallery.title}</h2>
-                                    {previewGallery.description && (
-                                        <p className="mt-1 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
-                                            {previewGallery.description}
-                                        </p>
-                                    )}
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+                                    <div className="flex-1">
+                                        <h2 className="text-lg font-black text-gray-900 dark:text-white">{previewGallery.title}</h2>
+                                        {previewGallery.description && (
+                                            <p className="mt-1 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
+                                                {previewGallery.description}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="shrink-0">
+                                        <WhatsAppShareButton type="gallery" item={previewGallery} variant="button" size="sm" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
