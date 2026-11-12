@@ -89,8 +89,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.export-pdf');
     });
 
-    // Modul Pengelolaan Berita (Publisher Berita & Admin)
-    Route::middleware('role:publisher,admin')->group(function () {
+    // Modul Pengelolaan Berita (Publisher Berita, Admin & Kepala Sekolah)
+    Route::middleware('role:publisher,admin,principal,teacher')->group(function () {
         Route::get('/news-management', [NewsController::class, 'index'])->name('news.index');
         Route::post('/news-management/fetch-instagram', [NewsController::class, 'fetchInstagram'])->name('news.fetch-instagram');
         Route::post('/news-management', [NewsController::class, 'store'])->name('news.store');
@@ -178,9 +178,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/admin/pwa-notifications', [\App\Http\Controllers\PwaNotificationSettingController::class, 'update'])->name('admin.pwa-notifications.update');
     });
 
-    // Matriks Pengaturan Hak Akses (Khusus Administrator)
-    Route::middleware('role:admin')->group(function () {
+    // Matriks Pengaturan Hak Akses
+    Route::middleware('role:admin,principal')->group(function () {
         Route::get('/admin/permissions', [\App\Http\Controllers\PermissionMatrixController::class, 'index'])->name('permissions.index');
+    });
+
+    Route::middleware('role:admin')->group(function () {
         Route::post('/admin/permissions', [\App\Http\Controllers\PermissionMatrixController::class, 'update'])->name('permissions.update');
         Route::post('/admin/permissions/reset', [\App\Http\Controllers\PermissionMatrixController::class, 'reset'])->name('permissions.reset');
 

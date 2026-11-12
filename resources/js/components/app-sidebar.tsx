@@ -92,6 +92,27 @@ export function AppSidebar() {
         return Boolean(permissions[module]?.[action]);
     };
 
+    const hasMasterAccess =
+        isAdmin ||
+        can('master_students', 'view') ||
+        can('master_teachers', 'view') ||
+        can('master_classes', 'view');
+
+    const hasPublikasiAccess =
+        isAdmin ||
+        can('news', 'view') ||
+        can('galleries', 'view') ||
+        can('school_profile', 'view') ||
+        can('principal_greeting', 'view') ||
+        can('contact_messages', 'view');
+
+    const hasSettingsAccess =
+        isAdmin ||
+        can('school_settings', 'view') ||
+        can('holidays', 'view') ||
+        can('pwa_notifications', 'view') ||
+        can('permissions', 'view');
+
     const mainNavItems: NavItem[] = isPublisher
         ? [
               {
@@ -258,7 +279,7 @@ export function AppSidebar() {
                           icon: FileSpreadsheet,
                           isActive: url.startsWith('/reports'),
                       },
-                      ...(can('extracurricular', 'view') && !isTeacher
+                      ...(can('extracurricular', 'view')
                           ? [
                                 {
                                     title: 'Laporan Ekskul',
@@ -270,7 +291,7 @@ export function AppSidebar() {
                           : []),
                   ],
               },
-              ...(canManageSchool
+              ...(hasMasterAccess
                   ? [
                         {
                             title: 'Master Data',
@@ -278,51 +299,71 @@ export function AppSidebar() {
                             icon: Database,
                             defaultOpen: true,
                             items: [
-                                {
-                                    title: 'Data Siswa',
-                                    href: '/master?tab=students',
-                                    icon: Users,
-                                    isActive: activeMasterTab === 'students',
-                                },
-                                {
-                                    title: 'Data Guru & Staf',
-                                    href: '/master?tab=teachers',
-                                    icon: Shield,
-                                    isActive: activeMasterTab === 'teachers',
-                                },
-                                {
-                                    title: 'Data Kelas',
-                                    href: '/master?tab=classrooms',
-                                    icon: GraduationCap,
-                                    isActive: activeMasterTab === 'classrooms',
-                                },
-                                {
-                                    title: 'Jadwal Guru Piket',
-                                    href: '/master?tab=duty',
-                                    icon: CalendarCheck,
-                                    isActive: activeMasterTab === 'duty',
-                                },
-                                {
-                                    title: 'Kenaikan Kelas',
-                                    href: '/master?tab=promotions',
-                                    icon: TrendingUp,
-                                    isActive: activeMasterTab === 'promotions',
-                                },
-                                {
-                                    title: 'Data Alumni',
-                                    href: '/master?tab=alumni',
-                                    icon: Award,
-                                    isActive: activeMasterTab === 'alumni',
-                                },
+                                ...(can('master_students', 'view')
+                                    ? [
+                                          {
+                                              title: 'Data Siswa',
+                                              href: '/master?tab=students',
+                                              icon: Users,
+                                              isActive: activeMasterTab === 'students',
+                                          },
+                                      ]
+                                    : []),
+                                ...(can('master_teachers', 'view')
+                                    ? [
+                                          {
+                                              title: 'Data Guru & Staf',
+                                              href: '/master?tab=teachers',
+                                              icon: Shield,
+                                              isActive: activeMasterTab === 'teachers',
+                                          },
+                                      ]
+                                    : []),
+                                ...(can('master_classes', 'view')
+                                    ? [
+                                          {
+                                              title: 'Data Kelas',
+                                              href: '/master?tab=classrooms',
+                                              icon: GraduationCap,
+                                              isActive: activeMasterTab === 'classrooms',
+                                          },
+                                          {
+                                              title: 'Jadwal Guru Piket',
+                                              href: '/master?tab=duty',
+                                              icon: CalendarCheck,
+                                              isActive: activeMasterTab === 'duty',
+                                          },
+                                      ]
+                                    : []),
+                                ...(can('master_students', 'alumni')
+                                    ? [
+                                          {
+                                              title: 'Kenaikan Kelas',
+                                              href: '/master?tab=promotions',
+                                              icon: TrendingUp,
+                                              isActive: activeMasterTab === 'promotions',
+                                          },
+                                          {
+                                              title: 'Data Alumni',
+                                              href: '/master?tab=alumni',
+                                              icon: Award,
+                                              isActive: activeMasterTab === 'alumni',
+                                          },
+                                      ]
+                                    : []),
                             ],
                         },
+                    ]
+                  : []),
+              ...(hasPublikasiAccess
+                  ? [
                         {
                             title: 'Publikasi & Website',
                             href: '/manage/school-profile',
                             icon: Newspaper,
                             defaultOpen: false,
                             items: [
-                                ...(isAdmin
+                                ...(can('news', 'view')
                                     ? [
                                           {
                                               title: 'Kelola Berita',
@@ -332,37 +373,57 @@ export function AppSidebar() {
                                           },
                                       ]
                                     : []),
-                                {
-                                    title: 'Galeri Kegiatan',
-                                    href: '/manage/galleries',
-                                    icon: Images,
-                                    isActive: url.startsWith('/manage/galleries'),
-                                },
-                                {
-                                    title: 'Profil Sekolah',
-                                    href: '/manage/school-profile',
-                                    icon: Building2,
-                                    isActive: url.startsWith('/manage/school-profile'),
-                                },
-                                {
-                                    title: 'Profil Guru',
-                                    href: '/manage/teacher-profiles',
-                                    icon: GraduationCap,
-                                    isActive: url.startsWith('/manage/teacher-profiles'),
-                                },
-                                {
-                                    title: 'Sambutan Kepala Sekolah',
-                                    href: '/publisher/principal-greeting',
-                                    icon: MessageSquareQuote,
-                                    isActive: url.startsWith('/publisher/principal-greeting'),
-                                },
-                                {
-                                    title: 'Kontak Kami',
-                                    href: '/manage/contact',
-                                    icon: PhoneCall,
-                                    isActive: url.startsWith('/manage/contact'),
-                                },
-                                ...(isAdmin
+                                ...(can('galleries', 'view')
+                                    ? [
+                                          {
+                                              title: 'Galeri Kegiatan',
+                                              href: '/manage/galleries',
+                                              icon: Images,
+                                              isActive: url.startsWith('/manage/galleries'),
+                                          },
+                                      ]
+                                    : []),
+                                ...(can('school_profile', 'view')
+                                    ? [
+                                          {
+                                              title: 'Profil Sekolah',
+                                              href: '/manage/school-profile',
+                                              icon: Building2,
+                                              isActive: url.startsWith('/manage/school-profile'),
+                                          },
+                                      ]
+                                    : []),
+                                ...(can('school_profile', 'view') || can('master_teachers', 'view')
+                                    ? [
+                                          {
+                                              title: 'Profil Guru',
+                                              href: '/manage/teacher-profiles',
+                                              icon: GraduationCap,
+                                              isActive: url.startsWith('/manage/teacher-profiles'),
+                                          },
+                                      ]
+                                    : []),
+                                ...(can('principal_greeting', 'view')
+                                    ? [
+                                          {
+                                              title: 'Sambutan Kepala Sekolah',
+                                              href: '/publisher/principal-greeting',
+                                              icon: MessageSquareQuote,
+                                              isActive: url.startsWith('/publisher/principal-greeting'),
+                                          },
+                                      ]
+                                    : []),
+                                ...(can('contact_messages', 'view')
+                                    ? [
+                                          {
+                                              title: 'Kontak Kami',
+                                              href: '/manage/contact',
+                                              icon: PhoneCall,
+                                              isActive: url.startsWith('/manage/contact'),
+                                          },
+                                      ]
+                                    : []),
+                                ...(can('news', 'view')
                                     ? [
                                           {
                                               title: 'Berita Publik',
@@ -374,30 +435,46 @@ export function AppSidebar() {
                                     : []),
                             ],
                         },
+                    ]
+                  : []),
+              ...(hasSettingsAccess
+                  ? [
                         {
                             title: 'Pengaturan Sistem',
                             href: '/admin/school-settings',
                             icon: Settings,
                             defaultOpen: url.startsWith('/admin/'),
                             items: [
-                                {
-                                    title: 'Pengaturan Sekolah',
-                                    href: '/admin/school-settings',
-                                    icon: School,
-                                    isActive: url.startsWith('/admin/school-settings'),
-                                },
-                                {
-                                    title: 'Kalender Pendidikan',
-                                    href: '/admin/holidays',
-                                    icon: CalendarDays,
-                                    isActive: url.startsWith('/admin/holidays'),
-                                },
-                                {
-                                    title: 'Notifikasi PWA',
-                                    href: '/admin/pwa-notifications',
-                                    icon: BellRing,
-                                    isActive: url.startsWith('/admin/pwa-notifications'),
-                                },
+                                ...(can('school_settings', 'view')
+                                    ? [
+                                          {
+                                              title: 'Pengaturan Sekolah',
+                                              href: '/admin/school-settings',
+                                              icon: School,
+                                              isActive: url.startsWith('/admin/school-settings'),
+                                          },
+                                      ]
+                                    : []),
+                                ...(can('holidays', 'view')
+                                    ? [
+                                          {
+                                              title: 'Kalender Pendidikan',
+                                              href: '/admin/holidays',
+                                              icon: CalendarDays,
+                                              isActive: url.startsWith('/admin/holidays'),
+                                          },
+                                      ]
+                                    : []),
+                                ...(can('pwa_notifications', 'view')
+                                    ? [
+                                          {
+                                              title: 'Notifikasi PWA',
+                                              href: '/admin/pwa-notifications',
+                                              icon: BellRing,
+                                              isActive: url.startsWith('/admin/pwa-notifications'),
+                                          },
+                                      ]
+                                    : []),
                                 ...(isAdmin
                                     ? [
                                           {
@@ -406,6 +483,10 @@ export function AppSidebar() {
                                               icon: Video,
                                               isActive: url.startsWith('/admin/tutorials'),
                                           },
+                                      ]
+                                    : []),
+                                ...(isAdmin || can('permissions', 'view')
+                                    ? [
                                           {
                                               title: 'Matriks Hak Akses',
                                               href: '/admin/permissions',

@@ -104,7 +104,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 
     public function canManageNews(): bool
     {
-        return $this->role === 'admin' || $this->role === 'publisher';
+        return $this->isAdmin() || $this->hasPermission('news', 'view');
     }
 
     public function news(): HasMany

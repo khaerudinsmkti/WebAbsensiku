@@ -22,6 +22,10 @@ class NewsController extends Controller
      */
     public function index(Request $request): Response
     {
+        if (! $request->user()?->hasPermission('news', 'view')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk melihat modul berita.');
+        }
+
         News::ensureInstagramColumn();
 
         $search = $request->input('search');
@@ -76,6 +80,10 @@ class NewsController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        if (! $request->user()?->hasPermission('news', 'create')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk membuat berita baru.');
+        }
+
         News::ensureInstagramColumn();
 
         $data = $request->all();
@@ -268,6 +276,10 @@ class NewsController extends Controller
      */
     public function update(Request $request, News $news): RedirectResponse
     {
+        if (! $request->user()?->hasPermission('news', 'edit')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk menyunting berita.');
+        }
+
         News::ensureInstagramColumn();
 
         $data = $request->all();
@@ -602,6 +614,10 @@ class NewsController extends Controller
      */
     public function destroy(News $news): RedirectResponse
     {
+        if (! request()->user()?->hasPermission('news', 'delete')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk menghapus berita.');
+        }
+
         // Hapus single image jika ada
         if ($news->image_path && Storage::disk('public')->exists($news->image_path)) {
             Storage::disk('public')->delete($news->image_path);
@@ -641,6 +657,10 @@ class NewsController extends Controller
      */
     public function storeCategory(Request $request): RedirectResponse
     {
+        if (! $request->user()?->hasPermission('news', 'create') && ! $request->user()?->hasPermission('news', 'edit')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengelola kategori berita.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:100|unique:news_categories,name',
             'color' => 'nullable|string|max:30',
@@ -662,6 +682,10 @@ class NewsController extends Controller
      */
     public function destroyCategory(NewsCategory $category): RedirectResponse
     {
+        if (! request()->user()?->hasPermission('news', 'delete')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk menghapus kategori berita.');
+        }
+
         $name = $category->name;
         $category->delete();
 
@@ -673,6 +697,10 @@ class NewsController extends Controller
      */
     public function fetchInstagram(Request $request): JsonResponse
     {
+        if (! $request->user()?->hasPermission('news', 'create') && ! $request->user()?->hasPermission('news', 'edit')) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         $request->validate([
             'url' => 'required|string|max:500',
         ]);

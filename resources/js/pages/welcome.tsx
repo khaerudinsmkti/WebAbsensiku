@@ -212,9 +212,16 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
     const { auth, school } = usePage<{ auth: any; school?: SchoolProp }>().props;
     const schoolName = school?.name || 'AbsensiKu SD';
     const logoUrl = school?.logo_url;
+    const permissions = auth?.permissions;
+    const can = (module: string, action: string = 'view'): boolean => {
+        if (auth?.user?.role === 'admin' || permissions === '*') return true;
+        if (!permissions || typeof permissions !== 'object') return false;
+        return Boolean(permissions[module]?.[action]);
+    };
     const isPublisher = auth?.user?.role === 'publisher';
-    const isPublisherOrAdmin = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin';
-    const canManageGreeting = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin' || auth?.user?.role === 'principal';
+    const isPublisherOrAdmin = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin' || can('news', 'view');
+    const canCreateNews = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin' || can('news', 'create');
+    const canManageGreeting = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin' || auth?.user?.role === 'principal' || can('principal_greeting', 'view');
 
     // Hero Banner Edit Modal State (Available for Publisher, Admin & Principal)
     const [isHeroModalOpen, setIsHeroModalOpen] = useState<boolean>(false);
@@ -957,7 +964,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                         </Link>
                                     </Button>
 
-                                    {isPublisherOrAdmin && (
+                                    {canCreateNews && (
                                         <Button
                                             type="button"
                                             variant="primary"

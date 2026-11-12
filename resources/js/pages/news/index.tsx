@@ -172,7 +172,14 @@ function formatFileSize(bytes: number): string {
 }
 
 export default function NewsManagement({ news, categories, stats, filters }: NewsPageProps) {
-    const { flash } = usePage<{ flash?: { success?: string; error?: string } }>().props;
+    const { flash, auth } = usePage<{ flash?: { success?: string; error?: string }; auth?: any }>().props;
+
+    const permissions = auth?.permissions;
+    const can = (action: string): boolean => {
+        if (auth?.user?.role === 'admin' || permissions === '*') return true;
+        if (!permissions || typeof permissions !== 'object') return false;
+        return Boolean(permissions['news']?.[action]);
+    };
 
     // Filter states
     const [search, setSearch] = useState(filters.search || '');
@@ -659,15 +666,17 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                             <Layers className="mr-1.5 size-4 text-[#FF6B35]" />
                             Kategori ({categories.length})
                         </Button>
-                        <Button
-                            type="button"
-                            variant="primary"
-                            onClick={openCreateModal}
-                            className="rounded-xl px-4 text-xs font-bold shadow-sm"
-                        >
-                            <Plus className="mr-1.5 size-4" />
-                            Tambah Berita Baru
-                        </Button>
+                        {can('create') && (
+                            <Button
+                                type="button"
+                                variant="primary"
+                                onClick={openCreateModal}
+                                className="rounded-xl px-4 text-xs font-bold shadow-sm"
+                            >
+                                <Plus className="mr-1.5 size-4" />
+                                Tambah Berita Baru
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -763,15 +772,17 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                             <p className="mt-1 text-xs text-gray-500 max-w-sm dark:text-gray-400">
                                 Mulai buat dan publikasikan berita sekolah pertama Anda untuk ditampilkan di portal publik.
                             </p>
-                            <Button
-                                type="button"
-                                variant="primary"
-                                onClick={openCreateModal}
-                                className="mt-4 rounded-xl text-xs font-bold"
-                            >
-                                <Plus className="mr-1.5 size-4" />
-                                Tulis Berita Baru
-                            </Button>
+                            {can('create') && (
+                                <Button
+                                    type="button"
+                                    variant="primary"
+                                    onClick={openCreateModal}
+                                    className="mt-4 rounded-xl text-xs font-bold"
+                                >
+                                    <Plus className="mr-1.5 size-4" />
+                                    Tulis Berita Baru
+                                </Button>
+                            )}
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
@@ -915,22 +926,26 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                                         >
                                                             <Eye className="size-3.5" />
                                                         </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => openEditModal(item)}
-                                                            className="flex size-7 items-center justify-center rounded-lg border border-gray-200 text-blue-600 hover:border-blue-400 hover:bg-blue-50 dark:border-gray-700 dark:text-blue-400"
-                                                            title="Edit Berita"
-                                                        >
-                                                            <Pencil className="size-3.5" />
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setDeletingNews(item)}
-                                                            className="flex size-7 items-center justify-center rounded-lg border border-gray-200 text-red-600 hover:border-red-400 hover:bg-red-50 dark:border-gray-700 dark:text-red-400"
-                                                            title="Hapus Berita"
-                                                        >
-                                                            <Trash2 className="size-3.5" />
-                                                        </button>
+                                                        {can('edit') && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openEditModal(item)}
+                                                                className="flex size-7 items-center justify-center rounded-lg border border-gray-200 text-blue-600 hover:border-blue-400 hover:bg-blue-50 dark:border-gray-700 dark:text-blue-400"
+                                                                title="Edit Berita"
+                                                            >
+                                                                <Pencil className="size-3.5" />
+                                                            </button>
+                                                        )}
+                                                        {can('delete') && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setDeletingNews(item)}
+                                                                className="flex size-7 items-center justify-center rounded-lg border border-gray-200 text-red-600 hover:border-red-400 hover:bg-red-50 dark:border-gray-700 dark:text-red-400"
+                                                                title="Hapus Berita"
+                                                            >
+                                                                <Trash2 className="size-3.5" />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>

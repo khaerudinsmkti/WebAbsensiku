@@ -153,6 +153,27 @@ export function MobileBottomNav() {
         return Boolean(permissions[module]?.[action]);
     };
 
+    const hasMasterAccess =
+        isAdmin ||
+        can('master_students', 'view') ||
+        can('master_teachers', 'view') ||
+        can('master_classes', 'view');
+
+    const hasPublikasiAccess =
+        isAdmin ||
+        can('news', 'view') ||
+        can('galleries', 'view') ||
+        can('school_profile', 'view') ||
+        can('principal_greeting', 'view') ||
+        can('contact_messages', 'view');
+
+    const hasSettingsAccess =
+        isAdmin ||
+        can('school_settings', 'view') ||
+        can('holidays', 'view') ||
+        can('pwa_notifications', 'view') ||
+        can('permissions', 'view');
+
     const [imgFailed, setImgFailed] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -581,7 +602,7 @@ export function MobileBottomNav() {
                                             isActive={isReportsActive}
                                             onClick={closeDrawer}
                                         />
-                                        {can('extracurricular', 'view') && !isTeacher && (
+                                        {can('extracurricular', 'view') && (
                                             <div className="col-span-2">
                                                 <NavCard
                                                     href="/extracurricular/reports"
@@ -609,81 +630,93 @@ export function MobileBottomNav() {
                                 </div>
                             )}
 
-                            {/* Master Data (Admin & Kepala Sekolah) */}
-                            {canManageSchool && (
+                            {/* Master Data */}
+                            {(hasMasterAccess && !isPublisher && !isCoach) && (
                                 <div className="space-y-1.5">
                                     <div className="text-[10px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5 px-1">
                                         <span className="size-1.5 rounded-full bg-indigo-500"></span>
                                         Master Data Sekolah
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
-                                        <NavCard
-                                            href="/master?tab=students"
-                                            title="Data Siswa"
-                                            subtitle="Direktori Murid & NISN"
-                                            icon={Users}
-                                            color="indigo"
-                                            isActive={url.startsWith('/master') && (activeMasterTab === 'students' || !activeMasterTab)}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/master?tab=teachers"
-                                            title="Data Guru & Staf"
-                                            subtitle="Akun Pengajar & NIP"
-                                            icon={Shield}
-                                            color="teal"
-                                            isActive={url.startsWith('/master') && activeMasterTab === 'teachers'}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/master?tab=classrooms"
-                                            title="Data Kelas"
-                                            subtitle="Rombongan Belajar"
-                                            icon={GraduationCap}
-                                            color="blue"
-                                            isActive={url.startsWith('/master') && activeMasterTab === 'classrooms'}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/master?tab=duty"
-                                            title="Jadwal Guru Piket"
-                                            subtitle="Roster Piket Harian"
-                                            icon={CalendarCheck}
-                                            color="amber"
-                                            isActive={url.startsWith('/master') && activeMasterTab === 'duty'}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/master?tab=promotions"
-                                            title="Kenaikan Kelas"
-                                            subtitle="Proses Naik Tingkat"
-                                            icon={TrendingUp}
-                                            color="emerald"
-                                            isActive={url.startsWith('/master') && activeMasterTab === 'promotions'}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/master?tab=alumni"
-                                            title="Data Alumni"
-                                            subtitle="Arsip Kelulusan Siswa"
-                                            icon={Award}
-                                            color="purple"
-                                            isActive={url.startsWith('/master') && activeMasterTab === 'alumni'}
-                                            onClick={closeDrawer}
-                                        />
+                                        {can('master_students', 'view') && (
+                                            <NavCard
+                                                href="/master?tab=students"
+                                                title="Data Siswa"
+                                                subtitle="Direktori Murid & NISN"
+                                                icon={Users}
+                                                color="indigo"
+                                                isActive={url.startsWith('/master') && (activeMasterTab === 'students' || !activeMasterTab)}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('master_teachers', 'view') && (
+                                            <NavCard
+                                                href="/master?tab=teachers"
+                                                title="Data Guru & Staf"
+                                                subtitle="Akun Pengajar & NIP"
+                                                icon={Shield}
+                                                color="teal"
+                                                isActive={url.startsWith('/master') && activeMasterTab === 'teachers'}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('master_classes', 'view') && (
+                                            <NavCard
+                                                href="/master?tab=classrooms"
+                                                title="Data Kelas"
+                                                subtitle="Rombongan Belajar"
+                                                icon={GraduationCap}
+                                                color="blue"
+                                                isActive={url.startsWith('/master') && activeMasterTab === 'classrooms'}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {(isAdmin || isPrincipal || can('master_classes', 'view')) && (
+                                            <NavCard
+                                                href="/master?tab=duty"
+                                                title="Jadwal Guru Piket"
+                                                subtitle="Roster Piket Harian"
+                                                icon={CalendarCheck}
+                                                color="amber"
+                                                isActive={url.startsWith('/master') && activeMasterTab === 'duty'}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {(isAdmin || isPrincipal || can('master_classes', 'view')) && (
+                                            <NavCard
+                                                href="/master?tab=promotions"
+                                                title="Kenaikan Kelas"
+                                                subtitle="Proses Naik Tingkat"
+                                                icon={TrendingUp}
+                                                color="emerald"
+                                                isActive={url.startsWith('/master') && activeMasterTab === 'promotions'}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {(isAdmin || isPrincipal || can('master_classes', 'view')) && (
+                                            <NavCard
+                                                href="/master?tab=alumni"
+                                                title="Data Alumni"
+                                                subtitle="Arsip Kelulusan Siswa"
+                                                icon={Award}
+                                                color="purple"
+                                                isActive={url.startsWith('/master') && activeMasterTab === 'alumni'}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
                                     </div>
                                 </div>
                             )}
 
-                            {/* Publikasi & Website (Admin & Kepala Sekolah) */}
-                            {canManageSchool && (
+                            {/* Publikasi & Website */}
+                            {(hasPublikasiAccess && !isPublisher && !isCoach) && (
                                 <div className="space-y-1.5">
                                     <div className="text-[10px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5 px-1">
                                         <span className="size-1.5 rounded-full bg-rose-500"></span>
                                         Publikasi & Website
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
-                                        {isAdmin && (
+                                        {can('news', 'view') && (
                                             <NavCard
                                                 href="/news-management"
                                                 title="Kelola Berita"
@@ -694,52 +727,62 @@ export function MobileBottomNav() {
                                                 onClick={closeDrawer}
                                             />
                                         )}
-                                        <NavCard
-                                            href="/manage/galleries"
-                                            title="Galeri Kegiatan"
-                                            subtitle="Album Dokumentasi Foto"
-                                            icon={Images}
-                                            color="rose"
-                                            isActive={url.startsWith('/manage/galleries')}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/manage/school-profile"
-                                            title="Profil Sekolah"
-                                            subtitle="Visi Misi & Identitas"
-                                            icon={Building2}
-                                            color="blue"
-                                            isActive={url.startsWith('/manage/school-profile')}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/manage/teacher-profiles"
-                                            title="Profil Guru"
-                                            subtitle="Biodata Pengajar Web"
-                                            icon={GraduationCap}
-                                            color="indigo"
-                                            isActive={url.startsWith('/manage/teacher-profiles')}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/publisher/principal-greeting"
-                                            title="Sambutan Kepala Sekolah"
-                                            subtitle="Pidato & Foto Resmi"
-                                            icon={MessageSquareQuote}
-                                            color="orange"
-                                            isActive={url.startsWith('/publisher/principal-greeting')}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/manage/contact"
-                                            title="Kontak Kami"
-                                            subtitle="Pesan & Kotak Saran"
-                                            icon={PhoneCall}
-                                            color="teal"
-                                            isActive={url.startsWith('/manage/contact')}
-                                            onClick={closeDrawer}
-                                        />
-                                        {isAdmin && (
+                                        {can('galleries', 'view') && (
+                                            <NavCard
+                                                href="/manage/galleries"
+                                                title="Galeri Kegiatan"
+                                                subtitle="Album Dokumentasi Foto"
+                                                icon={Images}
+                                                color="rose"
+                                                isActive={url.startsWith('/manage/galleries')}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('school_profile', 'view') && (
+                                            <NavCard
+                                                href="/manage/school-profile"
+                                                title="Profil Sekolah"
+                                                subtitle="Visi Misi & Identitas"
+                                                icon={Building2}
+                                                color="blue"
+                                                isActive={url.startsWith('/manage/school-profile')}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('school_profile', 'view') && (
+                                            <NavCard
+                                                href="/manage/teacher-profiles"
+                                                title="Profil Guru"
+                                                subtitle="Biodata Pengajar Web"
+                                                icon={GraduationCap}
+                                                color="indigo"
+                                                isActive={url.startsWith('/manage/teacher-profiles')}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('principal_greeting', 'view') && (
+                                            <NavCard
+                                                href="/publisher/principal-greeting"
+                                                title="Sambutan Kepala Sekolah"
+                                                subtitle="Pidato & Foto Resmi"
+                                                icon={MessageSquareQuote}
+                                                color="orange"
+                                                isActive={url.startsWith('/publisher/principal-greeting')}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('contact_messages', 'view') && (
+                                            <NavCard
+                                                href="/manage/contact"
+                                                title="Kontak Kami"
+                                                subtitle="Pesan & Kotak Saran"
+                                                icon={PhoneCall}
+                                                color="teal"
+                                                isActive={url.startsWith('/manage/contact')}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('news', 'view') && (
                                             <NavCard
                                                 href="/berita"
                                                 title="Berita Publik"
@@ -754,45 +797,51 @@ export function MobileBottomNav() {
                                 </div>
                             )}
 
-                            {/* Pengaturan Sistem (Admin & Kepala Sekolah) */}
-                            {canManageSchool && (
+                            {/* Pengaturan Sistem */}
+                            {(hasSettingsAccess && !isPublisher && !isCoach) && (
                                 <div className="space-y-1.5">
                                     <div className="text-[10px] font-black uppercase tracking-wider text-gray-400 flex items-center gap-1.5 px-1">
                                         <span className="size-1.5 rounded-full bg-blue-500"></span>
                                         Pengaturan Sistem
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
-                                        <NavCard
-                                            href="/admin/school-settings"
-                                            title="Pengaturan Sekolah"
-                                            subtitle="Logo, Alamat & Jam Masuk"
-                                            icon={School}
-                                            color="blue"
-                                            isActive={url.startsWith('/admin/school-settings')}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/admin/holidays"
-                                            title="Kalender Pendidikan"
-                                            subtitle="Jadwal Libur & Efektif"
-                                            icon={CalendarDays}
-                                            color="emerald"
-                                            isActive={url.startsWith('/admin/holidays')}
-                                            onClick={closeDrawer}
-                                        />
-                                        <div className={isAdmin ? '' : 'col-span-2'}>
+                                        {can('school_settings', 'view') && (
                                             <NavCard
-                                                href="/admin/pwa-notifications"
-                                                title="Notifikasi PWA"
-                                                subtitle="Pengingat Absensi Otomatis"
-                                                icon={BellRing}
-                                                color="orange"
-                                                badge="PWA"
-                                                isActive={url.startsWith('/admin/pwa-notifications')}
+                                                href="/admin/school-settings"
+                                                title="Pengaturan Sekolah"
+                                                subtitle="Logo, Alamat & Jam Masuk"
+                                                icon={School}
+                                                color="blue"
+                                                isActive={url.startsWith('/admin/school-settings')}
                                                 onClick={closeDrawer}
                                             />
-                                        </div>
-                                        {isAdmin && (
+                                        )}
+                                        {can('holidays', 'view') && (
+                                            <NavCard
+                                                href="/admin/holidays"
+                                                title="Kalender Pendidikan"
+                                                subtitle="Jadwal Libur & Efektif"
+                                                icon={CalendarDays}
+                                                color="emerald"
+                                                isActive={url.startsWith('/admin/holidays')}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('pwa_notifications', 'view') && (
+                                            <div className={(isAdmin || can('permissions', 'view')) ? '' : 'col-span-2'}>
+                                                <NavCard
+                                                    href="/admin/pwa-notifications"
+                                                    title="Notifikasi PWA"
+                                                    subtitle="Pengingat Absensi Otomatis"
+                                                    icon={BellRing}
+                                                    color="orange"
+                                                    badge="PWA"
+                                                    isActive={url.startsWith('/admin/pwa-notifications')}
+                                                    onClick={closeDrawer}
+                                                />
+                                            </div>
+                                        )}
+                                        {(isAdmin || can('permissions', 'view')) && (
                                             <NavCard
                                                 href="/admin/permissions"
                                                 title="Matriks Hak Akses"
