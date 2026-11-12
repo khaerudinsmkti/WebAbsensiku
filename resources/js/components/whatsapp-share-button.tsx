@@ -20,7 +20,8 @@ export function WhatsAppIcon({ className = 'size-4' }: { className?: string }) {
  */
 export function buildNewsWhatsAppMessage(news: NewsItem): string {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const shareUrl = `${origin}/berita?read=${news.id}`;
+    const slug = news.slug || news.id;
+    const shareUrl = `${origin}/berita?read=${encodeURIComponent(slug)}`;
 
     // Clean html tags from content for excerpt
     const plainText = (news.content || '')
@@ -50,7 +51,8 @@ export function buildNewsWhatsAppMessage(news: NewsItem): string {
  */
 export function buildGalleryWhatsAppMessage(gallery: GalleryItem): string {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const shareUrl = `${origin}/galeri?view=${gallery.id}`;
+    const slug = (gallery as any).slug || (gallery.title ? `${gallery.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}-${gallery.id}` : gallery.id);
+    const shareUrl = `${origin}/galeri?view=${encodeURIComponent(slug)}`;
 
     const categoryText = gallery.category ? `🏷️ Kategori: ${gallery.category}` : '';
     const dateText = gallery.formatted_date ? `📅 Tanggal: ${gallery.formatted_date}` : '';

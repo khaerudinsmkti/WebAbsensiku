@@ -97,6 +97,14 @@ interface WelcomeProps {
     totalGalleriesCount?: number;
 }
 
+function extractYouTubeVideoId(url?: string | null): string | null {
+    if (!url) return null;
+    const match = url.match(/(?:youtube(?:-nocookie)?\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i);
+    if (match) return match[1];
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url.trim())) return url.trim();
+    return null;
+}
+
 const DEFAULT_HERO_PILLARS: HeroPillarItem[] = [
     {
         title: 'Pendidikan Karakter',
@@ -375,14 +383,20 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
         const params = new URLSearchParams(window.location.search);
         const readId = params.get('read') || params.get('read_news');
         if (readId && news && news.length > 0) {
-            const found = news.find((item) => item.id.toString() === readId);
+            const found = news.find((item) => item.id.toString() === readId || item.slug === readId);
             if (found) {
                 handleOpenNews(found);
             }
         }
         const viewId = params.get('view') || params.get('view_gallery');
         if (viewId && galleries && galleries.length > 0) {
-            const found = galleries.find((item) => item.id.toString() === viewId);
+            const found = galleries.find((item) => {
+                if (item.id.toString() === viewId) return true;
+                if ((item as any).slug && (item as any).slug === viewId) return true;
+                const parts = viewId.split('-');
+                const possibleId = parts[parts.length - 1];
+                return item.id.toString() === possibleId;
+            });
             if (found) {
                 setActiveGalleryPhotoIdx(0);
                 setActiveGallery(found);
@@ -399,6 +413,9 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
     const [isFetchingQuickInstagram, setIsFetchingQuickInstagram] = useState<boolean>(false);
     const [lastFetchedQuickInstagramUrl, setLastFetchedQuickInstagramUrl] = useState<string>('');
     const [quickInstagramNotice, setQuickInstagramNotice] = useState<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
+    const [isFetchingQuickYouTube, setIsFetchingQuickYouTube] = useState<boolean>(false);
+    const [lastFetchedQuickYouTubeUrl, setLastFetchedQuickYouTubeUrl] = useState<string>('');
+    const [quickYouTubeNotice, setQuickYouTubeNotice] = useState<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
     const imageInputRef = useRef<HTMLInputElement>(null);
     const attachmentInputRef = useRef<HTMLInputElement>(null);
 
@@ -408,6 +425,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
         excerpt: string;
         content: string;
         instagram_url: string;
+        youtube_url: string;
         is_published: boolean;
         images_base64: string[];
         attachments_base64: string[];
@@ -418,6 +436,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
         excerpt: '',
         content: '',
         instagram_url: '',
+        youtube_url: '',
         is_published: true,
         images_base64: [],
         attachments_base64: [],
@@ -524,6 +543,94 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
         }
     };
 
+    const handleFetchQuickYouTubeThumbnail = async (overrideUrl?: string) => {
+        const url = (overrideUrl !== undefined ? overrideUrl : quickNewsForm.data.youtube_url).trim();
+        const yId = extractYouTubeVideoId(url);
+        if (!url || !yId) {
+            setQuickYouTubeNotice({
+                type: 'error',
+                text: 'Masukkan tautan YouTube yang valid terlebih dahulu.',
+            });
+            return;
+        }
+
+        setIsFetchingQuickYouTube(true);
+        setQuickYouTubeNotice({
+            type: 'info',
+            text: 'Mengunduh thumbnail video YouTube sebagai foto sampul...',
+        });
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const xsrfCookie = document.cookie
+                .split('; ')
+                .find((row) => row.startsWith('XSRF-TOKEN='))
+                ?.split('=')[1];
+
+            const response = await fetch('/news-management/fetch-youtube-thumbnail', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                    ...(xsrfCookie ? { 'X-XSRF-TOKEN': decodeURIComponent(xsrfCookie) } : {}),
+                },
+                body: JSON.stringify({ url }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setQuickYouTubeNotice({
+                    type: 'error',
+                    text: data.message || 'Gagal mengambil thumbnail YouTube.',
+                });
+                return;
+            }
+
+            setLastFetchedQuickYouTubeUrl(url);
+
+            if (data.image_base64) {
+                const addedImg = {
+                    id: 'yt-cover-' + data.youtube_id,
+                    file: new File([], `yt-thumbnail-${data.youtube_id}.jpg`, { type: 'image/jpeg' }),
+                    base64: data.image_base64,
+                };
+                setQuickImages((prev) => {
+                    const withoutOldYt = prev.filter((item) => !item.id.startsWith('yt-cover-'));
+                    const updated = [addedImg, ...withoutOldYt];
+                    quickNewsForm.setData('images_base64', updated.map((i) => i.base64));
+                    return updated;
+                });
+                setQuickYouTubeNotice({
+                    type: 'success',
+                    text: 'Foto sampul berita otomatis diambil dari thumbnail YouTube!',
+                });
+            } else {
+                setQuickYouTubeNotice({
+                    type: 'info',
+                    text: 'Video YouTube terdeteksi, namun thumbnail tidak dapat diunduh.',
+                });
+            }
+        } catch (err: any) {
+            setQuickYouTubeNotice({
+                type: 'error',
+                text: err.message || 'Terjadi kesalahan saat mengambil thumbnail YouTube.',
+            });
+        } finally {
+            setIsFetchingQuickYouTube(false);
+        }
+    };
+
+    const handleQuickYouTubeUrlChange = (val: string) => {
+        quickNewsForm.setData('youtube_url', val);
+        const trimmed = val.trim();
+        const yId = extractYouTubeVideoId(trimmed);
+        if (yId && trimmed !== lastFetchedQuickYouTubeUrl) {
+            handleFetchQuickYouTubeThumbnail(trimmed);
+        }
+    };
+
     const handleQuickNewsSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -542,6 +649,8 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                 setQuickImages([]);
                 setQuickAttachments([]);
                 setQuickInstagramNotice(null);
+                setQuickYouTubeNotice(null);
+                setLastFetchedQuickYouTubeUrl('');
             },
         });
     };
@@ -1200,7 +1309,6 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                                     </button>
 
                                                     <div className="flex items-center gap-1.5">
-                                                        <WhatsAppShareButton type="news" item={item} variant="icon" size="xs" />
                                                         {item.attachment_url && (
                                                             <a
                                                                 href={item.attachment_url}
@@ -1411,7 +1519,6 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                                             <span className="text-xs font-bold text-[#FF6B35] group-hover:underline">
                                                                 Lihat Album
                                                             </span>
-                                                            <WhatsAppShareButton type="gallery" item={gItem} variant="icon" size="xs" />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1656,13 +1763,13 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                         </div>
                                     )}
 
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-3 border-t border-gray-100 dark:border-gray-800">
-                                        <div className="flex-1">
-                                            <h2 className="text-xl font-black text-gray-900 dark:text-white">{activeGallery.title}</h2>
-                                        </div>
-                                        <div className="shrink-0">
-                                            <WhatsAppShareButton type="gallery" item={activeGallery} variant="button" size="sm" />
-                                        </div>
+                                    <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
+                                        <h2 className="text-xl font-black text-gray-900 dark:text-white">{activeGallery.title}</h2>
+                                        {activeGallery.description && (
+                                            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                                                {activeGallery.description}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -1835,6 +1942,50 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                         </div>
                                     )}
 
+                                    {/* Embed Video YouTube Terkait */}
+                                    {readingNews.youtube_url && (() => {
+                                        const yId = extractYouTubeVideoId(readingNews.youtube_url);
+                                        if (!yId) return null;
+                                        return (
+                                            <div className="mt-6 rounded-2xl border-2 border-red-200/80 bg-gradient-to-br from-red-50/60 via-white to-orange-50/40 p-5 dark:border-red-900/50 dark:from-red-950/20 dark:via-gray-900 dark:to-orange-950/20 space-y-3.5">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="flex size-8 items-center justify-center rounded-xl bg-red-600 text-white shadow-xs">
+                                                            <Youtube className="size-4.5" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-xs font-black uppercase tracking-wider text-red-950 dark:text-red-200">
+                                                                Video YouTube Terkait
+                                                            </h4>
+                                                            <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                                Tonton video dokumentasi resmi melalui pemutar di bawah ini
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <a
+                                                        href={readingNews.youtube_url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-red-700 transition-colors"
+                                                    >
+                                                        <ExternalLink className="size-3.5" />
+                                                        Tonton di YouTube
+                                                    </a>
+                                                </div>
+
+                                                <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-gray-200 bg-black dark:border-gray-800 shadow-sm">
+                                                    <iframe
+                                                        src={readingNews.youtube_embed_url || `https://www.youtube-nocookie.com/embed/${yId}`}
+                                                        title={`Video ${readingNews.title}`}
+                                                        className="size-full border-0"
+                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                        allowFullScreen
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+
                                     {/* Lampiran Dokumen PDF */}
                                     {allAttachments.length > 0 && (
                                         <div className="mt-8 rounded-2xl border-2 border-red-200 bg-red-50/70 p-5 dark:border-red-900/60 dark:bg-red-950/30 space-y-3">
@@ -1896,8 +2047,7 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                 </div>
 
                                 {/* Modal Footer */}
-                                <div className="flex items-center justify-between border-t border-gray-100 p-4 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50">
-                                    <WhatsAppShareButton type="news" item={readingNews} variant="button" size="sm" />
+                                <div className="flex items-center justify-end border-t border-gray-100 p-4 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50">
                                     <Button
                                         type="button"
                                         variant="secondary"
@@ -2003,6 +2153,105 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                             {quickInstagramNotice.text}
                                         </div>
                                     )}
+                                </div>
+
+                                {/* Tautkan Video YouTube Sekolah (Opsional) */}
+                                <div className="rounded-2xl border-2 border-red-200/80 bg-gradient-to-r from-red-50/70 via-rose-50/40 to-orange-50/60 p-4 dark:border-red-900/50 dark:from-red-950/30 dark:via-rose-950/20 dark:to-orange-950/20">
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex size-7 items-center justify-center rounded-lg bg-red-600 text-white shadow-xs">
+                                            <Youtube className="size-4" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-extrabold uppercase tracking-wide text-red-900 dark:text-red-200">
+                                                Tautkan Video YouTube (Opsional)
+                                            </label>
+                                            <p className="text-[11px] text-gray-600 dark:text-gray-400">
+                                                Tempel link video YouTube (video biasa atau Shorts) untuk disematkan di berita.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                        <input
+                                            type="url"
+                                            value={quickNewsForm.data.youtube_url}
+                                            onChange={(e) => handleQuickYouTubeUrlChange(e.target.value)}
+                                            placeholder="Contoh: https://www.youtube.com/watch?v=... atau https://youtu.be/..."
+                                            className="flex-1 rounded-xl border border-red-200 bg-white px-3.5 py-2 text-xs font-semibold focus:border-red-500 focus:outline-none dark:border-red-900/60 dark:bg-gray-800 dark:text-white"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            disabled={isFetchingQuickYouTube || !quickNewsForm.data.youtube_url.trim()}
+                                            onClick={() => handleFetchQuickYouTubeThumbnail()}
+                                            className="rounded-xl bg-red-600 hover:bg-red-700 px-3.5 py-2 text-xs font-bold text-white border-0 shadow-xs shrink-0"
+                                        >
+                                            {isFetchingQuickYouTube ? (
+                                                <>
+                                                    <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                                                    Mengambil...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Sparkles className="mr-1.5 size-3.5" />
+                                                    Tarik Sampul
+                                                </>
+                                            )}
+                                        </Button>
+                                        {quickNewsForm.data.youtube_url && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    quickNewsForm.setData('youtube_url', '');
+                                                    setLastFetchedQuickYouTubeUrl('');
+                                                    setQuickYouTubeNotice(null);
+                                                    setQuickImages((prev) => {
+                                                        const withoutOldYt = prev.filter((item) => !item.id.startsWith('yt-cover-'));
+                                                        quickNewsForm.setData('images_base64', withoutOldYt.map((i) => i.base64));
+                                                        return withoutOldYt;
+                                                    });
+                                                }}
+                                                className="rounded-xl border border-gray-200 bg-white px-2.5 py-2 text-xs font-bold text-gray-500 hover:text-red-600 dark:border-gray-700 dark:bg-gray-800"
+                                                title="Hapus tautan YouTube"
+                                            >
+                                                Hapus
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {quickYouTubeNotice && (
+                                        <div
+                                            className={`mt-2 rounded-xl px-3 py-1.5 text-[11px] font-semibold ${
+                                                quickYouTubeNotice.type === 'success'
+                                                    ? 'bg-emerald-100/90 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-200'
+                                                    : quickYouTubeNotice.type === 'error'
+                                                    ? 'bg-rose-100/90 text-rose-800 dark:bg-rose-950/70 dark:text-rose-200'
+                                                    : 'bg-blue-100/90 text-blue-800 dark:bg-blue-950/70 dark:text-blue-200'
+                                            }`}
+                                        >
+                                            {quickYouTubeNotice.text}
+                                        </div>
+                                    )}
+
+                                    {quickNewsForm.data.youtube_url && (() => {
+                                        const yId = extractYouTubeVideoId(quickNewsForm.data.youtube_url);
+                                        if (yId) {
+                                            return (
+                                                <div className="mt-3 overflow-hidden rounded-xl border border-red-200 bg-black dark:border-red-900/60">
+                                                    <div className="aspect-video w-full">
+                                                        <iframe
+                                                            src={`https://www.youtube-nocookie.com/embed/${yId}`}
+                                                            title="Pratinjau Video YouTube"
+                                                            className="size-full border-0"
+                                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                            allowFullScreen
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
                                 </div>
 
                                 <div>

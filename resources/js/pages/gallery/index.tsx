@@ -25,6 +25,7 @@ import { WhatsAppShareButton } from '@/components/whatsapp-share-button';
 export interface GalleryItem {
     id: number;
     title: string;
+    slug?: string;
     category: string;
     description?: string | null;
     activity_date?: string | null;

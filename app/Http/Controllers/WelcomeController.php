@@ -105,13 +105,29 @@ class WelcomeController extends Controller
         $newsCategories = NewsCategory::withCount(['news' => fn ($q) => $q->published()])
             ->get();
 
+        $readSlugOrId = $request->input('read') ?? $request->input('read_news');
+        $initialNews = null;
+        if ($readSlugOrId) {
+            $initialNews = News::with(['category', 'author:id,name,role'])
+                ->published()
+                ->where(function ($q) use ($readSlugOrId) {
+                    $q->where('slug', $readSlugOrId);
+                    if (is_numeric($readSlugOrId)) {
+                        $q->orWhere('id', (int) $readSlugOrId);
+                    }
+                })
+                ->first();
+        }
+
         return Inertia::render('news/public-index', [
             'news' => $newsList,
             'newsCategories' => $newsCategories,
+            'initialNews' => $initialNews,
             'filters' => [
                 'search' => $search ?? '',
                 'category_id' => $categoryId ?? 'all',
                 'per_page' => $perPage,
+                'read' => $readSlugOrId ?? '',
             ],
         ]);
     }
@@ -166,12 +182,34 @@ class WelcomeController extends Controller
             ->filter()
             ->values();
 
+        $viewSlugOrId = $request->input('view') ?? $request->input('view_gallery');
+        $initialGallery = null;
+        if ($viewSlugOrId) {
+            $possibleId = is_numeric($viewSlugOrId)
+                ? (int) $viewSlugOrId
+                : (int) substr(strrchr($viewSlugOrId, '-') ?: '', 1);
+
+            $initialGallery = Gallery::with('author:id,name')
+                ->published()
+                ->where(function ($q) use ($viewSlugOrId, $possibleId) {
+                    if ($possibleId > 0) {
+                        $q->where('id', $possibleId);
+                    }
+                    if (is_numeric($viewSlugOrId)) {
+                        $q->orWhere('id', (int) $viewSlugOrId);
+                    }
+                })
+                ->first();
+        }
+
         return Inertia::render('gallery/public-index', [
             'galleries' => $galleries,
             'categories' => $categories,
+            'initialGallery' => $initialGallery,
             'filters' => [
                 'search' => $search ?? '',
                 'category' => $category ?? 'all',
+                'view' => $viewSlugOrId ?? '',
             ],
         ]);
     }

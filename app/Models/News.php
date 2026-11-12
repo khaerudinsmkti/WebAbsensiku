@@ -29,6 +29,7 @@ class News extends Model
         'attachment_size',
         'attachments',
         'instagram_url',
+        'youtube_url',
         'is_published',
         'published_at',
         'views_count',
@@ -42,6 +43,8 @@ class News extends Model
         'formatted_date',
         'formatted_attachment_size',
         'instagram_embed_url',
+        'youtube_embed_url',
+        'youtube_thumbnail_url',
     ];
 
     public static function ensureInstagramColumn(): void
@@ -50,6 +53,11 @@ class News extends Model
             if (Schema::hasTable('news') && ! Schema::hasColumn('news', 'instagram_url')) {
                 Schema::table('news', function (Blueprint $table) {
                     $table->string('instagram_url', 500)->nullable()->after('attachments');
+                });
+            }
+            if (Schema::hasTable('news') && ! Schema::hasColumn('news', 'youtube_url')) {
+                Schema::table('news', function (Blueprint $table) {
+                    $table->string('youtube_url', 500)->nullable()->after('instagram_url');
                 });
             }
         } catch (\Throwable $e) {
@@ -235,6 +243,53 @@ class News extends Model
         }
 
         return null;
+    }
+
+    public function getYoutubeEmbedUrlAttribute(): ?string
+    {
+        if (empty($this->youtube_url)) {
+            return null;
+        }
+
+        $pattern = '%(?:youtube(?:-nocookie)?\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?|shorts|live)/|.*[?&]v=)|youtu\.be/)([^"&?/\s]{11})%i';
+        if (preg_match($pattern, $this->youtube_url, $matches)) {
+            $id = $matches[1];
+            return "https://www.youtube-nocookie.com/embed/{$id}";
+        }
+
+        if (preg_match('/^[a-zA-Z0-9_-]{11}$/', trim($this->youtube_url))) {
+            $id = trim($this->youtube_url);
+            return "https://www.youtube-nocookie.com/embed/{$id}";
+        }
+
+        return null;
+    }
+
+    public function getYoutubeThumbnailUrlAttribute(): ?string
+    {
+        if (empty($this->youtube_url)) {
+            return null;
+        }
+
+        $pattern = '%(?:youtube(?:-nocookie)?\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?|shorts|live)/|.*[?&]v=)|youtu\.be/)([^"&?/\s]{11})%i';
+        if (preg_match($pattern, $this->youtube_url, $matches)) {
+            return "https://img.youtube.com/vi/{$matches[1]}/hqdefault.jpg";
+        }
+
+        if (preg_match('/^[a-zA-Z0-9_-]{11}$/', trim($this->youtube_url))) {
+            return "https://img.youtube.com/vi/" . trim($this->youtube_url) . "/hqdefault.jpg";
+        }
+
+        return null;
+    }
+
+    public function getSlugAttribute($value): string
+    {
+        if (! empty($value)) {
+            return $value;
+        }
+
+        return \Illuminate\Support\Str::slug($this->title) . '-' . $this->id;
     }
 }
 

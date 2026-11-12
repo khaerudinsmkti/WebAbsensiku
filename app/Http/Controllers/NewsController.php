@@ -95,6 +95,7 @@ class NewsController extends Controller
             'excerpt' => 'nullable|string|max:500',
             'content' => 'nullable|string',
             'instagram_url' => 'nullable|string|max:500',
+            'youtube_url' => 'nullable|string|max:500',
             'is_published' => 'boolean',
             'published_at' => 'nullable|date',
             'images_base64' => 'nullable|array',
@@ -199,6 +200,15 @@ class NewsController extends Controller
 
         $imagePath = $imagesList[0] ?? null;
 
+        // Auto-fetch YouTube thumbnail as cover if no cover image uploaded
+        if (empty($imagesList) && ! empty($validated['youtube_url'])) {
+            $ytThumbPath = $this->downloadAndStoreYouTubeThumbnail($validated['youtube_url']);
+            if ($ytThumbPath) {
+                $imagesList[] = $ytThumbPath;
+                $imagePath = $ytThumbPath;
+            }
+        }
+
         // 2. Simpan multiple attachments
         $attachmentsList = [];
 
@@ -264,6 +274,7 @@ class NewsController extends Controller
             'attachment_size' => $primaryAttachment['size'] ?? null,
             'attachments' => ! empty($attachmentsList) ? $attachmentsList : null,
             'instagram_url' => ! empty($validated['instagram_url']) ? trim($validated['instagram_url']) : null,
+            'youtube_url' => ! empty($validated['youtube_url']) ? trim($validated['youtube_url']) : null,
             'is_published' => $isPublished,
             'published_at' => $publishedAt,
         ]);
@@ -290,6 +301,7 @@ class NewsController extends Controller
             'excerpt' => 'nullable|string|max:500',
             'content' => 'required|string',
             'instagram_url' => 'nullable|string|max:500',
+            'youtube_url' => 'nullable|string|max:500',
             'is_published' => 'boolean',
             'published_at' => 'nullable|date',
             'existing_images' => 'nullable|array',
@@ -386,6 +398,14 @@ class NewsController extends Controller
 
         $finalImages = array_values(array_unique(array_merge($keptImages, $newImages)));
         $imagePath = $finalImages[0] ?? null;
+
+        if (empty($finalImages) && ! empty($validated['youtube_url'])) {
+            $ytThumbPath = $this->downloadAndStoreYouTubeThumbnail($validated['youtube_url']);
+            if ($ytThumbPath) {
+                $finalImages[] = $ytThumbPath;
+                $imagePath = $ytThumbPath;
+            }
+        }
 
         // 2. Process Attachments
         $currentAttachments = [];
@@ -496,6 +516,7 @@ class NewsController extends Controller
             'attachment_size' => $primaryAttachment['size'] ?? null,
             'attachments' => ! empty($finalAttachments) ? $finalAttachments : null,
             'instagram_url' => ! empty($validated['instagram_url']) ? trim($validated['instagram_url']) : null,
+            'youtube_url' => ! empty($validated['youtube_url']) ? trim($validated['youtube_url']) : null,
             'is_published' => $isPublished,
             'published_at' => $isPublished ? $publishedAt : null,
         ]);
@@ -917,6 +938,128 @@ class NewsController extends Controller
             'suggested_category_id' => $igCategory?->id,
             'fetched_automatically' => ! empty($caption) || ! empty($imageBase64),
         ]);
+    }
+
+    /**
+     * Fetch high quality YouTube video thumbnail and convert to base64.
+     */
+    public function fetchYouTubeThumbnail(Request $request): JsonResponse
+    {
+        if (! $request->user()?->hasPermission('news', 'create') && ! $request->user()?->hasPermission('news', 'edit')) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'url' => 'required|string|max:500',
+        ]);
+
+        $url = trim($request->input('url'));
+        $pattern = '%(?:youtube(?:-nocookie)?\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?|shorts|live)/|.*[?&]v=)|youtu\.be/)([^"&?/\s]{11})%i';
+        $youtubeId = null;
+
+        if (preg_match($pattern, $url, $matches)) {
+            $youtubeId = $matches[1];
+        } elseif (preg_match('/^[a-zA-Z0-9_-]{11}$/', $url)) {
+            $youtubeId = $url;
+        }
+
+        if (! $youtubeId) {
+            return response()->json([
+                'message' => 'Format tautan YouTube tidak valid.',
+            ], 422);
+        }
+
+        $candidates = [
+            "https://img.youtube.com/vi/{$youtubeId}/maxresdefault.jpg",
+            "https://img.youtube.com/vi/{$youtubeId}/sddefault.jpg",
+            "https://img.youtube.com/vi/{$youtubeId}/hqdefault.jpg",
+        ];
+
+        $imageBase64 = null;
+        $chosenUrl = null;
+
+        foreach ($candidates as $imgUrl) {
+            try {
+                $resp = Http::withOptions(['verify' => false])->timeout(8)->get($imgUrl);
+                if ($resp->successful() && strlen($resp->body()) > 2000) {
+                    $mime = $resp->header('Content-Type') ?: 'image/jpeg';
+                    $imageBase64 = 'data:' . $mime . ';base64,' . base64_encode($resp->body());
+                    $chosenUrl = $imgUrl;
+                    break;
+                }
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+
+        if (! $imageBase64) {
+            try {
+                $chosenUrl = "https://img.youtube.com/vi/{$youtubeId}/hqdefault.jpg";
+                $resp = Http::withOptions(['verify' => false])->timeout(8)->get($chosenUrl);
+                if ($resp->successful()) {
+                    $mime = $resp->header('Content-Type') ?: 'image/jpeg';
+                    $imageBase64 = 'data:' . $mime . ';base64,' . base64_encode($resp->body());
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        return response()->json([
+            'youtube_id' => $youtubeId,
+            'image_base64' => $imageBase64,
+            'thumbnail_url' => $chosenUrl,
+            'clean_url' => "https://www.youtube.com/watch?v={$youtubeId}",
+        ]);
+    }
+
+    /**
+     * Download YouTube thumbnail and save into public storage as news cover image.
+     */
+    protected function downloadAndStoreYouTubeThumbnail(string $url): ?string
+    {
+        $pattern = '%(?:youtube(?:-nocookie)?\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?|shorts|live)/|.*[?&]v=)|youtu\.be/)([^"&?/\s]{11})%i';
+        $youtubeId = null;
+
+        if (preg_match($pattern, $url, $matches)) {
+            $youtubeId = $matches[1];
+        } elseif (preg_match('/^[a-zA-Z0-9_-]{11}$/', $url)) {
+            $youtubeId = $url;
+        }
+
+        if (! $youtubeId) {
+            return null;
+        }
+
+        $candidates = [
+            "https://img.youtube.com/vi/{$youtubeId}/maxresdefault.jpg",
+            "https://img.youtube.com/vi/{$youtubeId}/sddefault.jpg",
+            "https://img.youtube.com/vi/{$youtubeId}/hqdefault.jpg",
+        ];
+
+        foreach ($candidates as $imgUrl) {
+            try {
+                $resp = Http::withOptions(['verify' => false])->timeout(8)->get($imgUrl);
+                if ($resp->successful() && strlen($resp->body()) > 2000) {
+                    $filename = 'yt_thumb_' . $youtubeId . '_' . Str::random(6) . '.jpg';
+                    $path = 'news_images/' . $filename;
+                    Storage::disk('public')->put($path, $resp->body());
+                    return $path;
+                }
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+
+        try {
+            $resp = Http::withOptions(['verify' => false])->timeout(8)->get("https://img.youtube.com/vi/{$youtubeId}/hqdefault.jpg");
+            if ($resp->successful()) {
+                $filename = 'yt_thumb_' . $youtubeId . '_' . Str::random(6) . '.jpg';
+                $path = 'news_images/' . $filename;
+                Storage::disk('public')->put($path, $resp->body());
+                return $path;
+            }
+        } catch (\Throwable $e) {}
+
+        return null;
     }
 }
 

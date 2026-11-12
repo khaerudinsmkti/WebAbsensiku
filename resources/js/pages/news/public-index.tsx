@@ -12,6 +12,7 @@ import {
     ImageIcon,
     Images,
     Instagram,
+    Youtube,
     Newspaper,
     Plus,
     Search,
@@ -50,10 +51,12 @@ interface PublicNewsProps {
         data: NewsItem[];
     } & PaginationMeta;
     newsCategories: NewsCategory[];
+    initialNews?: NewsItem | null;
     filters: {
         search: string;
         category_id: string;
         per_page?: number;
+        read?: string;
     };
 }
 
@@ -69,7 +72,15 @@ function formatFileSize(bytes: number): string {
     return `${b.toFixed(1)} ${units[i]}`;
 }
 
-export default function PublicNewsIndex({ news, newsCategories = [], filters }: PublicNewsProps) {
+function extractYouTubeVideoId(url?: string | null): string | null {
+    if (!url) return null;
+    const match = url.match(/(?:youtube(?:-nocookie)?\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i);
+    if (match) return match[1];
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url.trim())) return url.trim();
+    return null;
+}
+
+export default function PublicNewsIndex({ news, newsCategories = [], filters, initialNews }: PublicNewsProps) {
     const { auth, school } = usePage<{ auth: any; school?: SchoolProp }>().props;
     const schoolName = school?.name || 'AbsensiKu SD';
     const logoUrl = school?.logo_url;
@@ -124,18 +135,26 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
             });
     };
 
-    // Auto-open news if query parameter ?read=ID is provided (e.g. from WhatsApp share link)
+    // Auto-open news if query parameter ?read=ID or ?read=SLUG is provided (e.g. from WhatsApp share link)
     useEffect(() => {
         if (typeof window === 'undefined') return;
         const params = new URLSearchParams(window.location.search);
         const readId = params.get('read');
-        if (readId && news?.data) {
-            const found = news.data.find((item) => item.id.toString() === readId);
-            if (found) {
-                handleOpenNews(found);
+        if (readId) {
+            if (initialNews && (initialNews.slug === readId || initialNews.id.toString() === readId)) {
+                handleOpenNews(initialNews);
+                return;
+            }
+            if (news?.data) {
+                const found = news.data.find(
+                    (item) => item.id.toString() === readId || item.slug === readId
+                );
+                if (found) {
+                    handleOpenNews(found);
+                }
             }
         }
-    }, [news?.data]);
+    }, [news?.data, initialNews]);
 
     const handleApplyFilters = (newCategory?: string) => {
         const cat = newCategory !== undefined ? newCategory : selectedCategory;
@@ -403,15 +422,12 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                                                     <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
                                                 </button>
 
-                                                <div className="flex items-center gap-1.5">
-                                                    <WhatsAppShareButton type="news" item={item} variant="icon" size="xs" />
-                                                    {item.attachment_url && (
-                                                        <span className="text-[11px] font-bold text-red-600 flex items-center gap-1">
-                                                            <FileText className="size-3" />
-                                                            PDF
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                {item.attachment_url && (
+                                                    <span className="text-[11px] font-bold text-red-600 flex items-center gap-1">
+                                                        <FileText className="size-3" />
+                                                        PDF
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -645,6 +661,50 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                                         </div>
                                     )}
 
+                                    {/* Embed Video YouTube Terkait */}
+                                    {readingNews.youtube_url && (() => {
+                                        const yId = extractYouTubeVideoId(readingNews.youtube_url);
+                                        if (!yId) return null;
+                                        return (
+                                            <div className="mt-6 rounded-2xl border-2 border-red-200/80 bg-gradient-to-br from-red-50/60 via-white to-orange-50/40 p-5 dark:border-red-900/50 dark:from-red-950/20 dark:via-gray-900 dark:to-orange-950/20 space-y-3.5">
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="flex size-8 items-center justify-center rounded-xl bg-red-600 text-white shadow-xs">
+                                                            <Youtube className="size-4.5" />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-xs font-black uppercase tracking-wider text-red-950 dark:text-red-200">
+                                                                Video YouTube Terkait
+                                                            </h4>
+                                                            <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                                                Tonton video dokumentasi resmi melalui pemutar di bawah ini
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <a
+                                                        href={readingNews.youtube_url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-red-700 transition-colors"
+                                                    >
+                                                        <ExternalLink className="size-3.5" />
+                                                        Tonton di YouTube
+                                                    </a>
+                                                </div>
+
+                                                <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-gray-200 bg-black dark:border-gray-800 shadow-sm">
+                                                    <iframe
+                                                        src={readingNews.youtube_embed_url || `https://www.youtube-nocookie.com/embed/${yId}`}
+                                                        title={`Video ${readingNews.title}`}
+                                                        className="size-full border-0"
+                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                        allowFullScreen
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })()}
+
                                     {allAttachments.length > 0 && (
                                         <div className="mt-8 rounded-2xl border-2 border-red-200 bg-red-50/70 p-5 dark:border-red-900/60 dark:bg-red-950/30 space-y-3">
                                             <div className="flex items-center gap-2">
@@ -704,8 +764,7 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters }: 
                                     )}
                                 </div>
 
-                                <div className="flex items-center justify-between border-t border-gray-100 p-4 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50">
-                                    <WhatsAppShareButton type="news" item={readingNews} variant="button" size="sm" />
+                                <div className="flex items-center justify-end border-t border-gray-100 p-4 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/50">
                                     <Button
                                         type="button"
                                         variant="secondary"

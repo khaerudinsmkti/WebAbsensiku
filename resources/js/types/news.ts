@@ -38,6 +38,9 @@ export interface NewsItem {
     formatted_attachment_size?: string | null;
     instagram_url?: string | null;
     instagram_embed_url?: string | null;
+    youtube_url?: string | null;
+    youtube_embed_url?: string | null;
+    youtube_thumbnail_url?: string | null;
     is_published: boolean;
     published_at?: string | null;
     formatted_date?: string;

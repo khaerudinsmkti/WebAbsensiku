@@ -31,6 +31,7 @@ class Gallery extends Model
         'images_urls',
         'formatted_date',
         'formatted_size',
+        'slug',
     ];
 
     protected function casts(): array
@@ -130,6 +131,12 @@ class Gallery extends Model
         }
 
         return round($bytes, 1) . ' ' . $units[$i];
+    }
+
+    public function getSlugAttribute(): string
+    {
+        $slug = \Illuminate\Support\Str::slug($this->title);
+        return $slug ? $slug . '-' . $this->id : (string) $this->id;
     }
 }
 

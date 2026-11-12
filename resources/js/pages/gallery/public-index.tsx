@@ -41,13 +41,15 @@ interface PublicGalleryProps {
         data: GalleryItem[];
     } & PaginationMeta;
     categories: string[];
+    initialGallery?: GalleryItem | null;
     filters: {
         search: string;
         category: string;
+        view?: string;
     };
 }
 
-export default function PublicGalleryIndex({ galleries, categories = [], filters }: PublicGalleryProps) {
+export default function PublicGalleryIndex({ galleries, categories = [], filters, initialGallery }: PublicGalleryProps) {
     const { auth, school } = usePage<{ auth: any; school?: SchoolProp }>().props;
     const schoolName = school?.name || 'AbsensiKu SD';
     const canManageGallery =
@@ -60,19 +62,32 @@ export default function PublicGalleryIndex({ galleries, categories = [], filters
     const [activeGallery, setActiveGallery] = useState<GalleryItem | null>(null);
     const [activePhotoIdx, setActivePhotoIdx] = useState<number>(0);
 
-    // Auto-open gallery if query parameter ?view=ID is provided (e.g. from WhatsApp share link)
+    // Auto-open gallery if query parameter ?view=ID or ?view=SLUG is provided (e.g. from WhatsApp share link)
     useEffect(() => {
         if (typeof window === 'undefined') return;
         const params = new URLSearchParams(window.location.search);
         const viewId = params.get('view');
-        if (viewId && galleries?.data) {
-            const found = galleries.data.find((item) => item.id.toString() === viewId);
-            if (found) {
+        if (viewId) {
+            if (initialGallery) {
                 setActivePhotoIdx(0);
-                setActiveGallery(found);
+                setActiveGallery(initialGallery);
+                return;
+            }
+            if (galleries?.data) {
+                const found = galleries.data.find((item) => {
+                    if (item.id.toString() === viewId) return true;
+                    if (item.slug && item.slug === viewId) return true;
+                    const parts = viewId.split('-');
+                    const possibleId = parts[parts.length - 1];
+                    return item.id.toString() === possibleId;
+                });
+                if (found) {
+                    setActivePhotoIdx(0);
+                    setActiveGallery(found);
+                }
             }
         }
-    }, [galleries?.data]);
+    }, [galleries?.data, initialGallery]);
 
     const handleCategoryClick = (cat: string) => {
         setSelectedCategory(cat);
@@ -288,7 +303,6 @@ export default function PublicGalleryIndex({ galleries, categories = [], filters
                                                     <span className="text-xs font-bold text-[#FF6B35] group-hover:underline">
                                                         Buka Galeri
                                                     </span>
-                                                    <WhatsAppShareButton type="gallery" item={item} variant="icon" size="xs" />
                                                 </div>
                                             </div>
                                         </div>
@@ -430,15 +444,15 @@ export default function PublicGalleryIndex({ galleries, categories = [], filters
                                         </div>
                                     )}
 
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-3 border-t border-gray-100 dark:border-gray-800">
-                                        <div className="flex-1">
-                                            <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">
-                                                {activeGallery.title}
-                                            </h2>
-                                        </div>
-                                        <div className="shrink-0">
-                                            <WhatsAppShareButton type="gallery" item={activeGallery} variant="button" size="sm" />
-                                        </div>
+                                    <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
+                                        <h2 className="text-xl sm:text-2xl font-black text-gray-900 dark:text-white">
+                                            {activeGallery.title}
+                                        </h2>
+                                        {activeGallery.description && (
+                                            <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+                                                {activeGallery.description}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
