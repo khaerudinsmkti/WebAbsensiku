@@ -61,6 +61,7 @@ interface NewsPageProps {
         search: string;
         category_id: string;
         status: string;
+        per_page?: number;
     };
 }
 
@@ -195,6 +196,7 @@ export default function NewsManagement({ news, categories, stats, filters }: New
     const [search, setSearch] = useState(filters.search || '');
     const [selectedCategory, setSelectedCategory] = useState(filters.category_id || 'all');
     const [selectedStatus, setSelectedStatus] = useState(filters.status || 'all');
+    const [perPage, setPerPage] = useState<number>(filters.per_page || 6);
 
     // Modals
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -272,6 +274,7 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                 search: search || undefined,
                 category_id: selectedCategory !== 'all' ? selectedCategory : undefined,
                 status: selectedStatus !== 'all' ? selectedStatus : undefined,
+                per_page: perPage !== 6 ? perPage : undefined,
             },
             { preserveState: true, preserveScroll: true },
         );
@@ -281,6 +284,7 @@ export default function NewsManagement({ news, categories, stats, filters }: New
         setSearch('');
         setSelectedCategory('all');
         setSelectedStatus('all');
+        setPerPage(6);
         router.get('/news-management', {}, { preserveState: true, preserveScroll: true });
     };
 
@@ -849,6 +853,31 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                             <option value="draft">Draf Saja</option>
                         </select>
 
+                        <select
+                            value={perPage}
+                            onChange={(e) => {
+                                const newPerPage = Number(e.target.value);
+                                setPerPage(newPerPage);
+                                router.get(
+                                    '/news-management',
+                                    {
+                                        search: search || undefined,
+                                        category_id: selectedCategory !== 'all' ? selectedCategory : undefined,
+                                        status: selectedStatus !== 'all' ? selectedStatus : undefined,
+                                        per_page: newPerPage !== 6 ? newPerPage : undefined,
+                                    },
+                                    { preserveState: true, preserveScroll: true }
+                                );
+                            }}
+                            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                            title="Jumlah berita per halaman"
+                        >
+                            <option value={6}>6 per halaman</option>
+                            <option value={12}>12 per halaman</option>
+                            <option value={18}>18 per halaman</option>
+                            <option value={24}>24 per halaman</option>
+                        </select>
+
                         <Button
                             type="button"
                             variant="secondary"
@@ -858,7 +887,7 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                             Terapkan
                         </Button>
 
-                        {(search || selectedCategory !== 'all' || selectedStatus !== 'all') && (
+                        {(search || selectedCategory !== 'all' || selectedStatus !== 'all' || perPage !== 6) && (
                             <button
                                 type="button"
                                 onClick={handleResetFilters}
@@ -1069,28 +1098,30 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                     )}
 
                     {/* Pagination */}
-                    {news.last_page > 1 && (
-                        <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50/50 px-4 py-3 dark:border-gray-800 dark:bg-gray-800/40">
-                            <span className="text-xs text-gray-500">
-                                Halaman {news.current_page} dari {news.last_page} (Total {news.total} berita)
+                    {news.total > 0 && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-gray-200 bg-gray-50/50 px-4 py-3 dark:border-gray-800 dark:bg-gray-800/40">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                                Menampilkan {news.from ?? 1} - {news.to ?? news.data.length} dari total {news.total} berita ({news.per_page} per halaman)
                             </span>
-                            <div className="flex items-center gap-1">
-                                {news.links.map((link, idx) => (
-                                    <button
-                                        key={idx}
-                                        disabled={!link.url || link.active}
-                                        onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
-                                        className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${
-                                            link.active
-                                                ? 'bg-[#FF6B35] text-white'
-                                                : link.url
-                                                ? 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200'
-                                                : 'text-gray-300 cursor-not-allowed dark:text-gray-600'
-                                        }`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                ))}
-                            </div>
+                            {news.last_page > 1 && (
+                                <div className="flex items-center gap-1">
+                                    {news.links.map((link, idx) => (
+                                        <button
+                                            key={idx}
+                                            disabled={!link.url || link.active}
+                                            onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll: true })}
+                                            className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                                                link.active
+                                                    ? 'bg-[#FF6B35] text-white'
+                                                    : link.url
+                                                    ? 'border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200'
+                                                    : 'text-gray-300 cursor-not-allowed dark:text-gray-600'
+                                            }`}
+                                            dangerouslySetInnerHTML={{ __html: link.label }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

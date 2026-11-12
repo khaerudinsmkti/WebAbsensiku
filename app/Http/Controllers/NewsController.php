@@ -52,7 +52,12 @@ class NewsController extends Controller
             $query->where('is_published', false);
         }
 
-        $newsList = $query->paginate(15)->withQueryString();
+        $perPage = (int) $request->input('per_page', 6);
+        if (! in_array($perPage, [6, 12, 18, 24, 30, 60])) {
+            $perPage = 6;
+        }
+
+        $newsList = $query->paginate($perPage)->withQueryString();
 
         $categories = NewsCategory::withCount('news')->get();
 
@@ -71,6 +76,7 @@ class NewsController extends Controller
                 'search' => $search ?? '',
                 'category_id' => $categoryId ?? 'all',
                 'status' => $status ?? 'all',
+                'per_page' => $perPage,
             ],
         ]);
     }
