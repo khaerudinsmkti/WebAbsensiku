@@ -154,25 +154,31 @@ export function MobileBottomNav() {
     };
 
     const hasMasterAccess =
-        isAdmin ||
-        can('master_students', 'view') ||
-        can('master_teachers', 'view') ||
-        can('master_classes', 'view');
+        (isAdmin ||
+            can('master_students', 'view') ||
+            can('master_teachers', 'view') ||
+            can('master_classes', 'view')) &&
+        !isPublisher &&
+        !isCoach;
 
     const hasPublikasiAccess =
-        isAdmin ||
-        can('news', 'view') ||
-        can('galleries', 'view') ||
-        can('school_profile', 'view') ||
-        can('principal_greeting', 'view') ||
-        can('contact_messages', 'view');
+        (isAdmin ||
+            can('news', 'view') ||
+            can('galleries', 'view') ||
+            can('school_profile', 'view') ||
+            can('principal_greeting', 'view') ||
+            can('contact_messages', 'view')) &&
+        !isPublisher &&
+        !isCoach;
 
     const hasSettingsAccess =
-        isAdmin ||
-        can('school_settings', 'view') ||
-        can('holidays', 'view') ||
-        can('pwa_notifications', 'view') ||
-        can('permissions', 'view');
+        (isAdmin ||
+            can('school_settings', 'view') ||
+            can('holidays', 'view') ||
+            can('pwa_notifications', 'view') ||
+            can('permissions', 'view')) &&
+        !isPublisher &&
+        !isCoach;
 
     const [imgFailed, setImgFailed] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -247,6 +253,14 @@ export function MobileBottomNav() {
     const isPublishActive = url.startsWith('/manage') || url.startsWith('/publisher') || url.startsWith('/news-management');
     const isAdminSettingsActive = url.startsWith('/admin/');
     const isTutorialsActive = url.startsWith('/tutorials') || url.startsWith('/admin/tutorials');
+
+    const isPublisherNewsActive = url.startsWith('/news-management');
+    const isPublisherGalleriesActive = url.startsWith('/manage/galleries');
+    const isPublisherProfileActive = url.startsWith('/manage/school-profile');
+    const isCoachCreateActive = url === '/extracurricular/reports/create';
+    const isCoachReportsActive = url.startsWith('/extracurricular/reports') && !isCoachCreateActive;
+    const isCoachRosterActive = url.startsWith('/extracurricular/roster');
+
     const isOtherActive =
         (isPrincipal && isAdjustmentsActive) ||
         isReportsActive ||
@@ -269,30 +283,78 @@ export function MobileBottomNav() {
             <nav className="fixed bottom-0 inset-x-0 z-40 block md:hidden bg-white/95 dark:bg-[#18122B]/95 backdrop-blur-xl border-t border-gray-200/80 dark:border-white/10 shadow-[0_-4px_25px_rgba(0,0,0,0.08)] pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-1.5 transition-all">
                 <div className="grid grid-cols-5 items-center justify-around px-2 max-w-md mx-auto">
                     {/* 1. Beranda / Dashboard */}
-                    <Link
-                        href={isPublisher ? '/news-management' : isCoach ? '/extracurricular/reports' : '/dashboard'}
-                        prefetch
-                        className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
-                            isDashboardActive
-                                ? 'text-[var(--brand-primary,#FF6B35)]'
-                                : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-                        }`}
-                    >
-                        <div
-                            className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
-                                isDashboardActive
-                                    ? 'bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand'
-                                    : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                    {isPublisher ? (
+                        <Link
+                            href="/news-management"
+                            prefetch
+                            className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
+                                isPublisherNewsActive
+                                    ? 'text-[var(--brand-primary,#FF6B35)]'
+                                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                             }`}
                         >
-                            <LayoutGrid className="size-5" />
-                        </div>
-                        <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isDashboardActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
-                            Beranda
-                        </span>
-                    </Link>
+                            <div
+                                className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
+                                    isPublisherNewsActive
+                                        ? 'bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand'
+                                        : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                                }`}
+                            >
+                                <Newspaper className="size-5" />
+                            </div>
+                            <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isPublisherNewsActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
+                                Beranda
+                            </span>
+                        </Link>
+                    ) : isCoach ? (
+                        <Link
+                            href="/extracurricular/reports"
+                            prefetch
+                            className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
+                                isCoachReportsActive
+                                    ? 'text-[var(--brand-primary,#FF6B35)]'
+                                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                            }`}
+                        >
+                            <div
+                                className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
+                                    isCoachReportsActive
+                                        ? 'bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand'
+                                        : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                                }`}
+                            >
+                                <LayoutGrid className="size-5" />
+                            </div>
+                            <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isCoachReportsActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
+                                Beranda
+                            </span>
+                        </Link>
+                    ) : (
+                        <Link
+                            href="/dashboard"
+                            prefetch
+                            className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
+                                isDashboardActive
+                                    ? 'text-[var(--brand-primary,#FF6B35)]'
+                                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                            }`}
+                        >
+                            <div
+                                className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
+                                    isDashboardActive
+                                        ? 'bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand'
+                                        : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                                }`}
+                            >
+                                <LayoutGrid className="size-5" />
+                            </div>
+                            <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isDashboardActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
+                                Beranda
+                            </span>
+                        </Link>
+                    )}
 
-                    {/* 2. Jurnal Kepala Sekolah (Khusus Principal) ATAU Presensi Harian */}
+                    {/* 2. Slot 2: Jurnal (Principal) / Galeri (Publisher) / Buat Laporan (Coach) / Presensi (Guru & Admin) */}
                     {isPrincipal ? (
                         <Link
                             href="/principal/journals"
@@ -316,9 +378,55 @@ export function MobileBottomNav() {
                                 Jurnal
                             </span>
                         </Link>
+                    ) : isPublisher ? (
+                        <Link
+                            href="/manage/galleries"
+                            prefetch
+                            className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
+                                isPublisherGalleriesActive
+                                    ? 'text-[var(--brand-primary,#FF6B35)]'
+                                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                            }`}
+                        >
+                            <div
+                                className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
+                                    isPublisherGalleriesActive
+                                        ? 'bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand'
+                                        : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                                }`}
+                            >
+                                <Images className="size-5" />
+                            </div>
+                            <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isPublisherGalleriesActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
+                                Galeri
+                            </span>
+                        </Link>
+                    ) : isCoach ? (
+                        <Link
+                            href="/extracurricular/reports/create"
+                            prefetch
+                            className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
+                                isCoachCreateActive
+                                    ? 'text-[var(--brand-primary,#FF6B35)]'
+                                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                            }`}
+                        >
+                            <div
+                                className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
+                                    isCoachCreateActive
+                                        ? 'bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand'
+                                        : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                                }`}
+                            >
+                                <Award className="size-5" />
+                            </div>
+                            <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isCoachCreateActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
+                                Buat Laporan
+                            </span>
+                        </Link>
                     ) : (
                         <Link
-                            href={isPublisher ? '/manage/galleries' : isCoach ? '/extracurricular/roster' : '/attendances'}
+                            href="/attendances"
                             prefetch
                             className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
                                 isPresensiActive
@@ -341,7 +449,7 @@ export function MobileBottomNav() {
                         </Link>
                     )}
 
-                    {/* 3. Presensi Harian (Bagi Kepala Sekolah) / Terlambat (Bagi yang lain) */}
+                    {/* 3. Slot 3: Presensi (Principal) / Profil Sekolah (Publisher) / Roster Siswa (Coach) / Terlambat (Guru & Admin) */}
                     {isPrincipal ? (
                         <Link
                             href="/attendances"
@@ -363,6 +471,52 @@ export function MobileBottomNav() {
                             </div>
                             <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isPresensiActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
                                 Presensi
+                            </span>
+                        </Link>
+                    ) : isPublisher ? (
+                        <Link
+                            href="/manage/school-profile"
+                            prefetch
+                            className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
+                                isPublisherProfileActive
+                                    ? 'text-[var(--brand-primary,#FF6B35)]'
+                                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                            }`}
+                        >
+                            <div
+                                className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
+                                    isPublisherProfileActive
+                                        ? 'bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand'
+                                        : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                                }`}
+                            >
+                                <Building2 className="size-5" />
+                            </div>
+                            <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isPublisherProfileActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
+                                Profil
+                            </span>
+                        </Link>
+                    ) : isCoach ? (
+                        <Link
+                            href="/extracurricular/roster"
+                            prefetch
+                            className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
+                                isCoachRosterActive
+                                    ? 'text-[var(--brand-primary,#FF6B35)]'
+                                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                            }`}
+                        >
+                            <div
+                                className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
+                                    isCoachRosterActive
+                                        ? 'bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand'
+                                        : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                                }`}
+                            >
+                                <Users className="size-5" />
+                            </div>
+                            <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isCoachRosterActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
+                                Roster
                             </span>
                         </Link>
                     ) : (
@@ -390,7 +544,7 @@ export function MobileBottomNav() {
                         </Link>
                     )}
 
-                    {/* 4. Rekap & Laporan (Kepala Sekolah) / Absen Khusus */}
+                    {/* 4. Slot 4: Laporan (Principal) / Tutorial (Publisher & Coach) / Absen Khusus (Guru & Admin) */}
                     {isPrincipal ? (
                         <Link
                             href="/reports"
@@ -412,6 +566,29 @@ export function MobileBottomNav() {
                             </div>
                             <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isReportsActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
                                 Laporan
+                            </span>
+                        </Link>
+                    ) : (isPublisher || isCoach) ? (
+                        <Link
+                            href="/tutorials"
+                            prefetch
+                            className={`flex flex-col items-center justify-center py-1 transition-all active:scale-90 ${
+                                isTutorialsActive
+                                    ? 'text-[var(--brand-primary,#FF6B35)]'
+                                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                            }`}
+                        >
+                            <div
+                                className={`flex size-10 items-center justify-center rounded-2xl transition-all ${
+                                    isTutorialsActive
+                                        ? 'bg-gradient-to-tr from-[var(--brand-primary,#FF6B35)] to-[var(--brand-primary-dark,#FF8C5A)] text-white shadow-brand'
+                                        : 'hover:bg-gray-100 dark:hover:bg-white/5'
+                                }`}
+                            >
+                                <Video className="size-5" />
+                            </div>
+                            <span className={`text-[10px] mt-1 font-extrabold tracking-tight ${isTutorialsActive ? 'text-[var(--brand-primary,#FF6B35)]' : ''}`}>
+                                Tutorial
                             </span>
                         </Link>
                     ) : (
@@ -566,43 +743,51 @@ export function MobileBottomNav() {
                                         Presensi & Laporan
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
-                                        <NavCard
-                                            href="/attendances"
-                                            title="Presensi Harian"
-                                            subtitle="Input Absensi Kelas"
-                                            icon={UserCheck}
-                                            color="emerald"
-                                            isActive={isPresensiActive}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/attendances/lateness"
-                                            title="Keterlambatan"
-                                            subtitle="Pencatatan & Slip Izin"
-                                            icon={Clock}
-                                            color="amber"
-                                            isActive={isLatenessActive}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/attendances/adjustments"
-                                            title="Absen Khusus"
-                                            subtitle="Izin, Sakit & Dispensasi"
-                                            icon={CalendarDays}
-                                            color="rose"
-                                            isActive={isAdjustmentsActive}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/reports"
-                                            title="Rekap & Laporan"
-                                            subtitle="Analitik, PDF & Excel"
-                                            icon={FileSpreadsheet}
-                                            color="blue"
-                                            isActive={isReportsActive}
-                                            onClick={closeDrawer}
-                                        />
-                                        {can('extracurricular', 'view') && (
+                                        {can('attendances', 'view') && (
+                                            <NavCard
+                                                href="/attendances"
+                                                title="Presensi Harian"
+                                                subtitle="Input Absensi Kelas"
+                                                icon={UserCheck}
+                                                color="emerald"
+                                                isActive={isPresensiActive}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('lateness', 'view') && (
+                                            <NavCard
+                                                href="/attendances/lateness"
+                                                title="Keterlambatan"
+                                                subtitle="Pencatatan & Slip Izin"
+                                                icon={Clock}
+                                                color="amber"
+                                                isActive={isLatenessActive}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('adjustments', 'view') && (
+                                            <NavCard
+                                                href="/attendances/adjustments"
+                                                title="Absen Khusus"
+                                                subtitle="Izin, Sakit & Dispensasi"
+                                                icon={CalendarDays}
+                                                color="rose"
+                                                isActive={isAdjustmentsActive}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('reports', 'view') && (
+                                            <NavCard
+                                                href="/reports"
+                                                title="Rekap & Laporan"
+                                                subtitle="Analitik, PDF & Excel"
+                                                icon={FileSpreadsheet}
+                                                color="blue"
+                                                isActive={isReportsActive}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('extracurricular', 'view') && !isTeacher && (
                                             <div className="col-span-2">
                                                 <NavCard
                                                     href="/extracurricular/reports"
@@ -877,60 +1062,72 @@ export function MobileBottomNav() {
                                         Publikasi & Konten
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
-                                        <NavCard
-                                            href="/news-management"
-                                            title="Kelola Berita"
-                                            subtitle="Warta & Pengumuman"
-                                            icon={Newspaper}
-                                            color="orange"
-                                            isActive={url.startsWith('/news-management')}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/manage/galleries"
-                                            title="Galeri Kegiatan"
-                                            subtitle="Album Dokumentasi Foto"
-                                            icon={Images}
-                                            color="rose"
-                                            isActive={url.startsWith('/manage/galleries')}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/manage/school-profile"
-                                            title="Profil Sekolah"
-                                            subtitle="Visi Misi & Identitas"
-                                            icon={Building2}
-                                            color="blue"
-                                            isActive={url.startsWith('/manage/school-profile')}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/manage/teacher-profiles"
-                                            title="Profil Guru"
-                                            subtitle="Biodata Pengajar Web"
-                                            icon={GraduationCap}
-                                            color="indigo"
-                                            isActive={url.startsWith('/manage/teacher-profiles')}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/publisher/principal-greeting"
-                                            title="Sambutan Kepala Sekolah"
-                                            subtitle="Pidato & Foto Resmi"
-                                            icon={MessageSquareQuote}
-                                            color="orange"
-                                            isActive={url.startsWith('/publisher/principal-greeting')}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/manage/contact"
-                                            title="Kontak Kami"
-                                            subtitle="Pesan & Kotak Saran"
-                                            icon={PhoneCall}
-                                            color="teal"
-                                            isActive={url.startsWith('/manage/contact')}
-                                            onClick={closeDrawer}
-                                        />
+                                        {can('news', 'view') && (
+                                            <NavCard
+                                                href="/news-management"
+                                                title="Kelola Berita"
+                                                subtitle="Warta & Pengumuman"
+                                                icon={Newspaper}
+                                                color="orange"
+                                                isActive={url.startsWith('/news-management')}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('galleries', 'view') && (
+                                            <NavCard
+                                                href="/manage/galleries"
+                                                title="Galeri Kegiatan"
+                                                subtitle="Album Dokumentasi Foto"
+                                                icon={Images}
+                                                color="rose"
+                                                isActive={url.startsWith('/manage/galleries')}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('school_profile', 'view') && (
+                                            <NavCard
+                                                href="/manage/school-profile"
+                                                title="Profil Sekolah"
+                                                subtitle="Visi Misi & Identitas"
+                                                icon={Building2}
+                                                color="blue"
+                                                isActive={url.startsWith('/manage/school-profile')}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {(can('school_profile', 'view') || can('master_teachers', 'view')) && (
+                                            <NavCard
+                                                href="/manage/teacher-profiles"
+                                                title="Profil Guru"
+                                                subtitle="Biodata Pengajar Web"
+                                                icon={GraduationCap}
+                                                color="indigo"
+                                                isActive={url.startsWith('/manage/teacher-profiles')}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('principal_greeting', 'view') && (
+                                            <NavCard
+                                                href="/publisher/principal-greeting"
+                                                title="Sambutan Kepala Sekolah"
+                                                subtitle="Pidato & Foto Resmi"
+                                                icon={MessageSquareQuote}
+                                                color="orange"
+                                                isActive={url.startsWith('/publisher/principal-greeting')}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('contact_messages', 'view') && (
+                                            <NavCard
+                                                href="/manage/contact"
+                                                title="Kontak Kami"
+                                                subtitle="Pesan & Kotak Saran"
+                                                icon={PhoneCall}
+                                                color="teal"
+                                                isActive={url.startsWith('/manage/contact')}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
                                         <div className="col-span-2">
                                             <NavCard
                                                 href="/tutorials"
@@ -954,33 +1151,39 @@ export function MobileBottomNav() {
                                         Ekstrakurikuler
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
-                                        <NavCard
-                                            href="/extracurricular/reports/create"
-                                            title="Buat Laporan"
-                                            subtitle="Input Sesi Latihan"
-                                            icon={Award}
-                                            color="purple"
-                                            isActive={url === '/extracurricular/reports/create'}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/extracurricular/reports"
-                                            title="Riwayat Laporan"
-                                            subtitle="Daftar Sesi Latihan"
-                                            icon={FileSpreadsheet}
-                                            color="blue"
-                                            isActive={url.startsWith('/extracurricular/reports') && url !== '/extracurricular/reports/create'}
-                                            onClick={closeDrawer}
-                                        />
-                                        <NavCard
-                                            href="/extracurricular/roster"
-                                            title="Daftar Anggota Siswa"
-                                            subtitle="Atur Murid Peserta Ekskul"
-                                            icon={Users}
-                                            color="emerald"
-                                            isActive={url.startsWith('/extracurricular/roster')}
-                                            onClick={closeDrawer}
-                                        />
+                                        {can('extracurricular', 'create') && (
+                                            <NavCard
+                                                href="/extracurricular/reports/create"
+                                                title="Buat Laporan"
+                                                subtitle="Input Sesi Latihan"
+                                                icon={Award}
+                                                color="purple"
+                                                isActive={url === '/extracurricular/reports/create'}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('extracurricular', 'view') && (
+                                            <NavCard
+                                                href="/extracurricular/reports"
+                                                title="Riwayat Laporan"
+                                                subtitle="Daftar Sesi Latihan"
+                                                icon={FileSpreadsheet}
+                                                color="blue"
+                                                isActive={url.startsWith('/extracurricular/reports') && url !== '/extracurricular/reports/create'}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
+                                        {can('extracurricular', 'roster') && (
+                                            <NavCard
+                                                href="/extracurricular/roster"
+                                                title="Daftar Anggota Siswa"
+                                                subtitle="Atur Murid Peserta Ekskul"
+                                                icon={Users}
+                                                color="emerald"
+                                                isActive={url.startsWith('/extracurricular/roster')}
+                                                onClick={closeDrawer}
+                                            />
+                                        )}
                                         <NavCard
                                             href="/tutorials"
                                             title="Video Tutorial"

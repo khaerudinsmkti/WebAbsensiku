@@ -93,72 +93,143 @@ export function AppSidebar() {
     };
 
     const hasMasterAccess =
-        isAdmin ||
-        can('master_students', 'view') ||
-        can('master_teachers', 'view') ||
-        can('master_classes', 'view');
+        (isAdmin ||
+            can('master_students', 'view') ||
+            can('master_teachers', 'view') ||
+            can('master_classes', 'view')) &&
+        !isPublisher &&
+        !isCoach;
 
     const hasPublikasiAccess =
-        isAdmin ||
-        can('news', 'view') ||
-        can('galleries', 'view') ||
-        can('school_profile', 'view') ||
-        can('principal_greeting', 'view') ||
-        can('contact_messages', 'view');
+        (isAdmin ||
+            can('news', 'view') ||
+            can('galleries', 'view') ||
+            can('school_profile', 'view') ||
+            can('principal_greeting', 'view') ||
+            can('contact_messages', 'view')) &&
+        !isPublisher &&
+        !isCoach;
 
     const hasSettingsAccess =
-        isAdmin ||
-        can('school_settings', 'view') ||
-        can('holidays', 'view') ||
-        can('pwa_notifications', 'view') ||
-        can('permissions', 'view');
+        (isAdmin ||
+            can('school_settings', 'view') ||
+            can('holidays', 'view') ||
+            can('pwa_notifications', 'view') ||
+            can('permissions', 'view')) &&
+        !isPublisher &&
+        !isCoach;
+
+    const publisherContentItems: NavItem[] = [
+        ...(can('news', 'view')
+            ? [
+                  {
+                      title: 'Kelola Berita',
+                      href: '/news-management',
+                      icon: Newspaper,
+                      isActive: url.startsWith('/news-management'),
+                  },
+              ]
+            : []),
+        ...(can('galleries', 'view')
+            ? [
+                  {
+                      title: 'Galeri Kegiatan',
+                      href: '/manage/galleries',
+                      icon: Images,
+                      isActive: url.startsWith('/manage/galleries'),
+                  },
+              ]
+            : []),
+        ...(can('school_profile', 'view')
+            ? [
+                  {
+                      title: 'Profil Sekolah',
+                      href: '/manage/school-profile',
+                      icon: Building2,
+                      isActive: url.startsWith('/manage/school-profile'),
+                  },
+              ]
+            : []),
+        ...(can('school_profile', 'view') || can('master_teachers', 'view')
+            ? [
+                  {
+                      title: 'Profil Guru',
+                      href: '/manage/teacher-profiles',
+                      icon: GraduationCap,
+                      isActive: url.startsWith('/manage/teacher-profiles'),
+                  },
+              ]
+            : []),
+        ...(can('principal_greeting', 'view')
+            ? [
+                  {
+                      title: 'Sambutan Kepala Sekolah',
+                      href: '/publisher/principal-greeting',
+                      icon: MessageSquareQuote,
+                      isActive: url.startsWith('/publisher/principal-greeting'),
+                  },
+              ]
+            : []),
+        ...(can('contact_messages', 'view')
+            ? [
+                  {
+                      title: 'Kontak Kami',
+                      href: '/manage/contact',
+                      icon: PhoneCall,
+                      isActive: url.startsWith('/manage/contact'),
+                  },
+              ]
+            : []),
+    ];
+
+    const coachItems: NavItem[] = [
+        ...(can('extracurricular', 'create')
+            ? [
+                  {
+                      title: 'Buat Laporan Ekskul',
+                      href: '/extracurricular/reports/create',
+                      icon: Award,
+                      isActive: url === '/extracurricular/reports/create',
+                  },
+              ]
+            : []),
+        ...(can('extracurricular', 'view')
+            ? [
+                  {
+                      title: 'Riwayat Laporan',
+                      href: '/extracurricular/reports',
+                      icon: FileSpreadsheet,
+                      isActive:
+                          url.startsWith('/extracurricular/reports') &&
+                          url !== '/extracurricular/reports/create',
+                  },
+              ]
+            : []),
+        ...(can('extracurricular', 'roster')
+            ? [
+                  {
+                      title: 'Daftar Anggota Siswa',
+                      href: '/extracurricular/roster',
+                      icon: Users,
+                      isActive: url.startsWith('/extracurricular/roster'),
+                  },
+              ]
+            : []),
+    ];
 
     const mainNavItems: NavItem[] = isPublisher
         ? [
-              {
-                  title: 'Publikasi & Konten',
-                  href: '/news-management',
-                  icon: Newspaper,
-                  defaultOpen: true,
-                  items: [
-                      {
-                          title: 'Kelola Berita',
-                          href: '/news-management',
-                          icon: Newspaper,
-                          isActive: url.startsWith('/news-management'),
-                      },
-                      {
-                          title: 'Galeri Kegiatan',
-                          href: '/manage/galleries',
-                          icon: Images,
-                          isActive: url.startsWith('/manage/galleries'),
-                      },
-                      {
-                          title: 'Profil Sekolah',
-                          href: '/manage/school-profile',
-                          icon: Building2,
-                          isActive: url.startsWith('/manage/school-profile'),
-                      },
-                      {
-                          title: 'Profil Guru',
-                          href: '/manage/teacher-profiles',
-                          icon: GraduationCap,
-                          isActive: url.startsWith('/manage/teacher-profiles'),
-                      },
-                      {
-                          title: 'Sambutan Kepala Sekolah',
-                          href: '/publisher/principal-greeting',
-                          icon: MessageSquareQuote,
-                          isActive: url.startsWith('/publisher/principal-greeting'),
-                      },
-                      {
-                          title: 'Kontak Kami',
-                          href: '/manage/contact',
-                          icon: PhoneCall,
-                          isActive: url.startsWith('/manage/contact'),
-                      },
-                  ],
-              },
+              ...(publisherContentItems.length > 0
+                  ? [
+                        {
+                            title: 'Publikasi & Konten',
+                            href: '/news-management',
+                            icon: Newspaper,
+                            defaultOpen: true,
+                            items: publisherContentItems,
+                        },
+                    ]
+                  : []),
               {
                   title: 'Halaman Publik',
                   href: '/',
@@ -194,34 +265,17 @@ export function AppSidebar() {
           ]
         : isCoach
         ? [
-              {
-                  title: 'Ekstrakurikuler',
-                  href: '/extracurricular/reports',
-                  icon: Award,
-                  defaultOpen: true,
-                  items: [
-                      {
-                          title: 'Buat Laporan Ekskul',
-                          href: '/extracurricular/reports/create',
-                          icon: Award,
-                          isActive: url === '/extracurricular/reports/create',
-                      },
-                      {
-                          title: 'Riwayat Laporan',
-                          href: '/extracurricular/reports',
-                          icon: FileSpreadsheet,
-                          isActive:
-                              url.startsWith('/extracurricular/reports') &&
-                              url !== '/extracurricular/reports/create',
-                      },
-                      {
-                          title: 'Daftar Anggota Siswa',
-                          href: '/extracurricular/roster',
-                          icon: Users,
-                          isActive: url.startsWith('/extracurricular/roster'),
-                      },
-                  ],
-              },
+              ...(coachItems.length > 0
+                  ? [
+                        {
+                            title: 'Ekstrakurikuler',
+                            href: '/extracurricular/reports',
+                            icon: Award,
+                            defaultOpen: true,
+                            items: coachItems,
+                        },
+                    ]
+                  : []),
               {
                   title: 'Video Tutorial',
                   href: '/tutorials',
@@ -252,34 +306,50 @@ export function AppSidebar() {
                   icon: ClipboardCheck,
                   defaultOpen: true,
                   items: [
-                      {
-                          title: 'Presensi Harian',
-                          href: '/attendances',
-                          icon: UserCheck,
-                          isActive:
-                              url.startsWith('/attendances') &&
-                              !url.includes('/lateness') &&
-                              !url.includes('/adjustments'),
-                      },
-                      {
-                          title: 'Keterlambatan',
-                          href: '/attendances/lateness',
-                          icon: Clock,
-                          isActive: url.startsWith('/attendances/lateness'),
-                      },
-                      {
-                          title: 'Absen Khusus',
-                          href: '/attendances/adjustments',
-                          icon: CalendarDays,
-                          isActive: url.startsWith('/attendances/adjustments'),
-                      },
-                      {
-                          title: 'Rekap & Laporan',
-                          href: '/reports',
-                          icon: FileSpreadsheet,
-                          isActive: url.startsWith('/reports'),
-                      },
-                      ...(can('extracurricular', 'view')
+                      ...(can('attendances', 'view')
+                          ? [
+                                {
+                                    title: 'Presensi Harian',
+                                    href: '/attendances',
+                                    icon: UserCheck,
+                                    isActive:
+                                        url.startsWith('/attendances') &&
+                                        !url.includes('/lateness') &&
+                                        !url.includes('/adjustments'),
+                                },
+                            ]
+                          : []),
+                      ...(can('lateness', 'view')
+                          ? [
+                                {
+                                    title: 'Keterlambatan',
+                                    href: '/attendances/lateness',
+                                    icon: Clock,
+                                    isActive: url.startsWith('/attendances/lateness'),
+                                },
+                            ]
+                          : []),
+                      ...(can('adjustments', 'view')
+                          ? [
+                                {
+                                    title: 'Absen Khusus',
+                                    href: '/attendances/adjustments',
+                                    icon: CalendarDays,
+                                    isActive: url.startsWith('/attendances/adjustments'),
+                                },
+                            ]
+                          : []),
+                      ...(can('reports', 'view')
+                          ? [
+                                {
+                                    title: 'Rekap & Laporan',
+                                    href: '/reports',
+                                    icon: FileSpreadsheet,
+                                    isActive: url.startsWith('/reports'),
+                                },
+                            ]
+                          : []),
+                      ...(can('extracurricular', 'view') && !isTeacher
                           ? [
                                 {
                                     title: 'Laporan Ekskul',

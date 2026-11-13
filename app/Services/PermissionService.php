@@ -357,7 +357,7 @@ class PermissionService
                             $isGranted = true;
                         }
                     } elseif ($role === 'teacher') {
-                        // Guru & wali kelas
+                        // Guru & wali kelas (hanya modul presensi & rekap laporan)
                         if ($modKey === 'attendances') {
                             $isGranted = in_array($permKey, ['view', 'create', 'edit']);
                         } elseif ($modKey === 'lateness') {
@@ -366,26 +366,16 @@ class PermissionService
                             $isGranted = in_array($permKey, ['view', 'create']);
                         } elseif ($modKey === 'reports') {
                             $isGranted = true;
-                        } elseif ($modKey === 'extracurricular') {
-                            $isGranted = ($permKey === 'view');
-                        } elseif (in_array($modKey, ['master_students', 'master_teachers', 'master_classes'])) {
-                            $isGranted = ($permKey === 'view');
-                        } elseif (in_array($modKey, ['news', 'galleries', 'school_profile', 'principal_greeting', 'school_settings', 'holidays'])) {
-                            $isGranted = ($permKey === 'view');
                         }
                     } elseif ($role === 'coach') {
-                        // Pelatih Ekskul
+                        // Pelatih Ekskul (hanya modul ekstrakurikuler)
                         if ($modKey === 'extracurricular') {
                             $isGranted = in_array($permKey, ['view', 'create', 'edit', 'delete', 'roster', 'print']);
-                        } elseif (in_array($modKey, ['master_students', 'school_settings', 'holidays'])) {
-                            $isGranted = ($permKey === 'view');
                         }
                     } elseif ($role === 'publisher') {
-                        // Tim Humas & Publikasi
+                        // Tim Humas & Publikasi (hanya modul publikasi & humas)
                         if (in_array($modKey, ['news', 'galleries', 'school_profile', 'principal_greeting', 'contact_messages'])) {
                             $isGranted = true;
-                        } elseif (in_array($modKey, ['master_teachers', 'school_settings', 'holidays'])) {
-                            $isGranted = ($permKey === 'view');
                         }
                     } elseif ($role === 'student') {
                         // Siswa & Orang tua
@@ -393,8 +383,6 @@ class PermissionService
                             $isGranted = ($permKey === 'view');
                         } elseif ($modKey === 'adjustments') {
                             $isGranted = in_array($permKey, ['view', 'create']);
-                        } elseif (in_array($modKey, ['master_teachers', 'news', 'galleries', 'school_profile', 'principal_greeting', 'school_settings', 'holidays'])) {
-                            $isGranted = ($permKey === 'view');
                         }
                     }
 
