@@ -202,6 +202,7 @@ export default function NewsManagement({ news, categories, stats, filters }: New
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [editingNews, setEditingNews] = useState<NewsItem | null>(null);
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+    const [editingCategory, setEditingCategory] = useState<NewsCategory | null>(null);
     const [previewNews, setPreviewNews] = useState<NewsItem | null>(null);
     const [previewActiveImageIdx, setPreviewActiveImageIdx] = useState(0);
     const [deletingNews, setDeletingNews] = useState<NewsItem | null>(null);
@@ -719,18 +720,59 @@ export default function NewsManagement({ news, categories, stats, filters }: New
         });
     };
 
+    const openCategoryModal = () => {
+        setEditingCategory(null);
+        categoryForm.reset();
+        setIsCategoryModalOpen(true);
+    };
+
+    const closeCategoryModal = () => {
+        setEditingCategory(null);
+        categoryForm.reset();
+        setIsCategoryModalOpen(false);
+    };
+
     const handleSaveCategory = (e: React.FormEvent) => {
         e.preventDefault();
-        categoryForm.post('/news-management/categories', {
-            onSuccess: () => {
-                categoryForm.reset();
-            },
+        if (editingCategory) {
+            categoryForm.put(`/news-management/categories/${editingCategory.id}`, {
+                onSuccess: () => {
+                    categoryForm.reset();
+                    setEditingCategory(null);
+                },
+            });
+        } else {
+            categoryForm.post('/news-management/categories', {
+                onSuccess: () => {
+                    categoryForm.reset();
+                },
+            });
+        }
+    };
+
+    const handleStartEditCategory = (cat: NewsCategory) => {
+        setEditingCategory(cat);
+        categoryForm.setData({
+            name: cat.name,
+            color: cat.color || 'blue',
+            description: cat.description || '',
         });
+    };
+
+    const handleCancelEditCategory = () => {
+        setEditingCategory(null);
+        categoryForm.reset();
     };
 
     const handleDeleteCategory = (catId: number) => {
         if (confirm('Yakin ingin menghapus kategori ini? Berita yang terkait akan dipindahkan ke tanpa kategori.')) {
-            router.delete(`/news-management/categories/${catId}`);
+            router.delete(`/news-management/categories/${catId}`, {
+                onSuccess: () => {
+                    if (editingCategory?.id === catId) {
+                        handleCancelEditCategory();
+                    }
+                },
+            });
         }
     };
 
@@ -775,7 +817,7 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => setIsCategoryModalOpen(true)}
+                            onClick={openCategoryModal}
                             className="rounded-xl border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200"
                         >
                             <Layers className="mr-1.5 size-4 text-[#FF6B35]" />
@@ -1354,9 +1396,20 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                             {/* Kategori & Status */}
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase mb-1">
-                                        Kategori Berita
-                                    </label>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase">
+                                            Kategori Berita
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={openCategoryModal}
+                                            className="text-[11px] font-bold text-[#FF6B35] hover:underline flex items-center gap-1 cursor-pointer"
+                                            title="Kelola atau tambah kategori berita baru"
+                                        >
+                                            <Layers className="size-3" />
+                                            <span>Kelola Kategori</span>
+                                        </button>
+                                    </div>
                                     <select
                                         value={form.data.category_id}
                                         onChange={(e) => form.setData('category_id', e.target.value)}
@@ -1687,13 +1740,18 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                 <div className="flex size-9 items-center justify-center rounded-xl bg-orange-100 text-[#FF6B35] dark:bg-orange-950 dark:text-[#FFA07A]">
                                     <Layers className="size-5" />
                                 </div>
-                                <h3 className="text-lg font-black text-gray-900 dark:text-white">
-                                    Kategori Berita
-                                </h3>
+                                <div>
+                                    <h3 className="text-lg font-black text-gray-900 dark:text-white">
+                                        Kategori Berita
+                                    </h3>
+                                    <p className="text-[11px] text-gray-500 font-medium">
+                                        Kelola topik dan klasifikasi artikel informasi sekolah
+                                    </p>
+                                </div>
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setIsCategoryModalOpen(false)}
+                                onClick={closeCategoryModal}
                                 className="flex size-8 items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                             >
                                 <X className="size-5" />
@@ -1701,17 +1759,39 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-5 space-y-5">
-                            {/* Form Tambah Kategori */}
+                            {/* Form Tambah / Edit Kategori */}
                             <form onSubmit={handleSaveCategory} className="rounded-2xl border border-gray-200 bg-gray-50/70 p-4 space-y-3 dark:border-gray-700 dark:bg-gray-800/40">
-                                <span className="text-xs font-extrabold text-gray-800 dark:text-gray-200 block">
-                                    Tambah Kategori Baru
-                                </span>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-extrabold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                                        {editingCategory ? (
+                                            <>
+                                                <Pencil className="size-3.5 text-[#FF6B35]" />
+                                                <span>Sunting Kategori: {editingCategory.name}</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Plus className="size-3.5 text-[#FF6B35]" />
+                                                <span>Tambah Kategori Baru</span>
+                                            </>
+                                        )}
+                                    </span>
+                                    {editingCategory && (
+                                        <button
+                                            type="button"
+                                            onClick={handleCancelEditCategory}
+                                            className="text-[11px] font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 underline"
+                                        >
+                                            Batal Edit
+                                        </button>
+                                    )}
+                                </div>
+
                                 <div>
                                     <input
                                         type="text"
                                         value={categoryForm.data.name}
                                         onChange={(e) => categoryForm.setData('name', e.target.value)}
-                                        placeholder="Nama Kategori (misal: Info Beasiswa)"
+                                        placeholder="Nama Kategori (misal: Info Beasiswa, Prestasi)"
                                         required
                                         className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold focus:border-[#FF6B35] focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                                     />
@@ -1747,15 +1827,37 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                         />
                                     </div>
                                 </div>
-                                <Button
-                                    type="submit"
-                                    variant="primary"
-                                    disabled={categoryForm.processing}
-                                    className="w-full rounded-xl text-xs font-bold py-2"
-                                >
-                                    <Plus className="mr-1.5 size-4" />
-                                    Simpan Kategori
-                                </Button>
+
+                                <div className="flex items-center gap-2 pt-1">
+                                    <Button
+                                        type="submit"
+                                        variant="primary"
+                                        disabled={categoryForm.processing}
+                                        className="flex-1 rounded-xl text-xs font-bold py-2 shadow-xs"
+                                    >
+                                        {editingCategory ? (
+                                            <>
+                                                <CheckCircle2 className="mr-1.5 size-4" />
+                                                Perbarui Kategori
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Plus className="mr-1.5 size-4" />
+                                                Simpan Kategori
+                                            </>
+                                        )}
+                                    </Button>
+                                    {editingCategory && (
+                                        <Button
+                                            type="button"
+                                            variant="secondary"
+                                            onClick={handleCancelEditCategory}
+                                            className="rounded-xl text-xs font-bold py-2"
+                                        >
+                                            Batal
+                                        </Button>
+                                    )}
+                                </div>
                             </form>
 
                             {/* Daftar Kategori */}
@@ -1766,29 +1868,54 @@ export default function NewsManagement({ news, categories, stats, filters }: New
                                 <div className="divide-y divide-gray-100 rounded-2xl border border-gray-200 bg-white overflow-hidden dark:divide-gray-800 dark:border-gray-700 dark:bg-gray-800">
                                     {categories.map((cat) => {
                                         const catColor = categoryColorMap[cat.color] || categoryColorMap.blue;
+                                        const isSelectedForEdit = editingCategory?.id === cat.id;
+
                                         return (
                                             <div
                                                 key={cat.id}
-                                                className="flex items-center justify-between px-3.5 py-2.5 text-xs"
+                                                className={`flex items-center justify-between px-3.5 py-2.5 text-xs transition-colors ${
+                                                    isSelectedForEdit
+                                                        ? 'bg-orange-50/70 dark:bg-orange-950/20'
+                                                        : ''
+                                                }`}
                                             >
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
                                                     <span
-                                                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${catColor.bg} ${catColor.text} ${catColor.border}`}
+                                                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border shrink-0 ${catColor.bg} ${catColor.text} ${catColor.border}`}
                                                     >
                                                         {cat.name}
                                                     </span>
-                                                    <span className="text-[11px] text-gray-400">
+                                                    <span className="text-[11px] text-gray-400 shrink-0">
                                                         ({cat.news_count ?? 0} berita)
                                                     </span>
+                                                    {cat.description && (
+                                                        <span className="text-[11px] text-gray-400 truncate hidden sm:inline">
+                                                            • {cat.description}
+                                                        </span>
+                                                    )}
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleDeleteCategory(cat.id)}
-                                                    className="rounded-lg p-1 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
-                                                    title="Hapus Kategori"
-                                                >
-                                                    <Trash2 className="size-3.5" />
-                                                </button>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleStartEditCategory(cat)}
+                                                        className={`rounded-lg p-1.5 transition-colors ${
+                                                            isSelectedForEdit
+                                                                ? 'bg-orange-200 text-[#FF6B35] dark:bg-orange-900/60'
+                                                                : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+                                                        }`}
+                                                        title="Sunting Kategori"
+                                                    >
+                                                        <Pencil className="size-3.5" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteCategory(cat.id)}
+                                                        className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400 transition-colors"
+                                                        title="Hapus Kategori"
+                                                    >
+                                                        <Trash2 className="size-3.5" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         );
                                     })}

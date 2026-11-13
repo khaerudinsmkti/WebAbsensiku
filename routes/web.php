@@ -98,6 +98,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/news-management/{news}', [NewsController::class, 'update'])->name('news.update');
         Route::delete('/news-management/{news}', [NewsController::class, 'destroy'])->name('news.destroy');
         Route::post('/news-management/categories', [NewsController::class, 'storeCategory'])->name('news.categories.store');
+        Route::put('/news-management/categories/{category}', [NewsController::class, 'updateCategory'])->name('news.categories.update');
         Route::delete('/news-management/categories/{category}', [NewsController::class, 'destroyCategory'])->name('news.categories.destroy');
     });
 

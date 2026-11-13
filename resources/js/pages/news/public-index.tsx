@@ -84,7 +84,7 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters, in
     const { auth, school } = usePage<{ auth: any; school?: SchoolProp }>().props;
     const schoolName = school?.name || 'AbsensiKu SD';
     const logoUrl = school?.logo_url;
-    const isPublisherOrAdmin = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin';
+    const isPublisherOrAdmin = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin' || auth?.user?.role === 'principal';
 
     const [search, setSearch] = useState(filters.search || '');
     const [selectedCategory, setSelectedCategory] = useState(filters.category_id || 'all');
@@ -209,10 +209,23 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters, in
                                 </p>
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-wrap items-center gap-3">
                                 <span className="text-xs font-bold text-gray-500 dark:text-gray-400">
                                     Total {news.total} Berita Diterbitkan
                                 </span>
+                                {isPublisherOrAdmin && (
+                                    <Button
+                                        asChild
+                                        variant="outline"
+                                        size="sm"
+                                        className="rounded-xl border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-200"
+                                    >
+                                        <Link href="/news-management">
+                                            <Layers className="mr-1.5 size-3.5 text-[#FF6B35]" />
+                                            Kelola Berita & Kategori
+                                        </Link>
+                                    </Button>
+                                )}
                             </div>
                         </div>
 
@@ -356,6 +369,12 @@ export default function PublicNewsIndex({ news, newsCategories = [], filters, in
                                                 {item.category && (
                                                     <span className="rounded-full bg-white/95 px-3 py-1 text-[11px] font-extrabold text-[#FF6B35] shadow-sm backdrop-blur-md dark:bg-gray-900/90 dark:text-[#FFA07A]">
                                                         {item.category.name}
+                                                    </span>
+                                                )}
+                                                {item.youtube_url && (
+                                                    <span className="flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-extrabold text-white shadow-sm">
+                                                        <Youtube className="size-3" />
+                                                        <span>Video</span>
                                                     </span>
                                                 )}
                                                 {item.instagram_url && (

@@ -228,8 +228,9 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
         return Boolean(permissions[module]?.[action]);
     };
     const isPublisher = auth?.user?.role === 'publisher';
-    const isPublisherOrAdmin = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin' || can('news', 'view');
-    const canCreateNews = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin' || can('news', 'create');
+    const isPrincipal = auth?.user?.role === 'principal';
+    const isPublisherOrAdmin = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin' || auth?.user?.role === 'principal' || can('news', 'view');
+    const canCreateNews = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin' || auth?.user?.role === 'principal' || can('news', 'create');
     const canManageGreeting = auth?.user?.role === 'publisher' || auth?.user?.role === 'admin' || auth?.user?.role === 'principal' || can('principal_greeting', 'view');
 
     // Hero Banner Edit Modal State (Available for Publisher, Admin & Principal)
@@ -1242,6 +1243,12 @@ export default function Welcome({ news = [], newsCategories = [], totalNewsCount
                                                     {item.category && (
                                                         <span className="rounded-full bg-white/95 px-3 py-1 text-[11px] font-extrabold text-[#FF6B35] shadow-sm backdrop-blur-md dark:bg-gray-900/90 dark:text-[#FFA07A]">
                                                             {item.category.name}
+                                                        </span>
+                                                    )}
+                                                    {item.youtube_url && (
+                                                        <span className="flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-extrabold text-white shadow-sm">
+                                                            <Youtube className="size-3" />
+                                                            <span>Video</span>
                                                         </span>
                                                     )}
                                                     {item.instagram_url && (

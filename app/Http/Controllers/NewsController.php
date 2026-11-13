@@ -684,7 +684,16 @@ class NewsController extends Controller
      */
     public function storeCategory(Request $request): RedirectResponse
     {
-        if (! $request->user()?->hasPermission('news', 'create') && ! $request->user()?->hasPermission('news', 'edit')) {
+        $user = $request->user();
+        $isAllowed = $user && (
+            $user->isAdmin() ||
+            $user->isPublisher() ||
+            $user->isPrincipal() ||
+            $user->hasPermission('news', 'create') ||
+            $user->hasPermission('news', 'edit')
+        );
+
+        if (! $isAllowed) {
             abort(403, 'Anda tidak memiliki hak akses untuk mengelola kategori berita.');
         }
 
@@ -705,11 +714,53 @@ class NewsController extends Controller
     }
 
     /**
+     * Update an existing news category.
+     */
+    public function updateCategory(Request $request, NewsCategory $category): RedirectResponse
+    {
+        $user = $request->user();
+        $isAllowed = $user && (
+            $user->isAdmin() ||
+            $user->isPublisher() ||
+            $user->isPrincipal() ||
+            $user->hasPermission('news', 'create') ||
+            $user->hasPermission('news', 'edit')
+        );
+
+        if (! $isAllowed) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengelola kategori berita.');
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|unique:news_categories,name,' . $category->id,
+            'color' => 'nullable|string|max:30',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        $category->update([
+            'name' => $validated['name'],
+            'slug' => Str::slug($validated['name']),
+            'color' => $validated['color'] ?? 'blue',
+            'description' => $validated['description'] ?? null,
+        ]);
+
+        return back()->with('success', "Kategori '{$category->name}' berhasil diperbarui.");
+    }
+
+    /**
      * Destroy a news category.
      */
     public function destroyCategory(NewsCategory $category): RedirectResponse
     {
-        if (! request()->user()?->hasPermission('news', 'delete')) {
+        $user = request()->user();
+        $isAllowed = $user && (
+            $user->isAdmin() ||
+            $user->isPublisher() ||
+            $user->isPrincipal() ||
+            $user->hasPermission('news', 'delete')
+        );
+
+        if (! $isAllowed) {
             abort(403, 'Anda tidak memiliki hak akses untuk menghapus kategori berita.');
         }
 
