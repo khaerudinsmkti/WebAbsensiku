@@ -123,11 +123,32 @@ export default function Dashboard({
     userRoleLabel = '',
 }: DashboardProps) {
     const { props } = usePage();
-    const user = props.auth?.user as { name?: string; role?: string } | undefined;
-    const school = props.school as { name?: string } | undefined;
+    const user = props.auth?.user as { name?: string; role?: string; nip?: string | null } | undefined;
+    const school = props.school as { name?: string; principal_nip?: string | null; principal_name?: string } | undefined;
+
+    // Menentukan sebutan Bapak / Ibu berdasarkan NIP 18 digit (digit ke-15 / 4 angka dari belakang: 1 = Bapak, 2 = Ibu)
+    const greetingHonorific = useMemo(() => {
+        const rawNip = user?.nip || (user?.role === 'principal' ? school?.principal_nip : undefined);
+        const cleanNip = typeof rawNip === 'string' || typeof rawNip === 'number'
+            ? String(rawNip).replace(/\D/g, '')
+            : '';
+
+        if (cleanNip.length === 18) {
+            const genderDigit = cleanNip.charAt(14); // Digit ke-15 (index 14, 4 angka dari belakang: 1 = Bapak, 2 = Ibu)
+            if (genderDigit === '1') {
+                return 'Bapak';
+            }
+            if (genderDigit === '2') {
+                return 'Ibu';
+            }
+        }
+
+        return 'Bapak/Ibu';
+    }, [user?.nip, user?.role, school?.principal_nip]);
+
     const greetingTitle = user?.name
-        ? `Selamat Datang Bapak/Ibu ${user.name}`
-        : 'Selamat Datang Bapak/Ibu';
+        ? `Selamat Datang ${greetingHonorific} ${user.name}`
+        : `Selamat Datang ${greetingHonorific}`;
 
     const todayStr = useMemo(() => new Date().toLocaleDateString('en-CA'), []);
     const isFuture = isFutureDate || selectedDate > todayStr;

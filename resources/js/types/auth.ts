@@ -2,6 +2,7 @@ export type User = {
     id: number;
     name: string;
     email: string;
+    nip?: string | null;
     role?: 'admin' | 'teacher' | 'principal' | 'publisher' | 'student' | string;
     is_duty_teacher_today?: boolean;
     avatar?: string;
