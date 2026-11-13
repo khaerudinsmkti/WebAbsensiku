@@ -92,14 +92,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Modul Pengelolaan Berita (Publisher Berita, Admin & Kepala Sekolah)
     Route::middleware('role:publisher,admin,principal,teacher')->group(function () {
         Route::get('/news-management', [NewsController::class, 'index'])->name('news.index');
+
+        // Kategori Berita (Harus didefinisikan SEBELUM rute wildcard {news})
+        Route::post('/news-management/categories', [NewsController::class, 'storeCategory'])->name('news.categories.store');
+        Route::put('/news-management/categories/{category}', [NewsController::class, 'updateCategory'])->name('news.categories.update')->whereNumber('category');
+        Route::delete('/news-management/categories/{category}', [NewsController::class, 'destroyCategory'])->name('news.categories.destroy')->whereNumber('category');
+
         Route::post('/news-management/fetch-instagram', [NewsController::class, 'fetchInstagram'])->name('news.fetch-instagram');
         Route::post('/news-management/fetch-youtube-thumbnail', [NewsController::class, 'fetchYouTubeThumbnail'])->name('news.fetch-youtube-thumbnail');
         Route::post('/news-management', [NewsController::class, 'store'])->name('news.store');
-        Route::post('/news-management/{news}', [NewsController::class, 'update'])->name('news.update');
-        Route::delete('/news-management/{news}', [NewsController::class, 'destroy'])->name('news.destroy');
-        Route::post('/news-management/categories', [NewsController::class, 'storeCategory'])->name('news.categories.store');
-        Route::put('/news-management/categories/{category}', [NewsController::class, 'updateCategory'])->name('news.categories.update');
-        Route::delete('/news-management/categories/{category}', [NewsController::class, 'destroyCategory'])->name('news.categories.destroy');
+        Route::post('/news-management/{news}', [NewsController::class, 'update'])->name('news.update')->whereNumber('news');
+        Route::delete('/news-management/{news}', [NewsController::class, 'destroy'])->name('news.destroy')->whereNumber('news');
     });
 
     // Kelola Sambutan Kepala Sekolah & Kontak Kami (Publisher, Admin, Kepala Sekolah)

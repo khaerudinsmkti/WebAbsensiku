@@ -1,5 +1,5 @@
 // AbsensiKu Progressive Web App Service Worker
-const CACHE_NAME = 'absensiku-pwa-v6';
+const CACHE_NAME = 'absensiku-pwa-v8';
 
 // Essential static assets to pre-cache
 const PRECACHE_ASSETS = [
@@ -66,7 +66,7 @@ self.addEventListener('fetch', (event) => {
                     });
                 }
                 return networkResponse;
-            }).catch(() => caches.match(request))
+            }).catch(() => caches.match(request).then((cached) => cached || new Response('', { status: 408 })))
         );
         return;
     }
@@ -116,7 +116,16 @@ self.addEventListener('fetch', (event) => {
                     if (cachedResponse) {
                         return cachedResponse;
                     }
-                    return caches.match('/');
+                    return caches.match('/').then((fallbackResponse) => {
+                        return (
+                            fallbackResponse ||
+                            new Response('Offline / Network Error', {
+                                status: 503,
+                                statusText: 'Service Unavailable',
+                                headers: { 'Content-Type': 'text/plain' },
+                            })
+                        );
+                    });
                 });
             })
     );
