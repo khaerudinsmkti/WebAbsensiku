@@ -140,6 +140,8 @@ class PermissionService
                 'permissions' => [
                     'view' => ['label' => 'Lihat Permohonan', 'description' => 'Melihat daftar permohonan izin & dispensasi.'],
                     'create' => ['label' => 'Ajukan Permohonan', 'description' => 'Membuat dan mengunggah bukti pengajuan izin/sakit.'],
+                    'edit' => ['label' => 'Sunting Absen Khusus', 'description' => 'Mengubah data permohonan izin pulang awal/absen khusus.'],
+                    'delete' => ['label' => 'Hapus Absen Khusus', 'description' => 'Menghapus permohonan izin pulang awal/absen khusus.'],
                     'approve' => ['label' => 'Validasi / Setujui', 'description' => 'Menyetujui atau menolak permohonan absen khusus.'],
                 ],
             ],
@@ -363,7 +365,7 @@ class PermissionService
                         } elseif ($modKey === 'lateness') {
                             $isGranted = true;
                         } elseif ($modKey === 'adjustments') {
-                            $isGranted = in_array($permKey, ['view', 'create']);
+                            $isGranted = in_array($permKey, ['view', 'create', 'edit', 'delete']);
                         } elseif ($modKey === 'reports') {
                             $isGranted = true;
                         }

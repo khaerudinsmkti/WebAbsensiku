@@ -290,6 +290,78 @@ class MasterDataController extends Controller
     }
 
     /**
+     * Bulk delete students in a specific classroom.
+     */
+    public function bulkDestroyStudentsByClassroom(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'classroom_id' => 'required|exists:classrooms,id',
+            'include_alumni' => 'nullable|boolean',
+        ]);
+
+        $classroom = Classroom::findOrFail($validated['classroom_id']);
+        $includeAlumni = $request->boolean('include_alumni', false);
+
+        $studentsQuery = Student::where('classroom_id', $classroom->id);
+        if (! $includeAlumni) {
+            $studentsQuery->where(function ($q) {
+                $q->where('is_active', true)->orWhere('is_alumni', false);
+            });
+        }
+
+        $studentIds = $studentsQuery->pluck('id')->toArray();
+        $studentCount = count($studentIds);
+
+        if ($studentCount === 0) {
+            return back()->with('error', "Tidak ada data siswa terdaftar di kelas {$classroom->name} untuk dihapus.");
+        }
+
+        $deletedMetrics = DB::transaction(function () use ($studentIds) {
+            // 1. Ambil ID riwayat absensi dari semua siswa yang akan dihapus
+            $attendanceIds = Attendance::whereIn('student_id', $studentIds)->pluck('id')->toArray();
+
+            $adjCount = 0;
+            if (! empty($attendanceIds)) {
+                // 2. Hapus file lampiran absen khusus jika ada
+                $adjustments = AttendanceAdjustment::whereIn('attendance_id', $attendanceIds)->get();
+                $adjCount = $adjustments->count();
+
+                foreach ($adjustments as $adj) {
+                    if ($adj->attachment_path && Storage::disk('public')->exists($adj->attachment_path)) {
+                        Storage::disk('public')->delete($adj->attachment_path);
+                    }
+                }
+
+                // 3. Hapus data absen khusus (AttendanceAdjustment)
+                AttendanceAdjustment::whereIn('attendance_id', $attendanceIds)->delete();
+
+                // 4. Hapus data absensi & keterlambatan (Attendance)
+                Attendance::whereIn('id', $attendanceIds)->delete();
+            }
+
+            // 5. Hapus akun user jika siswa memiliki akun login terhubung
+            $userIds = Student::whereIn('id', $studentIds)->whereNotNull('user_id')->pluck('user_id')->toArray();
+            if (! empty($userIds)) {
+                User::whereIn('id', $userIds)->delete();
+            }
+
+            // 6. Hapus data siswa
+            $studCount = Student::whereIn('id', $studentIds)->delete();
+
+            return [
+                'students' => $studCount,
+                'attendances' => count($attendanceIds),
+                'adjustments' => $adjCount,
+            ];
+        });
+
+        return back()->with(
+            'success',
+            "Berhasil menghapus masal {$deletedMetrics['students']} data siswa di kelas {$classroom->name} beserta {$deletedMetrics['attendances']} riwayat absensi."
+        );
+    }
+
+    /**
      * Batch import students from Excel file or direct copy-paste JSON payload
      */
     public function batchImportStudents(Request $request): RedirectResponse

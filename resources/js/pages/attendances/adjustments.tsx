@@ -6,20 +6,32 @@ import {
     FileText,
     HeartPulse,
     Paperclip,
+    Pencil,
     PlusCircle,
     Search,
+    Trash2,
     Upload,
     UserCheck,
     Users,
+    X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { PageBanner } from '@/components/page-banner';
 import { StatCard } from '@/components/stat-card';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 
 interface AdjustmentRecord {
     id: number;
     attendance_id: number;
+    student_id?: number;
     student_name: string;
     nisn: string;
     classroom: string;
@@ -29,8 +41,10 @@ interface AdjustmentRecord {
     reason: string;
     pickup_person: string | null;
     attachment_url: string | null;
+    has_attachment?: boolean;
     approved_by: string;
     created_at: string;
+    can_manage?: boolean;
 }
 
 interface EligibleStudent {
@@ -79,6 +93,9 @@ export default function AdjustmentsPage({
 
     const [selectedClassId, setSelectedClassId] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState<string>('');
+    const [editingRecord, setEditingRecord] = useState<AdjustmentRecord | null>(null);
+    const [deletingRecord, setDeletingRecord] = useState<AdjustmentRecord | null>(null);
+    const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
     const { data, setData, post, processing, reset, errors } = useForm({
         attendance_id: '' as string | number,
@@ -88,6 +105,62 @@ export default function AdjustmentsPage({
         pickup_person: '',
         proof: null as File | null,
     });
+
+    const editForm = useForm({
+        type: 'early_leave_sick',
+        departure_time: '10:30',
+        reason: '',
+        pickup_person: '',
+        proof: null as File | null,
+        delete_proof: false,
+    });
+
+    const handleOpenEdit = (record: AdjustmentRecord) => {
+        setEditingRecord(record);
+        editForm.setData({
+            type: record.type,
+            departure_time: record.departure_time,
+            reason: record.reason,
+            pickup_person: record.pickup_person || '',
+            proof: null,
+            delete_proof: false,
+        });
+        editForm.clearErrors();
+    };
+
+    const handleUpdate = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingRecord) return;
+
+        editForm.transform((data) => ({
+            ...data,
+            _method: 'PUT',
+        }));
+
+        editForm.post(`/attendances/adjustments/${editingRecord.id}`, {
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => {
+                setEditingRecord(null);
+                editForm.reset();
+            },
+        });
+    };
+
+    const handleDelete = () => {
+        if (!deletingRecord) return;
+        setIsDeleting(true);
+        router.delete(`/attendances/adjustments/${deletingRecord.id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setDeletingRecord(null);
+                setIsDeleting(false);
+            },
+            onError: () => {
+                setIsDeleting(false);
+            },
+        });
+    };
 
     const handleDateChange = (newDate: string) => {
         router.get(
@@ -462,12 +535,15 @@ export default function AdjustmentsPage({
                                         <th className="px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-[#FF6B35]">
                                             Diverifikasi
                                         </th>
+                                        <th className="px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-[#FF6B35] text-center">
+                                            Aksi
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#F5F5F5]">
                                     {adjustments.length === 0 ? (
                                         <tr>
-                                            <td colSpan={6} className="text-center py-12 text-gray-500 font-medium">
+                                            <td colSpan={7} className="text-center py-12 text-gray-500 font-medium">
                                                 Belum ada permohonan absen khusus / pulang awal pada tanggal ini.
                                             </td>
                                         </tr>
@@ -513,6 +589,30 @@ export default function AdjustmentsPage({
                                                     <div>{item.approved_by}</div>
                                                     <div className="text-[10px] text-gray-400">{item.created_at}</div>
                                                 </td>
+                                                <td className="px-5 py-3.5 text-center">
+                                                    {item.can_manage !== false ? (
+                                                        <div className="flex items-center justify-center gap-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleOpenEdit(item)}
+                                                                className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors dark:text-blue-400 dark:hover:bg-blue-950/40"
+                                                                title="Edit Absen Khusus"
+                                                            >
+                                                                <Pencil className="size-4" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setDeletingRecord(item)}
+                                                                className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors dark:text-red-400 dark:hover:bg-red-950/40"
+                                                                title="Hapus Absen Khusus"
+                                                            >
+                                                                <Trash2 className="size-4" />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-gray-300 dark:text-gray-600 text-xs">-</span>
+                                                    )}
+                                                </td>
                                             </tr>
                                         ))
                                     )}
@@ -521,6 +621,231 @@ export default function AdjustmentsPage({
                         </div>
                     </div>
                 </div>
+
+                {/* Modal Edit Absen Khusus */}
+                <Dialog open={!!editingRecord} onOpenChange={(open) => !open && setEditingRecord(null)}>
+                    <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-base font-extrabold text-gray-900 dark:text-white">
+                                <Pencil className="size-5 text-[#FF6B35]" />
+                                Edit Izin Khusus Pulang Awal
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-gray-500">
+                                Perbarui data alasan, jam kepulangan, penjemput, atau surat izin siswa.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        {editingRecord && (
+                            <form onSubmit={handleUpdate} className="flex flex-col gap-4 mt-2">
+                                {/* Info Siswa */}
+                                <div className="rounded-xl bg-orange-50/70 border border-orange-200/80 p-3 text-xs dark:bg-orange-950/30 dark:border-orange-900/40">
+                                    <div className="font-extrabold text-gray-900 dark:text-white text-sm">
+                                        {editingRecord.student_name}
+                                    </div>
+                                    <div className="text-gray-500 flex items-center gap-2 mt-0.5">
+                                        <span>NISN: {editingRecord.nisn}</span>
+                                        <span>•</span>
+                                        <span className="font-semibold text-gray-700 dark:text-gray-300">
+                                            Kelas {editingRecord.classroom}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Kategori & Jam Keluar */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-xs font-bold text-[#6B7280] uppercase tracking-wider block mb-1.5">
+                                            Kategori:
+                                        </label>
+                                        <select
+                                            value={editForm.data.type}
+                                            onChange={(e) => editForm.setData('type', e.target.value)}
+                                            className="w-full rounded-xl border-2 border-[#E8E8E8] bg-white px-3 py-2 text-xs font-semibold text-gray-800 focus:border-[#FF6B35] focus:outline-none dark:border-[#2D234A] dark:bg-[#18122B] dark:text-white"
+                                        >
+                                            <option value="early_leave_sick">Sakit di Sekolah</option>
+                                            <option value="early_leave_urgent">Keperluan Mendesak</option>
+                                            <option value="other">Lainnya</option>
+                                        </select>
+                                        {editForm.errors.type && (
+                                            <p className="text-red-500 text-[11px] mt-1">{editForm.errors.type}</p>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-[#6B7280] uppercase tracking-wider block mb-1.5">
+                                            Jam Keluar:
+                                        </label>
+                                        <input
+                                            type="time"
+                                            value={editForm.data.departure_time}
+                                            onChange={(e) => editForm.setData('departure_time', e.target.value)}
+                                            className="w-full rounded-xl border-2 border-[#E8E8E8] px-3 py-2 text-xs font-bold text-gray-800 focus:border-[#FF6B35] focus:outline-none dark:border-[#2D234A] dark:bg-[#18122B] dark:text-white"
+                                            required
+                                        />
+                                        {editForm.errors.departure_time && (
+                                            <p className="text-red-500 text-[11px] mt-1">{editForm.errors.departure_time}</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Alasan Kepulangan */}
+                                <div>
+                                    <label className="text-xs font-bold text-[#6B7280] uppercase tracking-wider block mb-1.5">
+                                        Alasan Kepulangan:
+                                    </label>
+                                    <textarea
+                                        rows={3}
+                                        value={editForm.data.reason}
+                                        onChange={(e) => editForm.setData('reason', e.target.value)}
+                                        className="w-full rounded-xl border-2 border-[#E8E8E8] p-2.5 text-xs text-gray-800 placeholder-gray-400 focus:border-[#FF6B35] focus:outline-none dark:border-[#2D234A] dark:bg-[#18122B] dark:text-white"
+                                        required
+                                    />
+                                    {editForm.errors.reason && (
+                                        <p className="text-red-500 text-[11px] mt-1">{editForm.errors.reason}</p>
+                                    )}
+                                </div>
+
+                                {/* Nama Penjemput / Wali */}
+                                <div>
+                                    <label className="text-xs font-bold text-[#6B7280] uppercase tracking-wider block mb-1.5">
+                                        Nama Penjemput / Wali:
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder="Contoh: Ibu Kandung (Ibu Dewi)"
+                                        value={editForm.data.pickup_person}
+                                        onChange={(e) => editForm.setData('pickup_person', e.target.value)}
+                                        className="w-full rounded-xl border-2 border-[#E8E8E8] px-3 py-2 text-xs text-gray-800 placeholder-gray-400 focus:border-[#FF6B35] focus:outline-none dark:border-[#2D234A] dark:bg-[#18122B] dark:text-white"
+                                    />
+                                    {editForm.errors.pickup_person && (
+                                        <p className="text-red-500 text-[11px] mt-1">{editForm.errors.pickup_person}</p>
+                                    )}
+                                </div>
+
+                                {/* Bukti / Surat Jalan */}
+                                <div>
+                                    <label className="text-xs font-bold text-[#6B7280] uppercase tracking-wider block mb-1.5">
+                                        Bukti / Surat Jalan:
+                                    </label>
+                                    {editingRecord.attachment_url && !editForm.data.delete_proof && (
+                                        <div className="mb-2 flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-800">
+                                            <a
+                                                href={editingRecord.attachment_url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="inline-flex items-center gap-1.5 text-[#FF6B35] font-bold hover:underline"
+                                            >
+                                                <Paperclip className="size-3.5" />
+                                                Lihat Lampiran Tersimpan
+                                            </a>
+                                            <button
+                                                type="button"
+                                                onClick={() => editForm.setData('delete_proof', true)}
+                                                className="text-xs text-red-500 hover:text-red-700 font-semibold cursor-pointer"
+                                            >
+                                                Hapus Lampiran
+                                            </button>
+                                        </div>
+                                    )}
+                                    {editForm.data.delete_proof && (
+                                        <div className="mb-2 flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+                                            <span>Lampiran akan dihapus saat disimpan.</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => editForm.setData('delete_proof', false)}
+                                                className="text-xs font-bold underline cursor-pointer"
+                                            >
+                                                Batal Hapus
+                                            </button>
+                                        </div>
+                                    )}
+                                    <input
+                                        type="file"
+                                        accept="image/*,.pdf"
+                                        onChange={(e) =>
+                                            editForm.setData('proof', e.target.files ? e.target.files[0] : null)
+                                        }
+                                        className="text-xs text-gray-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#FFF0EB] file:text-[#FF6B35] hover:file:bg-[#FFE66D]"
+                                    />
+                                    <span className="text-[11px] text-gray-400 block mt-1">
+                                        Unggah berkas baru (JPG, PNG, atau PDF maks 2MB) untuk mengganti lampiran sebelumnya.
+                                    </span>
+                                    {editForm.errors.proof && (
+                                        <p className="text-red-500 text-[11px] mt-1">{editForm.errors.proof}</p>
+                                    )}
+                                </div>
+
+                                <DialogFooter className="mt-2 flex items-center justify-end gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setEditingRecord(null)}
+                                        disabled={editForm.processing}
+                                    >
+                                        Batal
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        variant="primary"
+                                        size="sm"
+                                        disabled={editForm.processing}
+                                        className="text-white"
+                                    >
+                                        {editForm.processing ? 'Menyimpan...' : 'Simpan Perubahan'}
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        )}
+                    </DialogContent>
+                </Dialog>
+
+                {/* Modal Konfirmasi Hapus */}
+                <Dialog open={!!deletingRecord} onOpenChange={(open) => !open && setDeletingRecord(null)}>
+                    <DialogContent className="sm:max-w-[420px]">
+                        <DialogHeader>
+                            <div className="flex size-11 items-center justify-center rounded-2xl bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400 mb-2">
+                                <Trash2 className="size-5" />
+                            </div>
+                            <DialogTitle className="text-base font-extrabold text-gray-900 dark:text-white">
+                                Hapus Data Absen Khusus?
+                            </DialogTitle>
+                            <DialogDescription className="text-xs text-gray-500">
+                                Data izin pulang awal untuk{' '}
+                                <strong className="text-gray-900 dark:text-white">{deletingRecord?.student_name}</strong> ({deletingRecord?.classroom})
+                                pada tanggal {selectedDate} akan dihapus dari sistem.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="rounded-xl bg-gray-50 p-3 text-xs text-gray-600 dark:bg-gray-800/60 dark:text-gray-300">
+                            <div>Alasan: <strong>{deletingRecord?.reason}</strong></div>
+                            <div className="text-[11px] text-gray-400 mt-1">
+                                Catatan pulang awal pada presensi harian siswa juga akan dibersihkan secara otomatis.
+                            </div>
+                        </div>
+
+                        <DialogFooter className="mt-4 flex items-center justify-end gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setDeletingRecord(null)}
+                                disabled={isDeleting}
+                            >
+                                Batal
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="danger"
+                                size="sm"
+                                onClick={handleDelete}
+                                disabled={isDeleting}
+                                className="text-white bg-red-600 hover:bg-red-700"
+                            >
+                                {isDeleting ? 'Menghapus...' : 'Ya, Hapus Data'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
         </>
     );

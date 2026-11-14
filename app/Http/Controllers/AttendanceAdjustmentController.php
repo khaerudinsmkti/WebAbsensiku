@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,21 +36,31 @@ class AttendanceAdjustmentController extends Controller
         }
 
         $adjustments = $adjustmentsQuery->get()
-            ->map(function ($adj) {
+            ->map(function ($adj) use ($user) {
+                $studentClassroom = $adj->attendance?->student?->classroom;
+                $canManage = $user->isAdmin()
+                    || $user->isPrincipal()
+                    || $user->isDutyTeacherToday()
+                    || ($studentClassroom && $studentClassroom->homeroom_teacher_id === $user->id)
+                    || $adj->approved_by === $user->id;
+
                 return [
                     'id' => $adj->id,
                     'attendance_id' => $adj->attendance_id,
-                    'student_name' => $adj->attendance->student->name,
-                    'nisn' => $adj->attendance->student->nisn,
-                    'classroom' => $adj->attendance->student->classroom->name,
+                    'student_id' => $adj->attendance?->student_id,
+                    'student_name' => $adj->attendance?->student?->name ?? 'Siswa',
+                    'nisn' => $adj->attendance?->student?->nisn ?? '-',
+                    'classroom' => $adj->attendance?->student?->classroom?->name ?? '-',
                     'type' => $adj->type,
                     'type_name' => $adj->type_name,
                     'departure_time' => substr($adj->departure_time, 0, 5),
                     'reason' => $adj->reason,
                     'pickup_person' => $adj->pickup_person,
                     'attachment_url' => $adj->attachment_path ? asset('storage/' . $adj->attachment_path) : null,
-                    'approved_by' => $adj->approvedBy->name,
+                    'has_attachment' => ! empty($adj->attachment_path),
+                    'approved_by' => $adj->approvedBy?->name ?? 'Sistem',
                     'created_at' => $adj->created_at->format('H:i'),
+                    'can_manage' => $canManage,
                 ];
             });
 
@@ -167,6 +178,119 @@ class AttendanceAdjustmentController extends Controller
         });
 
         return back()->with('success', 'Izin khusus pulang awal berhasil dicatat dan diverifikasi.');
+    }
+
+    /**
+     * Update existing attendance adjustment.
+     */
+    public function update(Request $request, AttendanceAdjustment $adjustment): RedirectResponse
+    {
+        $this->authorizeAdjustmentAction($request, $adjustment);
+
+        $validated = $request->validate([
+            'type' => 'required|in:early_leave_sick,early_leave_urgent,other',
+            'departure_time' => 'required',
+            'reason' => 'required|string|max:500',
+            'pickup_person' => 'nullable|string|max:150',
+            'proof' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
+            'delete_proof' => 'nullable|boolean',
+        ]);
+
+        DB::transaction(function () use ($validated, $request, $adjustment) {
+            $attendance = $adjustment->attendance;
+
+            if ($request->hasFile('proof')) {
+                if ($adjustment->attachment_path && Storage::disk('public')->exists($adjustment->attachment_path)) {
+                    Storage::disk('public')->delete($adjustment->attachment_path);
+                }
+                $adjustment->attachment_path = $request->file('proof')->store('adjustments', 'public');
+            } elseif ($request->boolean('delete_proof')) {
+                if ($adjustment->attachment_path && Storage::disk('public')->exists($adjustment->attachment_path)) {
+                    Storage::disk('public')->delete($adjustment->attachment_path);
+                }
+                $adjustment->attachment_path = null;
+            }
+
+            $departureTime = substr($validated['departure_time'], 0, 5) . ':00';
+            $adjustment->type = $validated['type'];
+            $adjustment->departure_time = $departureTime;
+            $adjustment->reason = $validated['reason'];
+            $adjustment->pickup_person = $validated['pickup_person'] ?? null;
+            $adjustment->save();
+
+            if ($attendance) {
+                $cleanedNotes = preg_replace('/(\s*\|\s*)?Pulang Awal \([^)]+\) pkl [^|]+/u', '', $attendance->notes ?? '');
+                $typeLabel = match ($validated['type']) {
+                    'early_leave_sick' => 'Sakit di Sekolah',
+                    'early_leave_urgent' => 'Izin Pulang Cepat',
+                    default => 'Absen Khusus',
+                };
+                $timeFormatted = substr($validated['departure_time'], 0, 5);
+                $additionalNote = " | Pulang Awal ({$typeLabel}) pkl {$timeFormatted}: {$validated['reason']}";
+                $baseNotes = trim($cleanedNotes ?? '');
+                $attendance->update([
+                    'notes' => $baseNotes !== '' ? "{$baseNotes}{$additionalNote}" : trim($additionalNote, " |"),
+                ]);
+            }
+        });
+
+        $studentName = $adjustment->fresh()->attendance?->student?->name ?? 'Siswa';
+        return back()->with('success', "Data absen khusus {$studentName} berhasil diperbarui.");
+    }
+
+    /**
+     * Delete attendance adjustment.
+     */
+    public function destroy(Request $request, AttendanceAdjustment $adjustment): RedirectResponse
+    {
+        $this->authorizeAdjustmentAction($request, $adjustment);
+
+        $studentName = $adjustment->attendance?->student?->name ?? 'Siswa';
+
+        DB::transaction(function () use ($adjustment) {
+            $attendance = $adjustment->attendance;
+            if ($attendance) {
+                $cleanedNotes = preg_replace('/(\s*\|\s*)?Pulang Awal \([^)]+\) pkl [^|]+/u', '', $attendance->notes ?? '');
+                $attendance->update([
+                    'notes' => trim($cleanedNotes ?? '') ?: null,
+                ]);
+            }
+
+            if ($adjustment->attachment_path && Storage::disk('public')->exists($adjustment->attachment_path)) {
+                Storage::disk('public')->delete($adjustment->attachment_path);
+            }
+
+            $adjustment->delete();
+        });
+
+        return back()->with('success', "Data absen khusus {$studentName} berhasil dihapus.");
+    }
+
+    /**
+     * Authorize user action for a specific adjustment record.
+     */
+    protected function authorizeAdjustmentAction(Request $request, AttendanceAdjustment $adjustment): void
+    {
+        $user = $request->user();
+        if (! $user) {
+            abort(401, 'Silakan login terlebih dahulu.');
+        }
+
+        if ($user->isAdmin() || $user->isPrincipal() || $user->isDutyTeacherToday()) {
+            return;
+        }
+
+        if ($user->role === 'teacher') {
+            $studentClassroom = $adjustment->attendance?->student?->classroom;
+            $isHomeroom = $studentClassroom && $studentClassroom->homeroom_teacher_id === $user->id;
+            $isCreator = $adjustment->approved_by === $user->id;
+
+            if ($isHomeroom || $isCreator) {
+                return;
+            }
+        }
+
+        abort(403, 'Anda tidak berwenang mengelola data izin pulang awal ini.');
     }
 }
 

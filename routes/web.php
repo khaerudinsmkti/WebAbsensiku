@@ -82,6 +82,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // 4. Absen Khusus / Izin Pulang Awal
         Route::get('/attendances/adjustments', [AttendanceAdjustmentController::class, 'index'])->name('attendances.adjustments');
         Route::post('/attendances/adjustments', [AttendanceAdjustmentController::class, 'store'])->name('attendances.adjustments.store');
+        Route::match(['put', 'post'], '/attendances/adjustments/{adjustment}', [AttendanceAdjustmentController::class, 'update'])->name('attendances.adjustments.update')->whereNumber('adjustment');
+        Route::delete('/attendances/adjustments/{adjustment}', [AttendanceAdjustmentController::class, 'destroy'])->name('attendances.adjustments.destroy')->whereNumber('adjustment');
 
         // 5. Rekapitulasi & Ekspor Laporan
         Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
@@ -153,6 +155,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/master/students/{student}', [MasterDataController::class, 'updateStudent'])->name('master.students.update');
         Route::delete('/master/students/{student}', [MasterDataController::class, 'destroyStudent'])->name('master.students.destroy');
         Route::post('/master/students/batch-import', [MasterDataController::class, 'batchImportStudents'])->name('master.students.batch-import');
+        Route::post('/master/students/bulk-destroy-by-classroom', [MasterDataController::class, 'bulkDestroyStudentsByClassroom'])->name('master.students.bulk-destroy-by-classroom');
         Route::post('/master/promotions', [MasterDataController::class, 'processPromotions'])->name('master.promotions.process');
         Route::put('/master/alumni/{student}', [MasterDataController::class, 'updateAlumni'])->name('master.alumni.update');
         Route::post('/master/alumni/{student}/restore', [MasterDataController::class, 'restoreAlumni'])->name('master.alumni.restore');

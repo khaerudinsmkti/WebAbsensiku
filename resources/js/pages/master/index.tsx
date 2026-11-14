@@ -25,6 +25,7 @@ import {
     Upload,
     UserCheck,
     Users,
+    UserX,
     X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -411,6 +412,13 @@ export default function MasterIndexPage({
     const [pasteText, setPasteText] = useState('');
     const [parsedData, setParsedData] = useState<ParsedStudentRow[]>([]);
     const [importClassroomId, setImportClassroomId] = useState<number>(classrooms[0]?.id || 0);
+
+    // Bulk Delete Student by Classroom States
+    const [showClassroomBulkDeleteModal, setShowClassroomBulkDeleteModal] = useState(false);
+    const [bulkDeleteClassroomId, setBulkDeleteClassroomId] = useState<string | number>('');
+    const [bulkDeleteIncludeAlumni, setBulkDeleteIncludeAlumni] = useState(false);
+    const [classroomDeleteConfirmText, setClassroomDeleteConfirmText] = useState('');
+    const [isSubmittingClassroomBulkDelete, setIsSubmittingClassroomBulkDelete] = useState(false);
 
     const [showTeacherModal, setShowTeacherModal] = useState(false);
     const [editingTeacher, setEditingTeacher] = useState<TeacherItem | null>(null);
@@ -865,6 +873,67 @@ export default function MasterIndexPage({
                 onError: () => toast.error(`Gagal menghapus data siswa ${s.name}.`),
             });
         }
+    };
+
+    const openBulkDeleteClassroomModal = (classId?: number | string) => {
+        if (classId) {
+            setBulkDeleteClassroomId(classId);
+        } else if (selectedClassroomId) {
+            setBulkDeleteClassroomId(selectedClassroomId);
+        } else if (classrooms.length > 0) {
+            setBulkDeleteClassroomId(classrooms[0].id);
+        } else {
+            setBulkDeleteClassroomId('');
+        }
+        setBulkDeleteIncludeAlumni(false);
+        setClassroomDeleteConfirmText('');
+        setShowClassroomBulkDeleteModal(true);
+    };
+
+    const selectedBulkClassroom = useMemo(() => {
+        return classrooms.find((c) => String(c.id) === String(bulkDeleteClassroomId)) || null;
+    }, [classrooms, bulkDeleteClassroomId]);
+
+    const targetStudentCount = useMemo(() => {
+        if (!selectedBulkClassroom) return 0;
+        if (bulkDeleteIncludeAlumni) {
+            return selectedBulkClassroom.students_count ?? (selectedBulkClassroom.students?.length ?? 0);
+        }
+        return selectedBulkClassroom.students?.filter((s) => s.is_active !== false).length
+            ?? selectedBulkClassroom.students_count
+            ?? 0;
+    }, [selectedBulkClassroom, bulkDeleteIncludeAlumni]);
+
+    const handleExecuteClassroomBulkDelete = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!bulkDeleteClassroomId) {
+            toast.error('Pilih kelas yang ingin dihapus datanya');
+            return;
+        }
+        if (classroomDeleteConfirmText.trim().toUpperCase() !== 'HAPUS') {
+            toast.error('Ketik kata "HAPUS" untuk mengonfirmasi penghapusan masal');
+            return;
+        }
+
+        setIsSubmittingClassroomBulkDelete(true);
+        router.post(
+            '/master/students/bulk-destroy-by-classroom',
+            {
+                classroom_id: bulkDeleteClassroomId,
+                include_alumni: bulkDeleteIncludeAlumni,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setIsSubmittingClassroomBulkDelete(false);
+                    setShowClassroomBulkDeleteModal(false);
+                    setClassroomDeleteConfirmText('');
+                },
+                onError: () => {
+                    setIsSubmittingClassroomBulkDelete(false);
+                },
+            }
+        );
     };
 
     // -------------------------------------------------------------
@@ -1628,6 +1697,15 @@ export default function MasterIndexPage({
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2.5">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => openBulkDeleteClassroomModal()}
+                                    className="font-bold text-xs bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/60 shadow-xs"
+                                >
+                                    <Trash2 className="size-4 mr-1.5" />
+                                    Hapus Masal per Kelas
+                                </Button>
                                 <Button
                                     type="button"
                                     variant="secondary"
@@ -3375,6 +3453,16 @@ export default function MasterIndexPage({
                                                         >
                                                             <Edit3 className="size-4" />
                                                         </button>
+                                                        {(c.students?.length ?? 0) > 0 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openBulkDeleteClassroomModal(c.id)}
+                                                                className="rounded-lg p-1.5 text-orange-600 hover:bg-orange-50 transition-colors"
+                                                                title={`Hapus Masal Siswa di Kelas ${c.name}`}
+                                                            >
+                                                                <UserX className="size-4" />
+                                                            </button>
+                                                        )}
                                                         <button
                                                             type="button"
                                                             onClick={() => handleDeleteClass(c)}
@@ -4036,6 +4124,151 @@ export default function MasterIndexPage({
                                     Simpan {parsedData.length} Data Siswa
                                 </Button>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ========================================================= */}
+                {/* MODAL 2.5: HAPUS MASAL DATA SISWA PER KELAS               */}
+                {/* ========================================================= */}
+                {showClassroomBulkDeleteModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in">
+                        <div className="w-full max-w-lg rounded-[22px] bg-white p-6 shadow-2xl dark:bg-[#18122B] animate-in zoom-in-95">
+                            <div className="flex items-center justify-between border-b pb-3 mb-4 dark:border-gray-800">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="flex size-10 items-center justify-center rounded-xl bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400">
+                                        <Trash2 className="size-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                                            Hapus Masal Data Siswa per Kelas
+                                        </h3>
+                                        <p className="text-xs text-gray-500">
+                                            Pembersihan data seluruh peserta didik pada rombel tertentu
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowClassroomBulkDeleteModal(false);
+                                        setClassroomDeleteConfirmText('');
+                                    }}
+                                    className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                >
+                                    <X className="size-5" />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleExecuteClassroomBulkDelete} className="flex flex-col gap-4">
+                                {/* 1. Pilih Kelas */}
+                                <div>
+                                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-1.5 dark:text-gray-300">
+                                        Pilih Rombongan Belajar (Kelas):
+                                    </label>
+                                    <select
+                                        value={bulkDeleteClassroomId}
+                                        onChange={(e) => setBulkDeleteClassroomId(e.target.value)}
+                                        className="w-full rounded-xl border-2 border-gray-200 bg-white px-3.5 py-2 text-xs font-semibold text-gray-800 focus:border-red-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white cursor-pointer"
+                                        required
+                                    >
+                                        <option value="">-- Pilih Kelas --</option>
+                                        {classrooms.map((c) => {
+                                            const count = c.students?.filter((s) => s.is_active !== false).length ?? c.students_count ?? 0;
+                                            return (
+                                                <option key={c.id} value={c.id}>
+                                                    {c.name} ({count} Siswa Terdaftar)
+                                                </option>
+                                            );
+                                        })}
+                                    </select>
+                                </div>
+
+                                {/* 2. Informasi Rombel Terpilih */}
+                                {selectedBulkClassroom && (
+                                    <div className="rounded-xl border border-red-200 bg-red-50/60 p-3.5 text-xs text-red-900 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
+                                        <div className="flex items-center justify-between font-bold text-sm mb-1.5">
+                                            <span>{selectedBulkClassroom.name}</span>
+                                            <span className="rounded-full bg-red-200/80 px-2.5 py-0.5 text-xs text-red-800 font-extrabold dark:bg-red-900/60 dark:text-red-200">
+                                                {targetStudentCount} Siswa
+                                            </span>
+                                        </div>
+                                        <div className="text-xs text-gray-600 dark:text-gray-400 flex flex-col gap-0.5">
+                                            <div>Tahun Ajaran: <strong className="text-gray-800 dark:text-gray-200">{selectedBulkClassroom.academic_year}</strong></div>
+                                            <div>Wali Kelas: <strong className="text-gray-800 dark:text-gray-200">{selectedBulkClassroom.homeroom_teacher?.name || 'Belum Ditentukan'}</strong></div>
+                                        </div>
+
+                                        <div className="mt-2.5 pt-2 border-t border-red-200/80 dark:border-red-900/40 text-[11px] leading-relaxed">
+                                            ⚠️ <strong>PENTING:</strong> Tindakan ini akan menghapus permanen <strong>{targetStudentCount} data siswa</strong> di kelas ini beserta seluruh catatan presensi harian, keterlambatan, dan berkas absen khusus siswa terkait.
+                                            <br />
+                                            <em>Rombel <strong>{selectedBulkClassroom.name}</strong> tidak akan terhapus, melainkan menjadi rombel kosong yang siap diisi siswa baru.</em>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 3. Opsi Tambahan: Alumni */}
+                                <label className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={bulkDeleteIncludeAlumni}
+                                        onChange={(e) => setBulkDeleteIncludeAlumni(e.target.checked)}
+                                        className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                                    />
+                                    <span>Sertakan juga arsip data siswa non-aktif / alumni pada rombel ini (jika ada)</span>
+                                </label>
+
+                                {/* 4. Konfirmasi Ketik "HAPUS" */}
+                                <div>
+                                    <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-1 dark:text-gray-300">
+                                        Konfirmasi Keamanan:
+                                    </label>
+                                    <p className="text-[11px] text-gray-500 mb-1.5">
+                                        Ketik kata <strong className="text-red-600 font-mono">HAPUS</strong> pada kotak di bawah ini untuk mengonfirmasi:
+                                    </p>
+                                    <input
+                                        type="text"
+                                        placeholder='Ketik "HAPUS"'
+                                        value={classroomDeleteConfirmText}
+                                        onChange={(e) => setClassroomDeleteConfirmText(e.target.value)}
+                                        className="w-full rounded-xl border-2 border-red-300 px-3.5 py-2 text-xs font-bold text-red-700 placeholder-gray-400 focus:border-red-600 focus:outline-none dark:border-red-800 dark:bg-gray-800 dark:text-red-400"
+                                        required
+                                    />
+                                </div>
+
+                                {/* Footer Buttons */}
+                                <div className="flex items-center justify-end gap-2 pt-3 border-t dark:border-gray-800 mt-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            setShowClassroomBulkDeleteModal(false);
+                                            setClassroomDeleteConfirmText('');
+                                        }}
+                                        disabled={isSubmittingClassroomBulkDelete}
+                                        className="text-xs font-bold"
+                                    >
+                                        Batal
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        variant="destructive"
+                                        size="sm"
+                                        disabled={
+                                            isSubmittingClassroomBulkDelete ||
+                                            !bulkDeleteClassroomId ||
+                                            targetStudentCount === 0 ||
+                                            classroomDeleteConfirmText.trim().toUpperCase() !== 'HAPUS'
+                                        }
+                                        className="text-xs font-bold bg-red-600 hover:bg-red-700 text-white"
+                                    >
+                                        <Trash2 className="size-4 mr-1.5" />
+                                        {isSubmittingClassroomBulkDelete
+                                            ? 'Menghapus Siswa...'
+                                            : `Hapus ${targetStudentCount} Siswa Kelas Ini`}
+                                    </Button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 )}
